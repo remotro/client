@@ -1,12 +1,30 @@
-use std::net::{TcpListener, TcpStream};
+use std::{
+    net::{TcpListener, TcpStream},
+    io::{Read, Write}
+};
 use websocket::sync::Server;
 
-fn handle_client(stream: TcpStream) {
-
+fn handle_client(mut stream: TcpStream) {
+    loop {
+        let mut buffer = [0; 1024];
+        match stream.read(&mut buffer) {
+            Ok(0) => break,
+            Ok(n) => {
+                let state:String = String::from_utf8(buffer[..n].to_vec()).expect("Invalid UTF-8");
+                if state == "\n" {
+                    continue;
+                }
+                print!("{state}");
+            },
+            Err(_) => {
+                println!("Error reading Stream");
+            }
+        }
+    }
 }
 fn main() -> std::io::Result<()> {
-    let tcp_listener = TcpListener::bind("127.0.0.1:80")?; //TODO Choose a port to run on
-    let web_listener = Server::bind("127.0.0.1:0")?;
+    let tcp_listener = TcpListener::bind("127.0.0.1:8080")?; //TODO Choose a port to run on
+    /*let web_listener = Server::bind("127.0.0.1:0")?;*/
 
     // accept connections and process them serially
     for stream in tcp_listener.incoming() {
