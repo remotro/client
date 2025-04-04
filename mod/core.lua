@@ -15,7 +15,7 @@ function RE.load_rm_file(file)
 	return nil
 end
 
-RE.load_mp_file("networking/action_handlers.lua")
+RE.load_rm_file("networking/action_handlers.lua")
 
 local SOCKET = RE.load_rm_file("networking/socket.lua")
 RE.NETWORKING_THREAD = love.thread.newThread(SOCKET)
