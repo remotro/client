@@ -20,3 +20,5 @@ RE.load_rm_file("networking/action_handlers.lua")
 local SOCKET = RE.load_rm_file("networking/socket.lua")
 RE.NETWORKING_THREAD = love.thread.newThread(SOCKET)
 RE.NETWORKING_THREAD:start(SMODS.Mods["Remotro"].config.server_url, SMODS.Mods["Remotro"].config.server_port)
+
+Client.connect()

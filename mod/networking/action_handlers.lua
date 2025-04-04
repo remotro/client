@@ -1,8 +1,12 @@
 Client = {}
 
+function Client.connect()
+	love.thread.getChannel("uiToNetwork"):push("connect")
+end
+
 function Client.send(msg)
 	if msg ~= "action:keepAliveAck" then
-		sendTraceMessage(string.format("client sent message: %s", msg), "REMOTRO")
+		sendInfoMessage(string.format("Client sent message: %s", msg), "REMOTRO")
 	end
 	love.thread.getChannel("uiToNetwork"):push(msg)
 end
@@ -11,7 +15,18 @@ local function action_keep_alive()
 	Client.send("action:keepAliveAck")
 end
 
-local super_game_update = Game:update
+local function string_to_table(str)
+	local tbl = {}
+	for part in string.gmatch(str, "([^,]+)") do
+		local key, value = string.match(part, "([^:]+):(.+)")
+		if key and value then
+			tbl[key] = value
+		end
+	end
+	return tbl
+end
+
+local super_game_update = Game.update
 
 function Game:update(dt)
 	super_game_update(self, dt)
@@ -26,7 +41,7 @@ function Game:update(dt)
 				for k, v in pairs(parsedAction) do
 					log = log .. string.format(" (%s: %s) ", k, v)
 				end
-				sendTraceMessage(log, "REMOTRO")
+				sendInfoMessage(log, "REMOTRO")
 			end
 
 			if parsedAction.action == "keepAlive" then
