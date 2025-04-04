@@ -9,6 +9,7 @@ fn handle_client(mut stream: TcpStream) {
         Ok(s) => s,
         Err(_) => return,
     }
+    println!("Connection Success");
     loop {
         let mut buffer = [0; 1024];
         match stream.read(&mut buffer) {
@@ -28,7 +29,7 @@ fn handle_client(mut stream: TcpStream) {
     }
 }
 fn main() -> std::io::Result<()> {
-    let tcp_listener = TcpListener::bind("127.0.0.1:8080")?; //TODO Choose a port to run on
+    let tcp_listener = TcpListener::bind("127.0.0.1:34143")?;
     /*let web_listener = Server::bind("127.0.0.1:0")?;*/
 
     // accept connections and process them serially
