@@ -7,7 +7,7 @@ mod sockets;
 
 fn main() -> std::io::Result<()> {
     let tcp_listener = TcpListener::bind("127.0.0.1:34143")?;
-    /*let web_listener = Server::bind("127.0.0.1:0")?;*/
+    let _web_listener = Server::bind("127.0.0.1:34144")?;
     let mut handles: Vec<JoinHandle<()>> = vec![];
     for stream in tcp_listener.incoming() {
         let handle = thread::spawn(move || {

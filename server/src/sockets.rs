@@ -1,4 +1,7 @@
-use std::{net::TcpStream,io::{Read,Write}};
+use std::{
+    net::TcpStream,
+    io::{Read,Write}
+};
 pub fn handle_client(mut stream: TcpStream) {
     match stream.write_all(b"Connection success\n") {
         Ok(s) => s,
@@ -10,15 +13,16 @@ pub fn handle_client(mut stream: TcpStream) {
         match stream.read(&mut buffer) {
             Ok(0) => break "EOF",
             Ok(n) => {
-                let state: String = String::from_utf8(buffer[..n].to_vec()).expect("Invalid UTF-8");
-                if state == "\n" {
+                let message: String = String::from_utf8(buffer[..n].to_vec()).expect("Invalid UTF-8");
+                let message = message.trim();
+                if message == "action:keepAlive" {
+                    let _ = stream.write_all(b"keepAliveAck\n");
                     continue;
                 }
-                if state == "EOF\n" {
-                    break "EOF";
+                if message == "" {
+                    continue;
                 }
-                print!("{state}");
-                let _ = stream.write_all(state.as_bytes());
+                println!("{message}");
             }
             Err(_) => {
                 println!("Error reading Stream");
@@ -27,7 +31,7 @@ pub fn handle_client(mut stream: TcpStream) {
         }
     };
     match result {
-        "EOF" => println!("Connection closed cleanly"),
+        "EOF" => println!("Connection closed"),
         "Error" => println!("Connection crashed"),
         _ => return,
     }
