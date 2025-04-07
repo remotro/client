@@ -26,6 +26,8 @@ async fn manage_stream(stream: TcpStream) {
     let mut reader = BufReader::new(reader);
 
     let (tx, mut rx) = mpsc::channel::<String>(32);
+    let (keepalive_tx, mut keepalive_rx) = mpsc::channel(1);
+    let _ = keepalive_tx.send(()).await;
 
     let writer_task = tokio::spawn(async move {
         if writer.write_all(CONNECTED_MSG.as_bytes()).await.is_err() {
@@ -48,6 +50,9 @@ async fn manage_stream(stream: TcpStream) {
         let mut interval = interval(Duration::from_secs(15));
         loop {
             interval.tick().await;
+            if keepalive_rx.try_recv().is_err() {
+                break;
+            }
             if tx_timer.send(KEEP_ALIVE_MSG.to_string()).await.is_err() {
                 break;
             }
@@ -69,6 +74,10 @@ async fn manage_stream(stream: TcpStream) {
                     let received_message = line.trim();
                     if received_message == "action:keepAlive" {
                         if tx_reader.send(KEEP_ALIVE_ACK_MSG.to_string()).await.is_err() {
+                            break Err(());
+                        }
+                    } else if received_message == "action:keepAliveAck" {
+                        if keepalive_tx.send(()).await.is_err() {
                             break Err(());
                         }
                     } else if !received_message.is_empty() {
