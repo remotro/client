@@ -1,139 +1,95 @@
-use std::{
-    net::TcpStream,
-    io::{Read,Write},
-    thread,
-    sync::Arc
-};
-use crossbeam_channel::{
-    unbounded,select,
-};
-use tokio::io::AsyncWriteExt;
-use tokio::io::AsyncReadExt;
 use tokio::{
-    sync::{oneshot,Mutex},
-    net::TcpStream as tokioTcpStream,
-    time::{Duration,timeout}
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    net::TcpStream,
+    sync::mpsc,
+    time::{interval, Duration},
 };
-pub fn handle_client(mut stream: TcpStream) {
-    let (s,r) = unbounded();
-    let keep_alive_stream = stream.try_clone();
-    let keep_alive = thread::spawn({
-        let s = s.clone();
-        let r = r.clone();
-        move|| {
-        let max_retries = 5;
-        let mut current_retries = 0;
-        let max_wait = Duration::from_secs(5);
-        let send = keep_alive_stream.expect("Stream does not exist").write_all(b"keepAlive\n");
+
+const KEEP_ALIVE_MSG: &str = "action:keepAlive\n";
+const KEEP_ALIVE_ACK_MSG: &str = "action:keepAliveAck\n";
+const CONNECTED_MSG: &str = "Connected\n";
+
+pub async fn new_handle(stream: TcpStream) {
+    println!("New connection established.");
+
+    let (reader, mut writer) = stream.into_split();
+    let mut reader = BufReader::new(reader);
+
+    let (tx, mut rx) = mpsc::channel::<String>(32);
+
+    let writer_task = tokio::spawn(async move {
+        if writer.write_all(CONNECTED_MSG.as_bytes()).await.is_err() {
+            eprintln!("Failed to send initial Connected message.");
+            return;
+        }
+
+        while let Some(message) = rx.recv().await {
+            if writer.write_all(message.as_bytes()).await.is_err() {
+                eprintln!("Failed to write to socket; closing connection.");
+                break;
+            }
+        }
+        let _ = writer.shutdown().await;
+        println!("Writer task finished.");
+    });
+
+    let tx_timer = tx.clone();
+    let keep_alive_task = tokio::spawn(async move {
+        let mut interval = interval(Duration::from_secs(15));
         loop {
-            let _ = send;
-            select! {
-                recv(r) -> msg => {
-                    match msg {
-                        Ok(..) => {
-                            continue;
-                        },
-                        Err(_) => break,
-                    }
-                }
-                default(max_wait) => {
-                    if current_retries == max_retries {
-                        let _ = s.send("Timeout");
-                        break;
-                    }
-                    current_retries += 1;
-                }
+            interval.tick().await;
+            if tx_timer.send(KEEP_ALIVE_MSG.to_string()).await.is_err() {
+                break;
             }
         }
-    }});
-    match stream.write_all(b"Connection success\n") {
-        Ok(s) => s,
-        Err(_) => return,
-    }
-    println!("Connection Success");
-    let result = loop {
-        let mut buffer = [0; 1024];
-        match stream.read(&mut buffer) {
-            Ok(0) => break "EOF",
-            Ok(n) => {
-                let message: String = String::from_utf8(buffer[..n].to_vec()).expect("Invalid UTF-8");
-                let message = message.trim();
-                if message == "action:keepAlive" {
-                    let _ = stream.write_all(b"keepAliveAck\n");
-                    continue;
+        println!("Keep-alive task finished.");
+    });
+
+    let tx_reader = tx.clone();
+    let mut line = String::new();
+    let reader_loop_result = async {
+        loop {
+            line.clear();
+            match reader.read_line(&mut line).await {
+                Ok(0) => {
+                    println!("Connection closed by peer.");
+                    break Ok(());
                 }
-                if message == "keepAliveAck" {
-                    let _ = s.send("keepAliveAck");
-                    continue;
+                Ok(_) => {
+                    let received_message = line.trim();
+                    if received_message == "action:keepAlive" {
+                        if tx_reader.send(KEEP_ALIVE_ACK_MSG.to_string()).await.is_err() {
+                            break Err(());
+                        }
+                    } else if !received_message.is_empty() {
+                        println!("Received other message: {}", received_message);
+                    }
                 }
-                if message == "" {
-                    continue;
+                Err(e) => {
+                    eprintln!("Failed to read from socket; closing connection: {}", e);
+                    break Err(());
                 }
-                println!("{message}");
             }
-            Err(_) => {
-                println!("Error reading Stream");
-                break "Error";
-            }
-        }
-        if !r.is_empty() {
-            drop(r);
-            break "Time";
         }
     };
-    keep_alive.join().unwrap();
-    match result {
-        "EOF" => println!("Connection closed"),
-        "Error" => println!("Connection crashed"),
-        "Time" => println!("Timeout"),
-        _ => return,
+
+    tokio::select! {
+        res = reader_loop_result => {
+            match res {
+                Ok(_) => println!("Reader loop finished gracefully."),
+                Err(_) => println!("Reader loop finished due to error or closed channel."),
+            }
+        },
+        _ = writer_task => {
+            println!("Writer task completed (possibly due to error or closed channel).");
+        },
+        _ = keep_alive_task => {
+            println!("Keep-alive task completed (normally exits when channel closes).");
+        }
     }
+
+    drop(tx_reader);
+
+    println!("Connection handler finished.");
 }
 
-pub async fn new_handle (stream: tokioTcpStream) {
-    let stream = Arc::new(Mutex::new(stream));
-    let alive_stream = Arc::clone(&stream);
-    let data_stream = Arc::clone(&stream);
-    tokio::spawn(async move {
-            let lock = alive_stream.lock().await;
-            let max_retries = 5;
-            let mut current_retries = 0;
-            let max_wait = Duration::from_secs(5);
-            loop {
-                match lock.try_write(b"keepAlive\n") {
-                    Ok(_) => (),
-                    Err(_) => return,
-                }
-                let success = timeout(max_wait, lock.readable()).await;
-            }
-        });
-    let lock = data_stream.lock().await;
-    lock.writable().await;
-    match lock.try_write(b"Connected\n") {
-        Ok(_) => (),
-        Err(_) => return,
-    }
-    println!("Connected");
-    let exit = loop {
-        lock.readable().await;
-        let mut buf = [0; 1024];
-        match lock.try_read(&mut buf) {
-            Ok(0) => break "end",
-            Ok(n) => {
-                let message: String = String::from_utf8(buf[..n]
-                    .to_vec()).expect("Invalid UTF-8");
-                let message = message.trim();
-                println!("{message}");
-            }
-            Err(_) => {
-                break "err";
-            }
-        }
-    };
-    match exit {
-        "end" => println!("Connection closed"),
-        "err" => println!("Connection crashed"),
-        "Time" => println!("Timeout"),
-        _ => return,
-    }
-}
