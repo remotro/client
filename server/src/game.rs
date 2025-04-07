@@ -1,6 +1,6 @@
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
-    net::TcpStream,
+    net::{TcpListener, TcpStream},
     sync::mpsc,
     time::{interval, Duration},
 };
@@ -9,7 +9,7 @@ const KEEP_ALIVE_MSG: &str = "action:keepAlive\n";
 const KEEP_ALIVE_ACK_MSG: &str = "action:keepAliveAck\n";
 const CONNECTED_MSG: &str = "Connected\n";
 
-pub fn start(listener: TcpListener) {
+pub async fn start(listener: TcpListener) -> std::io::Result<()> {
     loop {
         let (stream, addr) = listener.accept().await?;
         println!("Accepted connection from: {}", addr);
