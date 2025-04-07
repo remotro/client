@@ -82,6 +82,33 @@ async fn manage_stream(stream: TcpStream) {
             }
         }
     };
+    let ws_handle_task = async {
+            /* Code for handling Websocket */
+        let stdin = tokio::io::stdin();
+        let mut reader = BufReader::new(stdin);
+        let mut line = String::new();
+        loop {
+            line.clear();
+            match reader.read_line(&mut line).await {
+                Ok(0) => break,
+                Ok(_) => {
+                    let input = line.trim().to_string();
+                    if input == "quit" {
+                        break;
+                    }
+                    if tx.send(input).await.is_err() {
+                        break;  // Channel closed
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Input error: {}", e);
+                    break;
+                }
+            }
+        }
+        println!("Input handler shutting down");
+    };
+
 
     tokio::select! {
         res = reader_loop_result => {
@@ -96,10 +123,13 @@ async fn manage_stream(stream: TcpStream) {
         _ = keep_alive_task => {
             println!("Keep-alive task completed (normally exits when channel closes).");
         }
+        _ = ws_handle_task => {
+            println!("Websocket handle completed");
+        }
+
     }
 
     drop(tx_reader);
 
     println!("Connection handler finished.");
 }
-
