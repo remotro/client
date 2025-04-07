@@ -9,7 +9,17 @@ const KEEP_ALIVE_MSG: &str = "action:keepAlive\n";
 const KEEP_ALIVE_ACK_MSG: &str = "action:keepAliveAck\n";
 const CONNECTED_MSG: &str = "Connected\n";
 
-pub async fn new_handle(stream: TcpStream) {
+pub fn start(listener: TcpListener) {
+    loop {
+        let (stream, addr) = listener.accept().await?;
+        println!("Accepted connection from: {}", addr);
+        tokio::spawn(async move {
+            manage_stream(stream).await;
+        });
+    }
+}
+
+async fn manage_stream(stream: TcpStream) {
     println!("New connection established.");
 
     let (reader, mut writer) = stream.into_split();
