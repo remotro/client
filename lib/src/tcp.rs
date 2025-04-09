@@ -42,7 +42,7 @@ pub struct ManagedTcpStream {
     writer_handle: JoinHandle<()>,
     keepalive_handle: JoinHandle<()>,
     reader_handle: JoinHandle<()>,
-    pub addr: SocketAddr,
+    addr: SocketAddr,
 }
 
 impl ManagedTcpStream {
@@ -207,6 +207,10 @@ impl ManagedTcpStream {
             reader_handle,
             addr,
         }
+    }
+
+    pub fn addr(&self) -> SocketAddr {
+        self.addr
     }
 
     /// Sends a message over the TCP connection.
