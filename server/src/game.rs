@@ -55,7 +55,6 @@ async fn manage_stream(stream: TcpStream) {
         loop {
             keepalive_timeout.tick().await;
             if keepalive_rx.try_recv().is_err() {
-                println!("failed keepAlive");
                 if keepalive_retries == KEEPALIVE_MAX_RETRIES {
                     break;
                 }
