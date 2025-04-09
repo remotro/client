@@ -9,6 +9,9 @@ const KEEP_ALIVE_MSG: &str = "action:keepAlive\n";
 const KEEP_ALIVE_ACK_MSG: &str = "action:keepAliveAck\n";
 const CONNECTED_MSG: &str = "Connected\n";
 
+const KEEPALIVE_MAX_RETRIES: i32 = 5;
+const KEEPALIVE_TIME_SECS: u64 = 15;
+
 pub async fn start(listener: TcpListener) -> std::io::Result<()> {
     loop {
         let (stream, addr) = listener.accept().await?;
@@ -47,11 +50,18 @@ async fn manage_stream(stream: TcpStream) {
 
     let tx_timer = tx.clone();
     let keep_alive_task = tokio::spawn(async move {
-        let mut interval = interval(Duration::from_secs(15));
+        let mut keepalive_timeout = interval(Duration::from_secs(KEEPALIVE_TIME_SECS));
+        let mut keepalive_retries = 1;
         loop {
-            interval.tick().await;
+            keepalive_timeout.tick().await;
             if keepalive_rx.try_recv().is_err() {
-                break;
+                println!("failed keepAlive");
+                if keepalive_retries == KEEPALIVE_MAX_RETRIES {
+                    break;
+                }
+                keepalive_retries += 1;
+            } else { // If keepAliveAck recieved
+                keepalive_retries = 1;
             }
             if tx_timer.send(KEEP_ALIVE_MSG.to_string()).await.is_err() {
                 break;
