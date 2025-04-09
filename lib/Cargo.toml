@@ -7,3 +7,4 @@ edition = "2024"
 crossbeam-channel = "0.5.14"
 websocket = "0.27.1"
 tokio = { version = "1", features = ["full"] }
+log = "0.4"

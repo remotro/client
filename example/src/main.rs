@@ -1,8 +1,15 @@
 use remotro::Remotro;
+use log;
 
 #[tokio::main]
 async fn main() {
+    env_logger::init(); // Initialize the logger
+
     let remotro = Remotro::host("127.0.0.1", 34143).await.unwrap();
-    let game = remotro.accept().await.unwrap();
-    println!("Remotro hosted on 127.0.0.1:34143");
+    log::info!("Remotro hosted on 127.0.0.1:34143");
+    loop {
+        let game = remotro.accept().await.unwrap();
+        log::info!("Game connected");
+        loop {}
+    }
 }

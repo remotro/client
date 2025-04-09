@@ -6,6 +6,7 @@ use tokio::{
     task::JoinHandle,
     time::{Duration, interval},
 };
+use log::{info, warn, error, debug, trace};
 
 const KEEP_ALIVE_MSG: &str = "action:keepAlive\n";
 const KEEP_ALIVE_ACK_MSG: &str = "action:keepAliveAck\n";
@@ -28,8 +29,8 @@ impl ManagedTcpListener {
     /// Accepts a new TCP connection and returns a ManagedTcpStream.
     pub async fn accept(&self) -> std::io::Result<ManagedTcpStream> {
         let (stream, addr) = self.tcp_listener.accept().await?;
-        println!("[{}] Accepted connection", addr);
-        Ok(ManagedTcpStream::new(stream, addr))
+        info!("[{}] Accepted connection", addr);
+        Ok(ManagedTcpStream::new(stream, addr).await)
     }
 }
 
@@ -46,7 +47,7 @@ pub struct ManagedTcpStream {
 
 impl ManagedTcpStream {
     /// Internal constructor to set up tasks and channels.
-    fn new(stream: TcpStream, addr: SocketAddr) -> Self {
+    async fn new(stream: TcpStream, addr: SocketAddr) -> Self {
         let (reader, mut writer) = stream.into_split();
         let mut reader = BufReader::new(reader);
 
@@ -58,13 +59,13 @@ impl ManagedTcpStream {
         let (reader_tx, reader_rx) = mpsc::channel::<String>(32);
 
         // Initial keep-alive ack signal - start enabled
-        let _ = keepalive_ack_tx.try_send(()); // Use try_send as we are not in async context here potentially
+        let _ = keepalive_ack_tx.send(()).await;
 
         // --- Writer Task ---
         let writer_handle = tokio::spawn(async move {
             // Send initial connection message
             if writer.write_all(CONNECTED_MSG.as_bytes()).await.is_err() {
-                eprintln!("[{}] Failed to send initial Connected message.", addr);
+                error!("[{}] Failed to send initial Connected message.", addr);
                 let _ = writer.shutdown().await; // Attempt graceful shutdown
                 return;
             }
@@ -72,13 +73,13 @@ impl ManagedTcpStream {
             // Process outgoing messages
             while let Some(message) = writer_rx.recv().await {
                 if writer.write_all(message.as_bytes()).await.is_err() {
-                    eprintln!("[{}] Failed to write to socket; closing writer task.", addr);
+                    error!("[{}] Failed to write to socket; closing writer task.", addr);
                     break; // Exit loop on write error
                 }
             }
             // Shutdown writer when the writer_tx channel is closed
             let _ = writer.shutdown().await;
-            println!("[{}] Writer task finished.", addr);
+            info!("[{}] Writer task finished.", addr);
         });
 
         // --- Keep-Alive Task ---
@@ -94,36 +95,36 @@ impl ManagedTcpStream {
                         // Check if ack was received since last tick
                         if keepalive_ack_rx.try_recv().is_err() { // No ack received
                             if keepalive_retries >= KEEPALIVE_MAX_RETRIES {
-                                println!("[{}] Keep-alive failed after {} retries. Closing connection.", addr, KEEPALIVE_MAX_RETRIES);
+                                warn!("[{}] Keep-alive failed after {} retries. Closing connection.", addr, KEEPALIVE_MAX_RETRIES);
                                 // Closing writer_tx_keepalive signals writer task to exit
                                 drop(writer_tx_keepalive);
                                 break;
                             }
-                             println!("[{}] Keep-alive check failed (retry {}/{})", addr, keepalive_retries, KEEPALIVE_MAX_RETRIES);
+                             warn!("[{}] Keep-alive check failed (retry {}/{})", addr, keepalive_retries, KEEPALIVE_MAX_RETRIES);
                             keepalive_retries += 1;
                         } else { // Ack received
                             // Reset retries only if an ack was explicitly received
-                             println!("[{}] Keep-alive ack received, resetting retries.", addr);
+                             debug!("[{}] Keep-alive ack received, resetting retries.", addr);
                             keepalive_retries = 1;
                         }
 
                         // Send keep-alive ping
                         if writer_tx_keepalive.send(KEEP_ALIVE_MSG.to_string()).await.is_err() {
                             // Writer task likely closed, exit keep-alive task
-                            println!("[{}] Writer channel closed. Keep-alive task stopping.", addr);
+                            info!("[{}] Writer channel closed. Keep-alive task stopping.", addr);
                             break;
                         } else {
-                            println!("[{}] Sent keep-alive ping.", addr);
+                            trace!("[{}] Sent keep-alive ping.", addr);
                         }
                     }
                     // Allow task to exit if writer channel closes externally
                      _ = writer_tx_keepalive.closed() => {
-                        println!("[{}] Writer channel closed externally. Keep-alive task stopping.", addr);
+                        info!("[{}] Writer channel closed externally. Keep-alive task stopping.", addr);
                         break;
                     }
                 }
             }
-            println!("[{}] Keep-alive task finished.", addr);
+            info!("[{}] Keep-alive task finished.", addr);
         });
 
         // --- Reader Task ---
@@ -134,34 +135,34 @@ impl ManagedTcpStream {
                 line.clear();
                 match reader.read_line(&mut line).await {
                     Ok(0) => {
-                        println!("[{}] Connection closed by peer (EOF).", addr);
+                        info!("[{}] Connection closed by peer (EOF).", addr);
                         break; // EOF
                     }
                     Ok(_) => {
                         let received_message = line.trim();
                         match received_message {
                             "action:keepAlive" => {
-                                println!("[{}] Received keepAlive ping.", addr);
+                                trace!("[{}] Received keepAlive ping.", addr);
                                 // Respond with keepAliveAck
                                 if writer_tx_reader_ack
                                     .send(KEEP_ALIVE_ACK_MSG.to_string())
                                     .await
                                     .is_err()
                                 {
-                                    eprintln!(
+                                    error!(
                                         "[{}] Failed to send keepAliveAck: writer channel closed.",
                                         addr
                                     );
                                     break; // Stop reader if we can't ack
                                 }
-                                println!("[{}] Sent keepAliveAck.", addr);
+                                trace!("[{}] Sent keepAliveAck.", addr);
                             }
                             "action:keepAliveAck" => {
-                                println!("[{}] Received keepAliveAck.", addr);
+                                trace!("[{}] Received keepAliveAck.", addr);
                                 // Signal keep-alive task that ack was received
                                 if keepalive_ack_tx.try_send(()).is_err() {
                                     // This might happen if the keepalive task already stopped, which is okay.
-                                    println!(
+                                    debug!(
                                         "[{}] Keep-alive ack channel closed, task likely stopped.",
                                         addr
                                     );
@@ -170,9 +171,9 @@ impl ManagedTcpStream {
                             "" => {} // Ignore empty lines
                             _ => {
                                 // Send other messages to the ManagedTcpStream owner
-                                println!("[{}] Received message: {}", addr, received_message);
+                                debug!("[{}] Received message: {}", addr, received_message);
                                 if reader_tx.send(received_message.to_string()).await.is_err() {
-                                    eprintln!(
+                                    error!(
                                         "[{}] Failed to send message to owner: reader channel closed.",
                                         addr
                                     );
@@ -182,7 +183,7 @@ impl ManagedTcpStream {
                         }
                     }
                     Err(e) => {
-                        eprintln!(
+                        error!(
                             "[{}] Failed to read from socket: {}. Closing reader task.",
                             addr, e
                         );
@@ -194,7 +195,7 @@ impl ManagedTcpStream {
             drop(reader_tx); // Signal owner no more messages
             drop(writer_tx_reader_ack); // Signal writer (potentially)
             drop(keepalive_ack_tx); // Signal keepalive task
-            println!("[{}] Reader task finished.", addr);
+            info!("[{}] Reader task finished.", addr);
         });
 
         Self {
@@ -233,7 +234,7 @@ impl ManagedTcpStream {
     /// Aborts the background tasks associated with this stream.
     /// This is usually called automatically when the stream is dropped.
     pub fn shutdown(&self) {
-        println!("[{}] Shutting down ManagedTcpStream tasks.", self.addr);
+        info!("[{}] Shutting down ManagedTcpStream tasks.", self.addr);
         // Aborting tasks is generally the way to stop them immediately.
         // Dropping the writer_tx handle signals the writer task to exit gracefully.
         // The reader and keepalive tasks check for channel closures.
@@ -245,7 +246,7 @@ impl ManagedTcpStream {
 
 impl Drop for ManagedTcpStream {
     fn drop(&mut self) {
-        println!(
+        info!(
             "[{}] Dropping ManagedTcpStream, shutting down tasks.",
             self.addr
         );
