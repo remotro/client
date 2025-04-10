@@ -9,7 +9,7 @@ async fn main() {
     log::info!("Remotro hosted on 127.0.0.1:34143");
     loop {
         let game = remotro.accept().await.unwrap();
-        log::info!("Game at {} connected", game.stream.addr());
+        log::info!("Game at {} connected", game.addr());
         loop {}
     }
 }
