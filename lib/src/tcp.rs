@@ -1,8 +1,10 @@
 use std::net::SocketAddr;
+use std::sync::Arc;
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
     net::{TcpListener, TcpStream},
     sync::mpsc::{self, Receiver, Sender},
+    sync::Notify,
     task::JoinHandle,
     time::{Duration, interval},
 };
@@ -53,13 +55,10 @@ impl ManagedTcpStream {
 
         // Channel for sending messages to the writer task
         let (writer_tx, mut writer_rx) = mpsc::channel::<String>(32);
-        // Channel for receiving keep-alive acknowledgements
-        let (keepalive_ack_tx, mut keepalive_ack_rx) = mpsc::channel::<()>(1);
+        // Notify for keep-alive acknowledgements
+        let keepalive_ack_notify = Arc::new(Notify::new());
         // Channel for receiving messages from the reader task
         let (reader_tx, reader_rx) = mpsc::channel::<String>(32);
-
-        // Initial keep-alive ack signal - start enabled
-        let _ = keepalive_ack_tx.send(()).await;
 
         // --- Writer Task ---
         let writer_handle = tokio::spawn(async move {
@@ -84,43 +83,53 @@ impl ManagedTcpStream {
 
         // --- Keep-Alive Task ---
         let writer_tx_keepalive = writer_tx.clone();
+        let keepalive_ack_notify_clone = keepalive_ack_notify.clone(); // Clone Arc<Notify>
         let keepalive_handle = tokio::spawn(async move {
             let mut keepalive_timeout = interval(Duration::from_secs(KEEPALIVE_TIME_SECS));
             let mut keepalive_retries = 1;
-            // Consume the first tick immediately, as it fires instantly
+            // Consume the first tick immediately as interval fires instantly
             keepalive_timeout.tick().await;
+            // Start notified so the first loop iteration sends a ping immediately.
+            keepalive_ack_notify_clone.notify_one();
+
             loop {
                 tokio::select! {
-                    _ = keepalive_timeout.tick() => {
-                        // Check if ack was received since last tick
-                        if keepalive_ack_rx.try_recv().is_err() { // No ack received
-                            if keepalive_retries >= KEEPALIVE_MAX_RETRIES {
-                                warn!("[{}] Keep-alive failed after {} retries. Closing connection.", addr, KEEPALIVE_MAX_RETRIES);
-                                // Closing writer_tx_keepalive signals writer task to exit
-                                drop(writer_tx_keepalive);
-                                break;
-                            }
-                             warn!("[{}] Keep-alive check failed (retry {}/{})", addr, keepalive_retries, KEEPALIVE_MAX_RETRIES);
-                            keepalive_retries += 1;
-                        } else { // Ack received
-                            // Reset retries only if an ack was explicitly received
-                             debug!("[{}] Keep-alive ack received, resetting retries.", addr);
-                            keepalive_retries = 1;
-                        }
+                    biased; // Prioritize checking for closed channel
 
-                        // Send keep-alive ping
-                        if writer_tx_keepalive.send(KEEP_ALIVE_MSG.to_string()).await.is_err() {
-                            // Writer task likely closed, exit keep-alive task
-                            info!("[{}] Writer channel closed. Keep-alive task stopping.", addr);
-                            break;
-                        } else {
-                            trace!("[{}] Sent keep-alive ping.", addr);
-                        }
-                    }
-                    // Allow task to exit if writer channel closes externally
                      _ = writer_tx_keepalive.closed() => {
                         info!("[{}] Writer channel closed externally. Keep-alive task stopping.", addr);
                         break;
+                    }
+
+                    // Wait until notified (meaning an ack was received)
+                    _ = keepalive_ack_notify_clone.notified() => {
+                        // Ack was received since the last check. Reset retries.
+                        debug!("[{}] Keep-alive ack received, resetting retries.", addr);
+                        keepalive_retries = 1;
+                        // Permit is consumed. Loop will continue to wait for timeout.
+                    }
+
+                    // Wait for the timeout interval
+                    _ = keepalive_timeout.tick() => {
+                        // Timeout elapsed. Time to send a ping.
+                        // `keepalive_retries` reflects state since last successful ack.
+                        if keepalive_retries > KEEPALIVE_MAX_RETRIES {
+                            warn!("[{}] Keep-alive failed after {} retries (no ack received since last check). Closing connection.", addr, KEEPALIVE_MAX_RETRIES);
+                            drop(writer_tx_keepalive); // Signal writer task to exit by dropping sender
+                            break;
+                        }
+
+                        // Send keep-alive ping
+                        trace!("[{}] Sending keep-alive ping (Retry {}/{})", addr, keepalive_retries, KEEPALIVE_MAX_RETRIES);
+                        if writer_tx_keepalive.send(KEEP_ALIVE_MSG.to_string()).await.is_err() {
+                            // Writer task likely closed if send fails
+                            info!("[{}] Writer channel closed. Keep-alive task stopping.", addr);
+                            break;
+                        }
+
+                        // Increment retries for the *next* check. If an ack comes in before the next tick,
+                        // retries will be reset by the `notified()` branch.
+                        keepalive_retries += 1;
                     }
                 }
             }
@@ -129,6 +138,7 @@ impl ManagedTcpStream {
 
         // --- Reader Task ---
         let writer_tx_reader_ack = writer_tx.clone(); // For sending keepAliveAck
+        let keepalive_ack_notify_reader_clone = keepalive_ack_notify.clone(); // Clone Arc<Notify>
         let reader_handle = tokio::spawn(async move {
             let mut line = String::new();
             loop {
@@ -141,7 +151,7 @@ impl ManagedTcpStream {
                     Ok(_) => {
                         let received_message = line.trim();
                         match received_message {
-                            "action:keepAlive" => {
+                            m if m == KEEP_ALIVE_MSG.trim() => {
                                 trace!("[{}] Received keepAlive ping.", addr);
                                 // Respond with keepAliveAck
                                 if writer_tx_reader_ack
@@ -157,16 +167,11 @@ impl ManagedTcpStream {
                                 }
                                 trace!("[{}] Sent keepAliveAck.", addr);
                             }
-                            "action:keepAliveAck" => {
+                            m if m == KEEP_ALIVE_ACK_MSG.trim() => {
                                 trace!("[{}] Received keepAliveAck.", addr);
                                 // Signal keep-alive task that ack was received
-                                if keepalive_ack_tx.try_send(()).is_err() {
-                                    // This might happen if the keepalive task already stopped, which is okay.
-                                    debug!(
-                                        "[{}] Keep-alive ack channel closed, task likely stopped.",
-                                        addr
-                                    );
-                                }
+                                keepalive_ack_notify_reader_clone.notify_one();
+                                trace!("[{}] Notified keep-alive task.", addr);
                             }
                             "" => {} // Ignore empty lines
                             _ => {
@@ -191,15 +196,14 @@ impl ManagedTcpStream {
                     }
                 }
             }
-            // Reader task is ending, close associated channels
+            // Reader task is ending, close associated channels/signals
             drop(reader_tx); // Signal owner no more messages
             drop(writer_tx_reader_ack); // Signal writer (potentially)
-            drop(keepalive_ack_tx); // Signal keepalive task
+            // No need to explicitly drop Arc<Notify>, happens automatically when all clones are dropped
             info!("[{}] Reader task finished.", addr);
         });
 
         Self {
-            // Changed from Ok(ManagedTcpStream{...})
             writer_tx,
             reader_rx,
             writer_handle,
@@ -234,26 +238,16 @@ impl ManagedTcpStream {
     pub async fn recv_message(&mut self) -> Option<String> {
         self.reader_rx.recv().await
     }
+}
 
-    /// Aborts the background tasks associated with this stream.
-    /// This is usually called automatically when the stream is dropped.
-    pub fn shutdown(&self) {
-        info!("[{}] Shutting down ManagedTcpStream tasks.", self.addr);
+impl Drop for ManagedTcpStream {
+    fn drop(&mut self) {
+        info!("[{}] Dropping ManagedTcpStream, shutting down tasks.", self.addr);
         // Aborting tasks is generally the way to stop them immediately.
         // Dropping the writer_tx handle signals the writer task to exit gracefully.
         // The reader and keepalive tasks check for channel closures.
         self.writer_handle.abort();
         self.keepalive_handle.abort();
         self.reader_handle.abort();
-    }
-}
-
-impl Drop for ManagedTcpStream {
-    fn drop(&mut self) {
-        info!(
-            "[{}] Dropping ManagedTcpStream, shutting down tasks.",
-            self.addr
-        );
-        self.shutdown();
     }
 }
