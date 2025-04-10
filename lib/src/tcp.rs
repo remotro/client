@@ -1,8 +1,8 @@
-use std::net::SocketAddr;
+use std::{net::SocketAddr,sync::Arc};
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
     net::{TcpListener, TcpStream},
-    sync::{mpsc,watch},
+    sync::{mpsc,Notify},
     task::JoinHandle,
     time::{Duration, interval},
 };
@@ -12,8 +12,8 @@ const KEEP_ALIVE_MSG: &str = "action:keepAlive\n";
 const KEEP_ALIVE_ACK_MSG: &str = "action:keepAliveAck\n";
 const CONNECTED_MSG: &str = "Connected\n";
 
-const KEEPALIVE_MAX_RETRIES: i32 = 2;
-const KEEPALIVE_TIME_SECS: u64 = 5;
+const KEEPALIVE_MAX_RETRIES: i32 = 5;
+const KEEPALIVE_TIME_SECS: u64 = 15;
 
 /// Manages accepting TCP connections.
 pub struct ManagedTcpListener {
@@ -58,15 +58,15 @@ impl ManagedTcpStream {
         // Channel for receiving messages from the reader task
         let (reader_tx, reader_rx) = mpsc::channel::<String>(32);
         // Shutdown switch, accessible by all threads
-        let (shutdown_tx, shutdown_rx) = watch::channel(false);
+        let shutdown = Arc::new(Notify::new());
 
         // Initial keep-alive ack signal - start enabled
         let _ = keepalive_ack_tx.send(()).await;
 
         // --- Writer Task ---
-        let mut writer_shutdown_rx = shutdown_rx.clone();
-        let writer_shutdown_tx = shutdown_tx.clone();
-        let writer_handle = tokio::spawn(async move {
+        let writer_handle = {
+            let shutdown = shutdown.clone();
+            tokio::spawn(async move {
             // Send initial connection message
             if writer.write_all(CONNECTED_MSG.as_bytes()).await.is_err() {
                 error!("[{}] Failed to send initial Connected message.", addr);
@@ -78,24 +78,24 @@ impl ManagedTcpStream {
                     message = writer_rx.recv() => {
                         if writer.write_all(message.unwrap().as_bytes()).await.is_err() {
                             error!("[{}] Failed to write to socket; closing writer task.", addr);
-                            let _ = writer_shutdown_tx.send(true);
+                            shutdown.notify_waiters();
                             break; // Exit loop on write error
                         }
                     }
-                    _ = writer_shutdown_rx.changed() => {
+                    _ = shutdown.notified() => {
                         info!("[{}] Received shutdown signal. Writer task stopping.", addr);
                         break;
                     }
                 }
             }
             info!("[{}] Writer task finished.", addr);
-        });
+        })};
 
         // --- Keep-Alive Task ---
-        let mut keepalive_shutdown_rx = shutdown_rx.clone();
-        let keepalive_shutdown_tx = shutdown_tx.clone();
         let writer_tx_keepalive = writer_tx.clone();
-        let keepalive_handle = tokio::spawn(async move {
+        let keepalive_handle = {
+            let shutdown = shutdown.clone();
+            tokio::spawn(async move {
             let mut keepalive_timeout = interval(Duration::from_secs(KEEPALIVE_TIME_SECS));
             let mut keepalive_retries = 1;
             loop {
@@ -105,7 +105,7 @@ impl ManagedTcpStream {
                         if keepalive_ack_rx.try_recv().is_err() { // No ack received
                             if keepalive_retries == KEEPALIVE_MAX_RETRIES {
                                 warn!("[{}] Keep-alive failed after {} retries. Closing connection.", addr, KEEPALIVE_MAX_RETRIES);
-                                let _ = keepalive_shutdown_tx.send(true);
+                                shutdown.notify_waiters();
                                 break;
                             }
                             warn!("[{}] Keep-alive check failed (retry {}/{})", addr, keepalive_retries, KEEPALIVE_MAX_RETRIES);
@@ -118,33 +118,34 @@ impl ManagedTcpStream {
                         if writer_tx_keepalive.send(KEEP_ALIVE_MSG.to_string()).await.is_err() {
                             // Writer task likely closed, exit keep-alive task
                             info!("[{}] Writer channel closed. Keep-alive task stopping.", addr);
-                            let _ = keepalive_shutdown_tx.send(true);
+                            shutdown.notify_waiters();
                             break;
                         } else {
                             trace!("[{}] Sent keep-alive ping.", addr);
                         }
                     }
-                    _ = keepalive_shutdown_rx.changed() => {
+                    _ = shutdown.notified() => {
                         break;
                     }
                 }
             }
             info!("[{}] Keep-alive task finished.", addr);
-        });
+        })};
 
         // --- Reader Task ---
-        let mut reader_shutdown_rx = shutdown_rx.clone();
-        let reader_shutdown_tx = shutdown_tx.clone();
         let writer_tx_reader_ack = writer_tx.clone(); // For sending keepAliveAck
-        let reader_handle = tokio::spawn(async move {
+        let reader_handle = {
+            let shutdown = shutdown.clone();
+            tokio::spawn(async move {
             let mut line = String::new();
             loop {
+                line.clear();
                 tokio::select! {
                     result = reader.read_line(&mut line) => {
                         match result {
                             Ok(0) => {
                                 info!("[{}] Connection closed by peer (EOF).", addr);
-                                let _ = reader_shutdown_tx.send(true);
+                                shutdown.notify_waiters();
                                 break; // EOF
                             }
                             Ok(_) => {
@@ -162,7 +163,7 @@ impl ManagedTcpStream {
                                                 "[{}] Failed to send keepAliveAck: writer channel closed.",
                                                 addr
                                             );
-                                            let _ = reader_shutdown_tx.send(true);
+                                            shutdown.notify_waiters();
                                             break; // Stop reader if we can't ack
                                         }
                                         trace!("[{}] Sent keepAliveAck.", addr);
@@ -187,7 +188,7 @@ impl ManagedTcpStream {
                                                 "[{}] Failed to send message to owner: reader channel closed.",
                                                 addr
                                             );
-                                            let _ = reader_shutdown_tx.send(true);
+                                            shutdown.notify_waiters();
                                             break; // Stop reader if owner is no longer listening
                                         }
                                     }
@@ -198,12 +199,12 @@ impl ManagedTcpStream {
                                     "[{}] Failed to read from socket: {}. Closing reader task.",
                                     addr, e
                                 );
-                                let _ = reader_shutdown_tx.send(true);
+                                shutdown.notify_waiters();
                                 break; // Error
                             }
                         }
                     }
-                    _ = reader_shutdown_rx.changed() => {
+                    _ = shutdown.notified() => {
                         break;
                     }
                 }
@@ -213,7 +214,7 @@ impl ManagedTcpStream {
             drop(writer_tx_reader_ack); // Signal writer (potentially)
             drop(keepalive_ack_tx); // Signal keepalive task
             info!("[{}] Reader task finished.", addr);
-        });
+        })};
 
         Self {
             // Changed from Ok(ManagedTcpStream{...})
