@@ -54,7 +54,7 @@ impl ManagedTcpStream {
         // Channel for sending messages to the writer task
         let (writer_tx, mut writer_rx) = mpsc::channel::<String>(32);
         // Notify for keep-alive acknowledgements
-        let keepalive_ack_notify = Arc::new(Notify::new());
+        let (keepalive_tx, keepalive_rx) = mpsc::channel(1);
         // Channel for receiving messages from the reader task
         let (reader_tx, reader_rx) = mpsc::channel::<String>(32);
         // Shutdown switch, accessible by all threads
@@ -99,21 +99,6 @@ impl ManagedTcpStream {
             keepalive_timeout.tick().await; // Wait for timeout before sending first keepAlive
             loop {
                 tokio::select! {
-                    biased; // Prioritize checking for closed channel
-
-                     _ = writer_tx_keepalive.closed() => {
-                        info!("[{}] Writer channel closed externally. Keep-alive task stopping.", addr);
-                        break;
-                    }
-
-                    // Wait until notified (meaning an ack was received)
-                    _ = keepalive_ack_notify_clone.notified() => {
-                        // Ack was received since the last check. Reset retries.
-                        debug!("[{}] Keep-alive ack received, resetting retries.", addr);
-                        keepalive_retries = 1;
-                        // Permit is consumed. Loop will continue to wait for timeout.
-                    }
-
                     // Wait for the timeout interval
                     _ = keepalive_timeout.tick() => {
                         // Check if ack was received since last tick
@@ -127,14 +112,6 @@ impl ManagedTcpStream {
                             keepalive_retries += 1;
                         } else { // Ack received
                             keepalive_retries = 1;
-                        }
-
-                // Send keep-alive ping
-                        if writer_tx.send(KEEP_ALIVE_MSG.to_string()).await.is_err() {
-                            // Writer task likely closed, exit keep-alive task
-                            info!("[{}] Writer channel closed. Keep-alive task stopping.", addr);
-                            shutdown.notify_waiters();
-                            break;
                         }
                     }
                     _ = shutdown.notified() => {
