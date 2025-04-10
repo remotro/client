@@ -12,8 +12,8 @@ const KEEP_ALIVE_MSG: &str = "action:keepAlive\n";
 const KEEP_ALIVE_ACK_MSG: &str = "action:keepAliveAck\n";
 const CONNECTED_MSG: &str = "Connected\n";
 
-const KEEPALIVE_MAX_RETRIES: i32 = 5;
-const KEEPALIVE_TIME_SECS: u64 = 15;
+const KEEPALIVE_MAX_RETRIES: i32 = 3;
+const KEEPALIVE_TIME_SECS: u64 = 1;
 
 /// Manages accepting TCP connections.
 pub struct ManagedTcpListener {
@@ -54,12 +54,12 @@ impl ManagedTcpStream {
         // Channel for sending messages to the writer task
         let (writer_tx, mut writer_rx) = mpsc::channel::<String>(32);
         // Notify for keep-alive acknowledgements
-        let (keepalive_tx, keepalive_rx) = mpsc::channel(1);
+        let (keepalive_tx, mut keepalive_rx) = mpsc::channel(1);
         // Channel for receiving messages from the reader task
         let (reader_tx, reader_rx) = mpsc::channel::<String>(32);
         // Shutdown switch, accessible by all threads
         let shutdown = Arc::new(Notify::new());
-        let _ = keepalive_ack_tx.send(()).await;
+        let _ = keepalive_tx.send(()).await;
 
         // --- Writer Task ---
         let writer_handle = {
@@ -102,7 +102,7 @@ impl ManagedTcpStream {
                     // Wait for the timeout interval
                     _ = keepalive_timeout.tick() => {
                         // Check if ack was received since last tick
-                        if keepalive_ack_rx.try_recv().is_err() { // No ack received
+                        if keepalive_rx.try_recv().is_err() { // No ack received
                             if keepalive_retries == KEEPALIVE_MAX_RETRIES {
                                 warn!("[{}] Keep-alive failed after {} retries. Closing connection.", addr, KEEPALIVE_MAX_RETRIES);
                                 shutdown.notify_waiters();
@@ -112,6 +112,14 @@ impl ManagedTcpStream {
                             keepalive_retries += 1;
                         } else { // Ack received
                             keepalive_retries = 1;
+                        }
+                        if writer_tx.send(KEEP_ALIVE_MSG.to_string()).await.is_err() {
+                            // Writer task likely closed, exit keep-alive task
+                            info!("[{}] Writer channel closed. Keep-alive task stopping.", addr);
+                            shutdown.notify_waiters();
+                            break;
+                        } else {
+                            trace!("[{}] Sent keep-alive ping.", addr);
                         }
                     }
                     _ = shutdown.notified() => {
@@ -162,7 +170,7 @@ impl ManagedTcpStream {
                                     "action:keepAliveAck" => {
                                         trace!("[{}] Received keepAliveAck.", addr);
                                         // Signal keep-alive task that ack was received
-                                        if keepalive_ack_tx.try_send(()).is_err() {
+                                        if keepalive_tx.try_send(()).is_err() {
                                             // This might happen if the keepalive task already stopped, which is okay.
                                             debug!(
                                                 "[{}] Keep-alive ack channel closed, task likely stopped.",
@@ -204,7 +212,7 @@ impl ManagedTcpStream {
             // Reader task is ending, close associated channels/signals
             drop(reader_tx); // Signal owner no more messages
             drop(writer_tx); // Signal writer (potentially)
-            drop(keepalive_ack_tx); // Signal keepalive task
+            drop(keepalive_tx); // Signal keepalive task
                                     // TODO Are these needed?
             info!("[{}] Reader task finished.", addr);
         })};
