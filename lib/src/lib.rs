@@ -1,4 +1,3 @@
-use tokio::net::TcpListener;
 mod tcp;
 use tcp::{ManagedTcpListener, ManagedTcpStream};
 
@@ -13,11 +12,11 @@ impl Remotro {
     }
 
     pub async fn accept(&self) -> Result<Balatro, std::io::Error> {
-        let managed_tcp_stream = self.managed_tcp_listener.accept().await?;
-        Ok(Balatro { managed_tcp_stream })
+        let stream = self.managed_tcp_listener.accept().await?;
+        Ok(Balatro { stream })
     }
 }
 
 pub struct Balatro {
-    managed_tcp_stream: ManagedTcpStream,
+    pub stream: ManagedTcpStream,
 }

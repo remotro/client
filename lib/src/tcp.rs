@@ -13,7 +13,7 @@ const KEEP_ALIVE_ACK_MSG: &str = "action:keepAliveAck\n";
 const CONNECTED_MSG: &str = "Connected\n";
 
 const KEEPALIVE_MAX_RETRIES: i32 = 5;
-const KEEPALIVE_TIME_SECS: u64 = 15;
+const KEEPALIVE_TIME_SECS: u64 = 5;
 
 /// Manages accepting TCP connections.
 pub struct ManagedTcpListener {

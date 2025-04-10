@@ -832,6 +832,7 @@ name = "remotro"
 version = "0.1.0"
 dependencies = [
  "crossbeam-channel",
+ "log 0.4.27",
  "tokio",
  "websocket",
 ]
