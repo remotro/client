@@ -92,8 +92,8 @@ impl ManagedTcpStream {
         })};
 
         // --- Keep-Alive Task ---
-        let writer_tx_keepalive = writer_tx.clone();
         let keepalive_handle = {
+            let writer_tx = writer_tx.clone();
             let shutdown = shutdown.clone();
             tokio::spawn(async move {
             let mut keepalive_timeout = interval(Duration::from_secs(KEEPALIVE_TIME_SECS));
@@ -115,7 +115,7 @@ impl ManagedTcpStream {
                         }
 
                 // Send keep-alive ping
-                        if writer_tx_keepalive.send(KEEP_ALIVE_MSG.to_string()).await.is_err() {
+                        if writer_tx.send(KEEP_ALIVE_MSG.to_string()).await.is_err() {
                             // Writer task likely closed, exit keep-alive task
                             info!("[{}] Writer channel closed. Keep-alive task stopping.", addr);
                             shutdown.notify_waiters();
@@ -133,8 +133,8 @@ impl ManagedTcpStream {
         })};
 
         // --- Reader Task ---
-        let writer_tx_reader_ack = writer_tx.clone(); // For sending keepAliveAck
         let reader_handle = {
+            let writer_tx = writer_tx.clone();
             let shutdown = shutdown.clone();
             tokio::spawn(async move {
             let mut line = String::new();
@@ -154,7 +154,7 @@ impl ManagedTcpStream {
                                     "action:keepAlive" => {
                                         trace!("[{}] Received keepAlive ping.", addr);
                                         // Respond with keepAliveAck
-                                        if writer_tx_reader_ack
+                                        if writer_tx
                                             .send(KEEP_ALIVE_ACK_MSG.to_string())
                                             .await
                                             .is_err()
@@ -211,8 +211,9 @@ impl ManagedTcpStream {
             }
             // Reader task is ending, close associated channels
             drop(reader_tx); // Signal owner no more messages
-            drop(writer_tx_reader_ack); // Signal writer (potentially)
+            drop(writer_tx); // Signal writer (potentially)
             drop(keepalive_ack_tx); // Signal keepalive task
+                                    // TODO Are these needed?
             info!("[{}] Reader task finished.", addr);
         })};
 
