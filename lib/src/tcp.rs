@@ -59,8 +59,6 @@ impl ManagedTcpStream {
         let (reader_tx, reader_rx) = mpsc::channel::<String>(32);
         // Shutdown switch, accessible by all threads
         let shutdown = Arc::new(Notify::new());
-
-        // Initial keep-alive ack signal - start enabled
         let _ = keepalive_ack_tx.send(()).await;
 
         // --- Writer Task ---
@@ -83,7 +81,7 @@ impl ManagedTcpStream {
                         }
                     }
                     _ = shutdown.notified() => {
-                        info!("[{}] Received shutdown signal. Writer task stopping.", addr);
+                        trace!("[{}] Received shutdown signal. Writer task stopping.", addr);
                         break;
                     }
                 }
@@ -98,6 +96,7 @@ impl ManagedTcpStream {
             tokio::spawn(async move {
             let mut keepalive_timeout = interval(Duration::from_secs(KEEPALIVE_TIME_SECS));
             let mut keepalive_retries = 1;
+            keepalive_timeout.tick().await; // Wait for timeout before sending first keepAlive
             loop {
                 tokio::select! {
                     _ = keepalive_timeout.tick() => {
@@ -125,6 +124,7 @@ impl ManagedTcpStream {
                         }
                     }
                     _ = shutdown.notified() => {
+                        trace!("[{}] Received shutdown signal. keepAlive task stopping.", addr);
                         break;
                     }
                 }
@@ -205,6 +205,7 @@ impl ManagedTcpStream {
                         }
                     }
                     _ = shutdown.notified() => {
+                        trace!("[{}] Received shutdown signal. Reader task stopping.", addr);
                         break;
                     }
                 }
@@ -234,10 +235,8 @@ impl ManagedTcpStream {
 
     /// Sends a message over the TCP connection.
     /// Returns an error if the connection's writer task has stopped.
-    pub async fn send_message(
-        &self,
-        message: String,
-    ) -> Result<(), mpsc::error::SendError<String>> {
+    pub async fn send_message(&self,message: String) -> Result<(),
+    mpsc::error::SendError<String>> {
         // Ensure message ends with a newline if not already present
         let formatted_message = if message.ends_with('\n') {
             message
