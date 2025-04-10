@@ -12,8 +12,8 @@ const KEEP_ALIVE_MSG: &str = "action:keepAlive\n";
 const KEEP_ALIVE_ACK_MSG: &str = "action:keepAliveAck\n";
 const CONNECTED_MSG: &str = "Connected\n";
 
-const KEEPALIVE_MAX_RETRIES: i32 = 3;
-const KEEPALIVE_TIME_SECS: u64 = 1;
+const KEEPALIVE_MAX_RETRIES: i32 = 5;
+const KEEPALIVE_TIME_SECS: u64 = 15;
 
 /// Manages accepting TCP connections.
 pub struct ManagedTcpListener {
@@ -113,6 +113,8 @@ impl ManagedTcpStream {
                         } else { // Ack received
                             keepalive_retries = 1;
                         }
+
+                // Send keep-alive ping
                         if writer_tx.send(KEEP_ALIVE_MSG.to_string()).await.is_err() {
                             // Writer task likely closed, exit keep-alive task
                             info!("[{}] Writer channel closed. Keep-alive task stopping.", addr);
