@@ -53,8 +53,8 @@ impl ManagedTcpStream {
 
         // Channel for sending messages to the writer task
         let (writer_tx, mut writer_rx) = mpsc::channel::<String>(32);
-        // Channel for receiving keep-alive acknowledgements
-        let (keepalive_ack_tx, mut keepalive_ack_rx) = mpsc::channel::<()>(1);
+        // Notify for keep-alive acknowledgements
+        let keepalive_ack_notify = Arc::new(Notify::new());
         // Channel for receiving messages from the reader task
         let (reader_tx, reader_rx) = mpsc::channel::<String>(32);
         // Shutdown switch, accessible by all threads
@@ -99,6 +99,22 @@ impl ManagedTcpStream {
             keepalive_timeout.tick().await; // Wait for timeout before sending first keepAlive
             loop {
                 tokio::select! {
+                    biased; // Prioritize checking for closed channel
+
+                     _ = writer_tx_keepalive.closed() => {
+                        info!("[{}] Writer channel closed externally. Keep-alive task stopping.", addr);
+                        break;
+                    }
+
+                    // Wait until notified (meaning an ack was received)
+                    _ = keepalive_ack_notify_clone.notified() => {
+                        // Ack was received since the last check. Reset retries.
+                        debug!("[{}] Keep-alive ack received, resetting retries.", addr);
+                        keepalive_retries = 1;
+                        // Permit is consumed. Loop will continue to wait for timeout.
+                    }
+
+                    // Wait for the timeout interval
                     _ = keepalive_timeout.tick() => {
                         // Check if ack was received since last tick
                         if keepalive_ack_rx.try_recv().is_err() { // No ack received
@@ -119,8 +135,6 @@ impl ManagedTcpStream {
                             info!("[{}] Writer channel closed. Keep-alive task stopping.", addr);
                             shutdown.notify_waiters();
                             break;
-                        } else {
-                            trace!("[{}] Sent keep-alive ping.", addr);
                         }
                     }
                     _ = shutdown.notified() => {
@@ -210,7 +224,7 @@ impl ManagedTcpStream {
                     }
                 }
             }
-            // Reader task is ending, close associated channels
+            // Reader task is ending, close associated channels/signals
             drop(reader_tx); // Signal owner no more messages
             drop(writer_tx); // Signal writer (potentially)
             drop(keepalive_ack_tx); // Signal keepalive task
@@ -219,7 +233,6 @@ impl ManagedTcpStream {
         })};
 
         Self {
-            // Changed from Ok(ManagedTcpStream{...})
             writer_tx,
             reader_rx,
             writer_handle,
@@ -252,26 +265,16 @@ impl ManagedTcpStream {
     pub async fn recv_message(&mut self) -> Option<String> {
         self.reader_rx.recv().await
     }
+}
 
-    /// Aborts the background tasks associated with this stream.
-    /// This is usually called automatically when the stream is dropped.
-    pub fn shutdown(&self) {
-        info!("[{}] Shutting down ManagedTcpStream tasks.", self.addr);
+impl Drop for ManagedTcpStream {
+    fn drop(&mut self) {
+        info!("[{}] Dropping ManagedTcpStream, shutting down tasks.", self.addr);
         // Aborting tasks is generally the way to stop them immediately.
         // Dropping the writer_tx handle signals the writer task to exit gracefully.
         // The reader and keepalive tasks check for channel closures.
         self.writer_handle.abort();
         self.keepalive_handle.abort();
         self.reader_handle.abort();
-    }
-}
-
-impl Drop for ManagedTcpStream {
-    fn drop(&mut self) {
-        info!(
-            "[{}] Dropping ManagedTcpStream, shutting down tasks.",
-            self.addr
-        );
-        self.shutdown();
     }
 }
