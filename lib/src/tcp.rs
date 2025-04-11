@@ -55,11 +55,11 @@ impl ManagedTcpStream {
         let (writer_tx, mut writer_rx) = mpsc::channel::<String>(32);
         // Notify for keep-alive acknowledgements
         let (keepalive_tx, mut keepalive_rx) = mpsc::channel(1);
+        let _ = keepalive_tx.send(()).await;
         // Channel for receiving messages from the reader task
         let (reader_tx, reader_rx) = mpsc::channel::<String>(32);
         // Shutdown switch, accessible by all threads
         let shutdown = Arc::new(Notify::new());
-        let _ = keepalive_tx.send(()).await;
 
         // --- Writer Task ---
         let writer_handle = {
@@ -235,11 +235,11 @@ impl ManagedTcpStream {
 
     /// Sends a message over the TCP connection.
     /// Returns an error if the connection's writer task has stopped.
-    pub async fn send_message(&self,message: String) -> Result<(),
-    mpsc::error::SendError<String>> {
+    pub async fn send_message(&self,message: &str) ->
+        Result<(), mpsc::error::SendError<String>> {
         // Ensure message ends with a newline if not already present
         let formatted_message = if message.ends_with('\n') {
-            message
+            message.to_string()
         } else {
             format!("{}\n", message)
         };

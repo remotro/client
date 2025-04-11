@@ -1,6 +1,8 @@
 mod tcp;
 use tcp::{ManagedTcpListener, ManagedTcpStream};
 use std::net::SocketAddr;
+use tokio::sync::mpsc::error;
+
 pub struct Remotro {
     managed_tcp_listener: ManagedTcpListener,
 }
@@ -25,4 +27,12 @@ impl Balatro {
     pub fn addr(&self) -> SocketAddr {
         self.managed_tcp_stream.addr()
     }
+    pub async fn send_message(&self,message: &str) -> 
+        Result<(), error::SendError<String>> {
+            self.managed_tcp_stream.send_message(message).await
+    }
+    pub async fn recv_message(&mut self) -> Option<String> {
+        self.managed_tcp_stream.recv_message().await
+    }
+            
 }

@@ -1,5 +1,6 @@
 use remotro::Remotro;
 use log;
+use tokio::time::{Duration,interval};
 
 #[tokio::main]
 async fn main() {
@@ -10,6 +11,16 @@ async fn main() {
     loop {
         let game = remotro.accept().await.unwrap();
         log::info!("Game at {} connected", game.addr());
-        loop {}
+        let mut delay = interval(Duration::from_secs(5));
+        loop {
+            delay.tick().await;
+            match game.send_message("test message").await {
+                Ok(_) => continue,
+                Err(e) => {
+                    log::error!("{e}"); // probably a better way to handle this
+                    break;
+                },
+            }
+        }
     }
 }
