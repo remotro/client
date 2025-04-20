@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use serde::Serialize;
 use tokio::net::TcpListener;
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter},
@@ -6,96 +7,307 @@ use tokio::{
         TcpStream,
         tcp::{OwnedReadHalf, OwnedWriteHalf},
     },
+    sync::{mpsc, oneshot},
+    task::JoinHandle,
+    time::{sleep, Instant},
 };
 use crate::net::protocol::Request;
 
-pub struct Socket {
-    listener: TcpListener,
+use super::protocol::Packet;
+use super::Error; // Assuming Error is in super
+
+use serde::de::DeserializeOwned;
+use std::time::Duration;
+
+// --- Constants for Heartbeat and Connection Logic ---
+
+/// Size of the MPSC channels used for communication between the main struct and the background task.
+const CHANNEL_BUFFER_SIZE: usize = 32;
+/// Duration of inactivity (no packets received or sent) before a ping is sent.
+const INACTIVITY_TIMEOUT_SECS: u64 = 7;
+/// Duration to wait for a response (any packet) after sending a ping before retrying.
+const PING_RESPONSE_TIMEOUT_SECS: u64 = 3;
+/// Maximum number of ping retries before closing the connection due to timeout.
+const MAX_PING_RETRIES: u8 = 3;
+/// The exact string format for a ping packet (including delimiter).
+const PING_PACKET: &str = "ping!";
+/// The exact string format for a pong packet (including delimiter).
+const PONG_PACKET: &str = "pong!";
+/// A practically infinite duration used to disable timers initially.
+const FOREVER_DURATION: Duration = Duration::from_secs(u64::MAX);
+
+/// Represents a TCP stream with an associated background task handling
+/// raw I/O, packet framing (kind!body\\n), and a heartbeat mechanism.
+///
+/// Communication between the public methods (`send`, `recv`) and the background task
+/// occurs via asynchronous channels.
+pub struct TcpStreamExt {
+    /// Sends fully formatted packet strings (`kind!body`) to the background task for writing.
+    tx_outgoing: mpsc::Sender<String>,
+    /// Receives results containing either successfully read and framed packets (`kind!body`)
+    /// or errors from the background task.
+    rx_incoming: mpsc::Receiver<Result<String, Error>>,
+    /// Handle to the background I/O and heartbeat task. Kept primarily to ensure
+    /// the task is associated with the lifetime of the struct, though not directly joined.
+    _task_handle: JoinHandle<()>,
+    /// Oneshot sender used to signal the background task to shut down gracefully.
+    /// Held in an Option to allow taking it during Drop.
+    close_tx: Option<oneshot::Sender<()>>,
 }
 
-impl Socket {
-    pub async fn bind(host: impl AsRef<str>, port: u16) -> Result<Self, Error> {
-        let listener = TcpListener::bind(format!("{}:{}", host.as_ref(), port)).await?;
-        Ok(Self { listener })
-    }
+impl TcpStreamExt {
+    pub fn new(stream: TcpStream) -> Self {
+        let (reader_half, writer_half) = stream.into_split();
+        let reader = BufReader::new(reader_half);
+        let writer = BufWriter::new(writer_half);
 
-    pub async fn accept(&mut self) -> Result<Connection, Error> {
-        let (stream, _) = self.listener.accept().await?;
-        Ok(Connection::new(stream))
-    }
-}
+        let (tx_outgoing, rx_outgoing) = mpsc::channel::<String>(CHANNEL_BUFFER_SIZE);
+        let (tx_incoming, rx_incoming) = mpsc::channel::<Result<String, Error>>(CHANNEL_BUFFER_SIZE);
+        let (close_tx, close_rx) = oneshot::channel::<()>();
 
-pub struct Connection {
-    writer: BufWriter<OwnedWriteHalf>,
-    reader: BufReader<OwnedReadHalf>,
-}
+        let task_handle = tokio::spawn(manage_connection(
+            reader,
+            writer,
+            rx_outgoing,
+            tx_incoming.clone(),
+            close_rx,
+        ));
 
-impl Connection {
-    fn new(stream: TcpStream) -> Self {
-        let (reader, writer) = stream.into_split();
-        let reader = BufReader::new(reader);
         Self {
-            writer: BufWriter::new(writer),
-            reader: reader,
+            tx_outgoing,
+            rx_incoming,
+            _task_handle: task_handle,
+            close_tx: Some(close_tx),
         }
     }
 
-    pub async fn send<R: Request>(&mut self, msg: R) -> Result<R::Expect, Error> {
+    pub async fn send<T: Serialize + Packet>(&mut self, msg: T) -> Result<(), Error> {
         let body = serde_json::to_string(&msg)?;
-        let packet = format!("{}!{}", R::kind(), body);
+        let packet_str = format!("{}!{}", T::kind(), body);
+        self.tx_outgoing.send(packet_str).await?;
+        Ok(())
+    }
 
-        self.writer.write_all(packet.as_bytes()).await?;
-        self.writer.flush().await?;
-        let mut buf = String::new();
-        self.reader.read_line(&mut buf).await?;
+    pub async fn recv<R: DeserializeOwned + Packet>(&mut self) -> Result<R, Error> {
+        let received_result = self
+            .rx_incoming
+            .recv()
+            .await
+            .ok_or(Error::ConnectionClosed)?;
 
-        let mut split = buf.split('!');
+        let buf = received_result?;
+
+        let mut split = buf.splitn(2, '!');
         let kind = split
             .next()
-            .ok_or(Error::Message(Cow::Borrowed("No kind")))?;
+            .ok_or(Error::MalformedHead(Cow::Borrowed("Received packet has no kind")))?;
         let body = split
             .next()
-            .ok_or(Error::Message(Cow::Borrowed("No body")))?;
-        if let Some(_) = split.next() {
-            return Err(Error::Message(Cow::Borrowed("message has more than one !")));
-        }
+            .ok_or(Error::MalformedHead(Cow::Borrowed("Received packet has no body")))?;
+
         if kind != R::kind() {
-            return Err(Error::Message(Cow::Owned(format!(
+            return Err(Error::MalformedHead(Cow::Owned(format!(
                 "Expected response kind {}, got {}",
                 R::kind(),
                 kind
             ))));
         }
 
-        let response: R::Expect = serde_json::from_str(body)?;
+        let response: R = serde_json::from_str(body)?;
         Ok(response)
     }
 }
 
-
-#[derive(Debug)]
-pub enum Error {
-    IO(std::io::Error),
-    Message(Cow<'static, str>),
-    Json(serde_json::Error),
-}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+impl Drop for TcpStreamExt {
+    fn drop(&mut self) {
+        if let Some(sender) = self.close_tx.take() {
+            let _ = sender.send(());
+        }
     }
 }
 
-impl std::error::Error for Error {}
+/// The core background task that handles TCP reading, writing, packet framing,
+/// and the ping/pong heartbeat mechanism.
+///
+/// It runs in a loop, using `tokio::select!` to concurrently manage:
+/// 1. Receiving outgoing packets from `TcpStreamExt::send` via `rx_outgoing`.
+/// 2. Reading incoming data from the `TcpStream` (`reader`).
+/// 3. Handling ping responses and forwarding other data via `tx_incoming`.
+/// 4. Tracking inactivity and sending pings.
+/// 5. Tracking ping responses and handling retries/timeouts.
+/// 6. Listening for a shutdown signal via `close_rx`.
+async fn manage_connection(
+    mut reader: BufReader<OwnedReadHalf>,
+    mut writer: BufWriter<OwnedWriteHalf>,
+    mut rx_outgoing: mpsc::Receiver<String>, // Messages to send from Self::send
+    tx_incoming: mpsc::Sender<Result<String, Error>>, // Framed messages or errors back to Self::recv
+    mut close_rx: oneshot::Receiver<()>, // Signal to close from Drop
+) {
+    // Buffer for reading lines from the socket.
+    let mut line_buf = String::new();
+    // Durations for timers, loaded from constants.
+    let inactivity_timeout = Duration::from_secs(INACTIVITY_TIMEOUT_SECS);
+    let ping_response_timeout = Duration::from_secs(PING_RESPONSE_TIMEOUT_SECS);
 
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Self {
-        Error::IO(err)
+    // --- Timers ---
+    // Timer for detecting inactivity (no sends or receives).
+    let inactivity_timer = sleep(inactivity_timeout);
+    // Timer for detecting lack of response after a ping has been sent.
+    // Initialized to sleep forever, effectively disabling it until the first ping.
+    let ping_timer = sleep(FOREVER_DURATION);
+
+    // Timers must be pinned to be used in `select!` as `sleep` doesn't produce `Unpin` futures.
+    tokio::pin!(inactivity_timer);
+    tokio::pin!(ping_timer);
+
+    // --- State ---
+    // Counter for consecutive pings sent without receiving *any* packet in response.
+    let mut pings_sent_without_response = 0;
+
+    loop {
+        tokio::select! {
+            // `biased;` ensures that the shutdown signal is checked first in each loop iteration,
+            // allowing for prompt termination when `TcpStreamExt` is dropped.
+            biased;
+
+            // 1. Check for shutdown signal from `TcpStreamExt::drop`.
+            _ = &mut close_rx => {
+                // Got close signal.
+                break;
+            }
+
+            // 2. Read data from the TCP stream.
+            read_result = reader.read_line(&mut line_buf) => {
+                match read_result {
+                    Ok(0) => { // EOF - Connection closed cleanly by peer.
+                        let _ = tx_incoming.send(Err(Error::ConnectionClosed)).await;
+                        break;
+                    }
+                    Ok(_) => { // Received some data.
+                        // Any received data resets inactivity and ping state.
+                        inactivity_timer.as_mut().reset(Instant::now() + inactivity_timeout);
+                        if pings_sent_without_response > 0 {
+                            // If we were waiting for a ping response, disable the ping timer.
+                            ping_timer.as_mut().reset(Instant::now() + FOREVER_DURATION);
+                        }
+                        pings_sent_without_response = 0;
+
+                        // Process the received line (remove trailing newline).
+                        let received_line = line_buf.trim_end();
+
+                        if received_line == PING_PACKET {
+                            // Received a ping, send a pong back immediately.
+                            // Note: We add the newline back for the write.
+                             if let Err(e) = writer.write_all(format!("{}\\n", PONG_PACKET).as_bytes()).await {
+                                let _ = tx_incoming.send(Err(e.into())).await; // Report write error upstream.
+                                break;
+                             }
+                             if let Err(e) = writer.flush().await {
+                                 let _ = tx_incoming.send(Err(e.into())).await; // Report flush error upstream.
+                                 break;
+                             }
+                             // Don't forward the internal "ping!" packet upstream to `recv`.
+                        } else {
+                            // Received a regular data packet.
+                            // Send the raw framed packet string upstream via the channel.
+                            let owned_line = received_line.to_string();
+                            if tx_incoming.send(Ok(owned_line)).await.is_err() {
+                                // Upstream receiver (`TcpStreamExt::recv`) has been dropped. Connection is useless.
+                                break;
+                            }
+                        }
+                        // Clear the buffer for the next read operation.
+                        line_buf.clear();
+                    }
+                    Err(e) => { // Error during read.
+                         let _ = tx_incoming.send(Err(e.into())).await; // Report IO error upstream.
+                         break;
+                    }
+                }
+            }
+
+            // 3. Send an outgoing packet requested by `TcpStreamExt::send`.
+            Some(packet_str) = rx_outgoing.recv() => {
+                 // Add newline because the reader side uses `read_line`.
+                 let packet_with_newline = format!("{}\\n", packet_str);
+                 if let Err(e) = writer.write_all(packet_with_newline.as_bytes()).await {
+                     let _ = tx_incoming.send(Err(e.into())).await; // Report write error upstream.
+                     break;
+                 }
+                 if let Err(e) = writer.flush().await {
+                     let _ = tx_incoming.send(Err(e.into())).await; // Report flush error upstream.
+                     break;
+                 }
+                 // Successfully sent data, so reset the inactivity timer.
+                 inactivity_timer.as_mut().reset(Instant::now() + inactivity_timeout);
+                 // Sending data also counts as activity, reset ping state if we were waiting.
+                 if pings_sent_without_response > 0 {
+                     ping_timer.as_mut().reset(Instant::now() + FOREVER_DURATION);
+                 }
+                 pings_sent_without_response = 0;
+            }
+
+            // 4. Inactivity timer fired.
+            _ = &mut inactivity_timer => {
+                 // No packets sent or received for INACTIVITY_TIMEOUT_SECS.
+                 // Send the first ping if we aren't already in a ping/pong cycle.
+                 if pings_sent_without_response == 0 {
+                    if let Err(e) = writer.write_all(format!("{}\\n", PING_PACKET).as_bytes()).await {
+                         let _ = tx_incoming.send(Err(e.into())).await;
+                         break;
+                     }
+                     if let Err(e) = writer.flush().await {
+                         let _ = tx_incoming.send(Err(e.into())).await;
+                         break;
+                     }
+                     pings_sent_without_response = 1;
+                     // Start the ping response timer.
+                     ping_timer.as_mut().reset(Instant::now() + ping_response_timeout);
+                     // Reset the inactivity timer as well, sending a ping counts as activity.
+                     inactivity_timer.as_mut().reset(Instant::now() + inactivity_timeout);
+                 }
+                 // If pings_sent_without_response > 0, it means we've already sent a ping
+                 // and are waiting. The ping_timer branch will handle retries/timeouts.
+            }
+
+            // 5. Ping response timer fired (only active if pings_sent_without_response > 0).
+            _ = &mut ping_timer, if pings_sent_without_response > 0 => {
+                // Waited PING_RESPONSE_TIMEOUT_SECS for *any* packet after sending a ping, but received none.
+                if pings_sent_without_response >= MAX_PING_RETRIES {
+                     // Exceeded max retries, declare timeout.
+                     let _ = tx_incoming.send(Err(Error::Timeout)).await;
+                     break;
+                }
+
+                 // Send another ping (retry).
+                 if let Err(e) = writer.write_all(format!("{}\\n", PING_PACKET).as_bytes()).await {
+                     let _ = tx_incoming.send(Err(e.into())).await;
+                     break;
+                 }
+                 if let Err(e) = writer.flush().await {
+                     let _ = tx_incoming.send(Err(e.into())).await;
+                     break;
+                 }
+
+                 pings_sent_without_response += 1;
+                 // Reset the ping response timer for the next retry.
+                 ping_timer.as_mut().reset(Instant::now() + ping_response_timeout);
+                 // Also reset the inactivity timer.
+                 inactivity_timer.as_mut().reset(Instant::now() + inactivity_timeout);
+            }
+
+            // `else` branch is required by `select!` when using `biased;`.
+            // It's reached if no other branch is ready.
+            else => {
+                 // This might happen if channels are closed unexpectedly.
+                 // Treat as a reason to shut down the task.
+                 break;
+            }
+        }
     }
+    // Loop exited (due to error, close signal, or channel closure).
+    // Ensure the upstream receiver knows the connection is closed if it hasn't already received an error.
+    // Ignore error here, as the receiver might already be dropped.
+    let _ = tx_incoming.send(Err(Error::ConnectionClosed)).await;
 }
 
-impl From<serde_json::Error> for Error {
-    fn from(err: serde_json::Error) -> Self {
-        Error::Json(err)
-    }
-}
