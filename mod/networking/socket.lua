@@ -38,7 +38,7 @@ function Networking.connect()
 	-- and if it is, skip this function
 
 	SEND_THREAD_DEBUG_MESSAGE(
-		string.format("Attempting to connect to multiplayer server... URL: %s, PORT: %d", CONFIG_URL, CONFIG_PORT)
+		string.format("Attempting to connect to remotro client... URL: %s, PORT: %d", CONFIG_URL, CONFIG_PORT)
 	)
 
 	Networking.Client = socket.tcp()
@@ -50,7 +50,7 @@ function Networking.connect()
 
 	if connectionResult ~= 1 then
 		SEND_THREAD_DEBUG_MESSAGE(string.format("%s", errorMessage))
-		networkToUiChannel:push("action:error,message:Failed to connect to multiplayer server")
+		networkToUiChannel:push('disconnected?')
 	else
 		isSocketClosed = false
 	end
@@ -67,10 +67,10 @@ local mainThreadMessageQueue = function()
 		for _ = 1, requestsPerCycle do
 			local msg = uiToNetworkChannel:pop()
 			if msg then
-				if msg:find("^action") ~= nil then
-					Networking.Client:send(msg .. "\n")
-				elseif msg == "connect" then
+				if msg == "connect?" then
 					Networking.connect()
+				else
+					Networking.Client:send(msg .. "\n")
 				end
 			else
 				-- If there are no more messages, yield
@@ -126,7 +126,7 @@ local networkPacketQueue = function()
 					isRetry = false
 
 					timerCoroutine = coroutine.create(timer)
-					networkToUiChannel:push("action:disconnected")
+					networkToUiChannel:push("disconnected?")
 				else
 					-- If there are no more packets, yield
 					coroutine.yield()
@@ -166,16 +166,16 @@ while true do
 
 			timerCoroutine = coroutine.create(timer)
 
-			networkToUiChannel:push("action:disconnected")
+			networkToUiChannel:push("disconnected?")
 		end
 
 		if isRetry then
 			retryCount = retryCount + 1
-			-- Send keepAlive without cutting the line
-			uiToNetworkChannel:push("action:keepAlive")
+			-- Send ping! without cutting the line
+			uiToNetworkChannel:push("ping!")
 
 			-- Restart the timer
-			timerCoroutine = coroutine.create(timer)
+			timerCoroutine = coroutine.create(timeerrorr)
 			coroutine.resume(timerCoroutine, keepAliveRetryTimeout)
 		end
 	end

@@ -1,4 +1,4 @@
-use crate::net::tcp::Connection;
+use crate::net::Connection;
 use crate::net::protocol;
 
 pub struct Balatro {
@@ -29,14 +29,14 @@ impl <'a> MenuScreen<'a> {
             stake_id: "".to_string(),
             seed: None,
         };
-        self.connection.send(new_run).await?.result?;
+        self.connection.req(new_run).await?.result?;
         Ok(Screen::Menu(self))
     }
 }
 
 #[derive(Debug)]
 pub enum Error {
-    Net(crate::net::tcp::Error),
+    Net(crate::net::Error),
     Game(String),
 }
 
@@ -48,8 +48,8 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-impl From<crate::net::tcp::Error> for Error {
-    fn from(err: crate::net::tcp::Error) -> Self {
+impl From<crate::net::Error> for Error {
+    fn from(err: crate::net::Error) -> Self {
         Error::Net(err)
     }
 }
