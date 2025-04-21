@@ -24,7 +24,7 @@ pub struct MenuScreen<'a> {
 
 impl <'a> MenuScreen<'a> {
     pub async fn new_run(self) -> Result<Screen<'a>, Error> {
-        let new_run = protocol::NewRun {
+        let new_run = protocol::SetupRun {
             back: "b_yellow".to_string(),
             stake: 1,
             seed: None,
