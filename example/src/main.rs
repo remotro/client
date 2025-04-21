@@ -9,12 +9,15 @@ async fn main() {
     log::info!("Remotro hosted on 127.0.0.1:34143");
     loop {
         let mut balatro = remotro.accept().await.unwrap();
-        // let screen = balatro.screen().await.unwrap();
-        // match screen {
-        //     Screen::Menu(menu) => {
-        //         menu.new_run().await.unwrap();
-        //     }
-        // }
+        // Wait for 5 seconds before proceeding
+        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+        log::info!("Waited 5 seconds, proceeding with connection");
+        let screen = balatro.screen().await.unwrap();
+        match screen {
+            Screen::Menu(menu) => {
+                menu.new_run().await.unwrap();
+            }
+        }
         loop {}
     }
 }

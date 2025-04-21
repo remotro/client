@@ -12,19 +12,19 @@ pub trait Response : DeserializeOwned + Packet {
 }
 
 #[derive(Serialize)]
-pub struct NewRun {
+pub struct SetupRun {
     pub back: String,
     pub stake: u32,
     pub seed: Option<String>,
 }
 
-impl Request for NewRun {
+impl Request for SetupRun {
     type Expect = Ack;
 }
 
-impl Packet for NewRun {
+impl Packet for SetupRun {
     fn kind() -> &'static str {
-        "new_run"
+        "setup_run"
     }
 }
 
