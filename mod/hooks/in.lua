@@ -1,6 +1,9 @@
 RE.InHooks = {}
 
-function RE.IN_HOOKS.setup_run(bundle)
-    G.EVENT_MANAGER.push(Event{})
-    G.FUNCS.setup_run(bundle["back"], bundle["stake"], bundle["seed"])
+function RE.InHooks.setup_run(bundle)
+    -- Balatro assumes that run start will occur in run setup,
+    -- which will populate the viewed deck (back). We must "pretend"
+    -- this is the case as well. 
+    G.GAME.viewed_back = G.P_CENTERS[bundle["back"]]
+    G.FUNCS.start_run(e, {stake = bundle["stake"], seed = nil, challenge = nil});
 end

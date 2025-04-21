@@ -1,6 +1,6 @@
 RE = SMODS.current_mod
 
-function RE.load_rm_file(file)
+function RE.load_re_file(file)
 	local chunk, err = SMODS.load_file(file, "Remotro")
 	if chunk then
 		local ok, func = pcall(chunk)
@@ -15,11 +15,14 @@ function RE.load_rm_file(file)
 	return nil
 end
 
-RE.load_rm_file("hooks/in.lua")
-RE.JSON = RE.load_rm_file("vendor/json/json.lua")
-RE.load_rm_file("vendor/networking/action_handlers.lua")
-local SOCKET = RE.load_rm_file("vendor/networking/socket.lua")
+local SOCKET = RE.load_re_file("vendor/socket/socket.lua")
 RE.NETWORKING_THREAD = love.thread.newThread(SOCKET)
 RE.NETWORKING_THREAD:start(SMODS.Mods["Remotro"].config.server_url, SMODS.Mods["Remotro"].config.server_port)
 
-Client.connect()
+RE.JSON = RE.load_re_file("vendor/json/json.lua")
+RE.load_re_file("net/client.lua")
+
+RE.load_re_file("hooks/in.lua")
+RE.load_re_file("hooks/manager.lua")
+
+RE.Client.connect()
