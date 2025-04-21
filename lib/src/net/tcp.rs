@@ -1,7 +1,5 @@
-use crate::net::protocol::Request;
 use serde::Serialize;
 use std::borrow::Cow;
-use tokio::net::TcpListener;
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter},
     net::{
@@ -222,16 +220,23 @@ async fn run_connection(
                             trace!("PONG sent successfully.");
                             // Don't forward the internal "ping!" packet upstream to `recv`.
                         } else {
-                            // Received a regular data packet.
-                            // Send the raw framed packet string upstream via the channel.
-                            debug!("Received data packet, forwarding upstream.");
-                            let owned_line = received_line.to_string();
-                            if tx_incoming.send(Ok(owned_line)).await.is_err() {
-                                // Upstream receiver (`TcpStreamExt::recv`) has been dropped. Connection is useless.
-                                info!("Upstream receiver closed, shutting down connection task.");
-                                break;
+                            // Check if it's a PONG packet. If so, log it but don't forward.
+                            if received_line == PONG_PACKET {
+                                debug!("Received PONG.");
+                                // PONG is primarily for acknowledging the connection is alive,
+                                // no need to forward it to the application layer via `recv`.
+                            } else {
+                                // Received a regular data packet.
+                                // Send the raw framed packet string upstream via the channel.
+                                debug!("Received data packet, forwarding upstream.");
+                                let owned_line = received_line.to_string();
+                                if tx_incoming.send(Ok(owned_line)).await.is_err() {
+                                    // Upstream receiver (`TcpStreamExt::recv`) has been dropped. Connection is useless.
+                                    info!("Upstream receiver closed, shutting down connection task.");
+                                    break;
+                                }
+                                trace!("Forwarded packet upstream.");
                             }
-                            trace!("Forwarded packet upstream.");
                         }
                         // Clear the buffer for the next read operation.
                         line_buf.clear();
@@ -273,7 +278,7 @@ async fn run_connection(
                 // No packets sent or received for INACTIVITY_TIMEOUT_SECS.
                 // Send the first ping if we aren't already in a ping/pong cycle.
                 if pings_sent_without_response == 0 {
-                    debug!("Inactivity detected, sending PING (Attempt 1/{})", MAX_PING_RETRIES);
+                    debug!("Inactivity detected, sending PIN    G (Attempt 1/{})", MAX_PING_RETRIES);
                     if let Err(e) = writer.write_all(format!("{}\n", PING_PACKET).as_bytes()).await {
                         error!("Failed to send PING (Attempt 1): {}", e);
                         let _ = tx_incoming.send(Err(e.into())).await;

@@ -38,7 +38,7 @@ function Networking.connect()
 	-- and if it is, skip this function
 
 	SEND_THREAD_DEBUG_MESSAGE(
-		string.format("Attempting to connect to remotro client... URL: %s, PORT: %d", CONFIG_URL, CONFIG_PORT)
+		string.format("Attempting to connect to multiplayer server... URL: %s, PORT: %d", CONFIG_URL, CONFIG_PORT)
 	)
 
 	Networking.Client = socket.tcp()
@@ -50,7 +50,7 @@ function Networking.connect()
 
 	if connectionResult ~= 1 then
 		SEND_THREAD_DEBUG_MESSAGE(string.format("%s", errorMessage))
-		networkToUiChannel:push('disconnected?')
+		networkToUiChannel:push("action:error,message:Failed to connect to multiplayer server")
 	else
 		isSocketClosed = false
 	end
@@ -67,7 +67,7 @@ local mainThreadMessageQueue = function()
 		for _ = 1, requestsPerCycle do
 			local msg = uiToNetworkChannel:pop()
 			if msg then
-				if msg == "connect?" then
+				if msg == "connect!" then
 					Networking.connect()
 				else
 					Networking.Client:send(msg .. "\n")
@@ -126,7 +126,7 @@ local networkPacketQueue = function()
 					isRetry = false
 
 					timerCoroutine = coroutine.create(timer)
-					networkToUiChannel:push("disconnected?")
+					networkToUiChannel:push("disconnected!")
 				else
 					-- If there are no more packets, yield
 					coroutine.yield()
@@ -166,16 +166,16 @@ while true do
 
 			timerCoroutine = coroutine.create(timer)
 
-			networkToUiChannel:push("disconnected?")
+			networkToUiChannel:push("disconnected!")
 		end
 
 		if isRetry then
 			retryCount = retryCount + 1
-			-- Send ping! without cutting the line
+			-- Send keepAlive without cutting the line
 			uiToNetworkChannel:push("ping!")
 
 			-- Restart the timer
-			timerCoroutine = coroutine.create(timeerrorr)
+			timerCoroutine = coroutine.create(timer)
 			coroutine.resume(timerCoroutine, keepAliveRetryTimeout)
 		end
 	end
