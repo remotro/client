@@ -13,8 +13,8 @@ pub trait Response : DeserializeOwned + Packet {
 
 #[derive(Serialize)]
 pub struct NewRun {
-    pub deck_id: String,
-    pub stake_id: String,
+    pub back: String,
+    pub stake: u32,
     pub seed: Option<String>,
 }
 

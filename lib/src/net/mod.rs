@@ -4,7 +4,6 @@ mod tcp;
 use tcp::TcpStreamExt;
 use protocol::Request;
 use tokio::net::TcpListener;
-use tokio::sync::mpsc;
 
 use std::borrow::Cow;
 
@@ -43,11 +42,11 @@ impl Connection {
 #[derive(Debug)]
 pub enum Error {
     IO(std::io::Error),
-    MalformedHead(Cow<'static, str>),
-    MalformedBody(serde_json::Error),
+    Message(Cow<'static, str>),
+    Json(serde_json::Error),
     Timeout,
     ConnectionClosed,
-    Send(mpsc::error::SendError<String>)
+    ChannelError(Cow<'static, str>),
 }
 
 impl std::fmt::Display for Error {
@@ -66,13 +65,6 @@ impl From<std::io::Error> for Error {
 
 impl From<serde_json::Error> for Error {
     fn from(err: serde_json::Error) -> Self {
-        Error::MalformedBody(err)
+        Error::Json(err)
     }
 }
-
-impl From<mpsc::error::SendError<String>> for Error {
-    fn from(err: mpsc::error::SendError<String>) -> Self {
-        Error::Send(err)
-    }
-}
-
