@@ -32,7 +32,7 @@ impl Connection {
         Self { stream }
     }
 
-    pub async fn req<R: Request>(&mut self, req: R) -> Result<R::Expect, Error> {
+    pub async fn request<R: Request>(&mut self, req: R) -> Result<R::Expect, Error> {
         self.stream.send(req).await?;
         self.stream.recv().await
     }

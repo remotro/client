@@ -1,21 +1,25 @@
-use remotro::{Remotro, balatro::Screen};
+use remotro::{balatro::{menu::{Deck, Stake}, Screen}, Remotro};
 use log;
 
 #[tokio::main]
 async fn main() {
-    env_logger::init(); // Initialize the logger
+    env_logger::init();
 
+    // Host a TCP socket
     let mut remotro = Remotro::host("127.0.0.1", 34143).await.unwrap();
     log::info!("Remotro hosted on 127.0.0.1:34143");
     loop {
+        // Wait for a Game to connect
         let mut balatro = remotro.accept().await.unwrap();
-        // Wait for 5 seconds before proceeding
-        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-        log::info!("Waited 5 seconds, proceeding with connection");
+
+        // Check current screen in Game
         let screen = balatro.screen().await.unwrap();
         match screen {
             Screen::Menu(menu) => {
-                menu.new_run().await.unwrap();
+                let mut select_blind = menu.new_run(Deck::Anaglyph, Stake::White, None).await.unwrap();
+            }
+            _ => {
+                // Do another thing
             }
         }
         loop {}
