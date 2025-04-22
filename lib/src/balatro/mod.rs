@@ -1,5 +1,7 @@
+pub mod menu;
+pub mod blinds;
+
 use crate::net::Connection;
-use crate::net::protocol;
 
 pub struct Balatro {
     connection: Connection,
@@ -9,29 +11,16 @@ impl Balatro {
     pub fn new(connection: Connection) -> Self {
         Self { connection }
     }
+
+    /// Obtains the current state from the connected Balatro game.
     pub async fn screen(&mut self) -> Result<Screen, Error> {
-        Ok(Screen::Menu(MenuScreen { connection: &mut self.connection }))
+        Ok(Screen::Menu(menu::Menu::new(&mut self.connection)))
     }
 }
 
 pub enum Screen<'a> {
-    Menu(MenuScreen<'a>),
-}
-
-pub struct MenuScreen<'a> {
-    connection: &'a mut Connection,
-}
-
-impl <'a> MenuScreen<'a> {
-    pub async fn new_run(self) -> Result<Screen<'a>, Error> {
-        let new_run = protocol::SetupRun {
-            back: "b_yellow".to_string(),
-            stake: 1,
-            seed: None,
-        };
-        self.connection.req(new_run).await?.result?;
-        Ok(Screen::Menu(self))
-    }
+    Menu(menu::Menu<'a>),
+    Blinds(blinds::SelectBlind)
 }
 
 #[derive(Debug)]
