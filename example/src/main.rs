@@ -41,7 +41,7 @@ async fn main() {
 
                 let select_blind = menu.new_run(deck, stake, None).await.unwrap();
                 // Prompt the user for Y/N input
-                log::info!("Do you want to select a blind? (Y/N)");
+                log::info!("Select or skip a blind");
 
                 let mut user_input = String::new();
                 std::io::stdin()
@@ -50,10 +50,12 @@ async fn main() {
 
                 // Process the input
                 match user_input.trim().to_lowercase().as_str() {
-                    "y" | "yes" => {
+                    "select" => {
+                        log::info!("Selecting blind");
                         select_blind.select().await.unwrap();
                     }
-                    "n" | "no" => {
+                    "skip" => {
+                        log::info!("Skipping blind");
                         select_blind.skip().await.unwrap();
                     }
                     _ => {

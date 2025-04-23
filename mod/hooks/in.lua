@@ -1,9 +1,9 @@
 RE.InHooks = {}
 
 function RE.InHooks.start_run(bundle, cb)
-    if G.STATE ~= G.STATES.MAIN_MENU and G.STATE ~= G.STATES.SPLASH then
+    if G.STATE ~= G.STATES.MENU then
         cb({
-            Err = "cannot do this action, must be in main_menu but in " .. G.STATE
+            Err = "cannot do this action, must be in menu (" .. G.STATES.MENU .. ") but in " .. G.STATE
         })
         return
     end
@@ -34,8 +34,8 @@ function RE.InHooks.start_run(bundle, cb)
     })
 end
 
-function get_e(id)
-    return G.blind_select.UIRoot.children[1].children[1].config.object:get_UIE_by_ID(id)
+local function get_e()
+    return G.blind_select.UIRoot.children[1].children[1].config.object:get_UIE_by_ID('select_blind_button')
 end
 
 function RE.InHooks.select_blind(bundle, cb)
@@ -46,7 +46,7 @@ function RE.InHooks.select_blind(bundle, cb)
         return
     end
 
-    G.FUNCS.select_blind(get_e('select_blind_button'))
+    G.FUNCS.select_blind(get_e())
     cb({
         Ok = {}
     })
@@ -60,7 +60,7 @@ function RE.InHooks.skip_blind(bundle, cb)
         return
     end
 
-    G.FUNCS.skip_blind(get_e('skip_blind_button'))
+    G.FUNCS.skip_blind(get_e())
     cb({
         Ok = {}
     })
