@@ -1,7 +1,7 @@
 use crate::net::Connection;
 use crate::balatro::blinds::SelectBlind;
 use super::Screen;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub struct Menu<'a> {
     connection: &'a mut Connection,
@@ -12,16 +12,18 @@ impl <'a> Menu<'a> {
         Self { connection }
     }
 
-    pub async fn new_run(self, deck: Deck, stake: Stake, seed: Option<Seed>) -> Result<SelectBlind, super::Error> {
+    pub async fn new_run(self, deck: Deck, stake: Stake, seed: Option<Seed>) -> Result<SelectBlind<'a>, super::Error> {
         let new_run = protocol::StartRun {
-            back: deck,
-            stake,
+            back: protocol::Back(deck),
+            stake: protocol::StakeNo(stake),
             seed,
         };
         let blinds = self.connection.request(new_run).await??;
-        Ok(SelectBlind::new(blinds))
+        Ok(SelectBlind::new(crate::balatro::blinds::protocol::BlindInfo {}, self.connection))
     }
 }
+
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub enum Deck {
     Red,
     Blue,
@@ -40,6 +42,7 @@ pub enum Deck {
     Eclectic
 }
 
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub enum Stake {
     White,
     Red,
@@ -55,9 +58,7 @@ pub enum Stake {
 pub struct Seed(String);
 
 pub(crate) mod protocol {
-    use crate::balatro::blinds;
-    use crate::balatro::blinds::protocol::BlindInfo;
-    use crate::net::protocol::{Packet, Request, Response};
+    use crate::net::protocol::{Packet, Request};
     use super::{Deck, Seed, Stake};
     use serde::{Serialize, Serializer};
 
@@ -66,17 +67,19 @@ pub(crate) mod protocol {
 
     #[derive(Serialize)]
     pub struct StartRun {
-        pub back: Deck,
-        pub stake: Stake,
+        pub back: Back,
+        pub stake: StakeNo,
         pub seed: Option<Seed>,
     }
 
-    impl Serialize for Deck {
+    pub struct Back(pub Deck);
+
+    impl Serialize for Back {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
         {
-            serializer.serialize_str(match *self {
+            serializer.serialize_str(match self.0 {
                 Deck::Red => "b_red",
                 Deck::Blue => "b_blue",
                 Deck::Yellow => "b_yellow",
@@ -96,13 +99,15 @@ pub(crate) mod protocol {
         }
     }
 
-    impl Serialize for Stake {
+    pub struct StakeNo(pub Stake);
+
+    impl Serialize for StakeNo {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
         {
             // Serialize variants as 1-based integers
-            let value = match *self {
+            let value = match self.0 {
                 Stake::White => 1,
                 Stake::Red => 2,
                 Stake::Green => 3,
@@ -117,7 +122,7 @@ pub(crate) mod protocol {
     }
 
     impl Request for StartRun {
-        type Expect = Result<blinds::protocol::BlindInfo, String>;
+        type Expect = Result<Vec<()>, String>;
     }
     
     impl Packet for StartRun {
@@ -126,13 +131,4 @@ pub(crate) mod protocol {
         }
     }
 
-    impl Response for Result<BlindInfo, String> {
-
-    }
-    
-    impl Packet for Result<BlindInfo, String> {
-        fn kind() -> &'static str {
-            "main_menu/start_run/result"
-        }
-    }
 }

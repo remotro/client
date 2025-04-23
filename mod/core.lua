@@ -7,10 +7,10 @@ function RE.load_re_file(file)
 		if ok then
 			return func
 		else
-			sendWarnMessage("Failed to process file: " .. func, "REMOTRO")
+			error("Failed to process file: " .. func)
 		end
 	else
-		sendWarnMessage("Failed to find or compile file: " .. tostring(err), "REMOTRO")
+		error("Failed to find or compile file: " .. tostring(err))
 	end
 	return nil
 end

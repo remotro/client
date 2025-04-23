@@ -313,6 +313,7 @@ dependencies = [
  "env_logger",
  "log 0.4.27",
  "remotro",
+ "serde_json",
  "tokio",
 ]
 

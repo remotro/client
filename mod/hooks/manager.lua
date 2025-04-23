@@ -17,7 +17,11 @@ function Game:update(dt)
 		if request then
             sendDebugMessage("Recieved " .. request.kind)
             if request.kind == "main_menu/start_run" then
-				RE.InHooks.start_run(request.body, responder("main_menu/start_run/result"))
+				RE.InHooks.start_run(request.body, responder("placeholder/result"))
+			elseif request.kind == "blind_select/select" then
+				RE.InHooks.select_blind(request.body, responder("placeholder/result"))
+			elseif request.kind == "blind_select/skip" then
+				RE.InHooks.skip_blind(request.body, responder("placeholder/result"))
             end
 		end
 	until not request

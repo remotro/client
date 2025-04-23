@@ -1,5 +1,11 @@
-use remotro::{balatro::{menu::{Deck, Stake}, Screen}, Remotro};
 use log;
+use remotro::{
+    Remotro,
+    balatro::{
+        Screen,
+        menu::{Deck, Stake},
+    },
+};
 
 #[tokio::main]
 async fn main() {
@@ -16,7 +22,44 @@ async fn main() {
         let screen = balatro.screen().await.unwrap();
         match screen {
             Screen::Menu(menu) => {
-                let mut select_blind = menu.new_run(Deck::Anaglyph, Stake::White, None).await.unwrap();
+                // Prompt the user for Y/N input
+                log::warn!("Select a deck:");
+                let mut deck = String::new();
+                std::io::stdin()
+                    .read_line(&mut deck)
+                    .expect("Failed to read line from stdin");
+                let deck_bundle = format!("{{ \"{}\": null }}", deck.trim());
+                let deck: Deck = serde_json::from_str(&deck_bundle).unwrap();
+            
+                log::warn!("Select a stake:");
+                let mut stake = String::new();
+                std::io::stdin()
+                    .read_line(&mut stake)
+                    .expect("Failed to read line from stdin");
+                let stake_bundle = format!("{{ \"{}\": null }}", stake.trim());
+                let stake: Stake = serde_json::from_str(&stake_bundle).unwrap();
+
+                let select_blind = menu.new_run(deck, stake, None).await.unwrap();
+                // Prompt the user for Y/N input
+                log::info!("Do you want to select a blind? (Y/N)");
+
+                let mut user_input = String::new();
+                std::io::stdin()
+                    .read_line(&mut user_input)
+                    .expect("Failed to read line from stdin");
+
+                // Process the input
+                match user_input.trim().to_lowercase().as_str() {
+                    "y" | "yes" => {
+                        select_blind.select().await.unwrap();
+                    }
+                    "n" | "no" => {
+                        select_blind.skip().await.unwrap();
+                    }
+                    _ => {
+                        println!("Invalid input. Please enter Y or N.");
+                    }
+                }
             }
             _ => {
                 // Do another thing

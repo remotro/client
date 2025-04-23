@@ -20,7 +20,7 @@ impl Balatro {
 
 pub enum Screen<'a> {
     Menu(menu::Menu<'a>),
-    Blinds(blinds::SelectBlind)
+    Blinds(blinds::SelectBlind<'a>),
 }
 
 #[derive(Debug)]
@@ -48,4 +48,3 @@ impl From<String> for Error {
         Error::Game(err)
     }
 }
-
