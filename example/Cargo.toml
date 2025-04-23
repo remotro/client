@@ -8,3 +8,4 @@ remotro = { path = "../lib" }
 tokio = { version = "1", features = ["full"] }
 log = "0.4"
 env_logger = "0.11"
+serde_json = "1.0.140"
