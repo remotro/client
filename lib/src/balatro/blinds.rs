@@ -1,5 +1,4 @@
 use protocol::BlindInfo;
-use serde::Deserialize;
 
 use crate::net::Connection;
 
