@@ -19,7 +19,7 @@ impl <'a> Menu<'a> {
             seed,
         };
         let blinds = self.connection.request(new_run).await??;
-        Ok(SelectBlind::new(crate::balatro::blinds::protocol::BlindInfo {}, self.connection))
+        Ok(SelectBlind::new(blinds, self.connection))
     }
 }
 
@@ -58,7 +58,7 @@ pub enum Stake {
 pub struct Seed(String);
 
 pub(crate) mod protocol {
-    use crate::net::protocol::{Packet, Request};
+    use crate::{balatro::blinds::protocol::BlindInfo, net::protocol::{Packet, Request}};
     use super::{Deck, Seed, Stake};
     use serde::{Serialize, Serializer};
 
@@ -122,12 +122,12 @@ pub(crate) mod protocol {
     }
 
     impl Request for StartRun {
-        type Expect = Result<Vec<()>, String>;
+        type Expect = Result<BlindInfo, String>;
     }
     
     impl Packet for StartRun {
-        fn kind() -> &'static str {
-            "main_menu/start_run"
+        fn kind() -> String {
+            "main_menu/start_run".to_string()
         }
     }
 

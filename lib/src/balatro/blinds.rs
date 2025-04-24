@@ -32,14 +32,17 @@ pub(crate) mod protocol {
 
     #[derive(Deserialize)]
     pub struct BlindInfo {
+        small: u32,
+        big: u32,
+        boss: u32,
     }
     
     impl Response for BlindInfo {
     }
     
     impl Packet for BlindInfo {
-        fn kind() -> &'static str {
-            "blind_select/info"
+        fn kind() -> String {
+            "blind_select/info".to_string()
         }
     }
 
@@ -47,12 +50,12 @@ pub(crate) mod protocol {
     pub struct SelectBlind;
 
     impl Request for SelectBlind {
-        type Expect = Result<Vec<()>, String>;
+        type Expect = Result<BlindInfo, String>;
     }
 
     impl Packet for SelectBlind {
-        fn kind() -> &'static str {
-            "blind_select/select"
+        fn kind() -> String {
+            "blind_select/select".to_string()
         }
     }
 
@@ -60,12 +63,12 @@ pub(crate) mod protocol {
     pub struct SkipBlind;
 
     impl Request for SkipBlind {
-        type Expect = Result<Vec<()>, String>;
+        type Expect = Result<BlindInfo, String>;
     }
 
     impl Packet for SkipBlind {
-        fn kind() -> &'static str {
-            "blind_select/skip"
+        fn kind() -> String {
+            "blind_select/skip".to_string()
         }
     }
     

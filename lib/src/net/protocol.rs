@@ -1,7 +1,7 @@
 use serde::{de::DeserializeOwned, Serialize};
 
 pub trait Packet {
-    fn kind() -> &'static str;
+    fn kind() -> String;
 }
 
 pub trait Request: Serialize + Packet {
@@ -10,12 +10,11 @@ pub trait Request: Serialize + Packet {
 
 pub trait Response : DeserializeOwned + Packet {}
 
-impl Response for Result<Vec<()>, String> {
-
+impl <P: Response> Response for Result<P, String> {
 }
 
-impl Packet for Result<Vec<()>, String> {
-    fn kind() -> &'static str {
-        "placeholder/result"
+impl <P: Response> Packet for Result<P, String> {
+    fn kind() -> String {
+        "result/".to_string() + &P::kind()
     }
 }
