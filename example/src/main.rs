@@ -23,7 +23,7 @@ async fn main() {
         match screen {
             Screen::Menu(menu) => {
                 // Prompt the user for Y/N input
-                log::warn!("Select a deck:");
+                println!("Select a deck:");
                 let mut deck = String::new();
                 std::io::stdin()
                     .read_line(&mut deck)
@@ -31,7 +31,7 @@ async fn main() {
                 let deck_bundle = format!("{{ \"{}\": null }}", deck.trim());
                 let deck: Deck = serde_json::from_str(&deck_bundle).unwrap();
             
-                log::warn!("Select a stake:");
+                println!("Select a stake:");
                 let mut stake = String::new();
                 std::io::stdin()
                     .read_line(&mut stake)
@@ -51,11 +51,11 @@ async fn main() {
                 // Process the input
                 match user_input.trim().to_lowercase().as_str() {
                     "select" => {
-                        log::info!("Selecting blind");
+                        println!("Selecting blind");
                         select_blind.select().await.unwrap();
                     }
                     "skip" => {
-                        log::info!("Skipping blind");
+                        println!("Skipping blind");
                         select_blind.skip().await.unwrap();
                     }
                     _ => {
