@@ -278,7 +278,7 @@ async fn run_connection(
                 // No packets sent or received for INACTIVITY_TIMEOUT_SECS.
                 // Send the first ping if we aren't already in a ping/pong cycle.
                 if pings_sent_without_response == 0 {
-                    debug!("Inactivity detected, sending PIN    G (Attempt 1/{})", MAX_PING_RETRIES);
+                    debug!("Inactivity detected, sending PING (Attempt 1/{})", MAX_PING_RETRIES);
                     if let Err(e) = writer.write_all(format!("{}\n", PING_PACKET).as_bytes()).await {
                         error!("Failed to send PING (Attempt 1): {}", e);
                         let _ = tx_incoming.send(Err(e.into())).await;

@@ -22,7 +22,7 @@ async fn main() {
         let screen = balatro.screen().await.unwrap();
         match screen {
             Screen::Menu(menu) => {
-                // Prompt the user for Y/N input
+                // Prompt the user to select Deck
                 println!("Select a deck:");
                 let mut deck = String::new();
                 std::io::stdin()
@@ -30,7 +30,8 @@ async fn main() {
                     .expect("Failed to read line from stdin");
                 let deck_bundle = format!("{{ \"{}\": null }}", deck.trim());
                 let deck: Deck = serde_json::from_str(&deck_bundle).unwrap();
-            
+                
+                // Prompt the user to select Stake
                 println!("Select a stake:");
                 let mut stake = String::new();
                 std::io::stdin()
@@ -40,9 +41,9 @@ async fn main() {
                 let stake: Stake = serde_json::from_str(&stake_bundle).unwrap();
 
                 let select_blind = menu.new_run(deck, stake, None).await.unwrap();
-                // Prompt the user for Y/N input
+                
+                // Prompt the user to Select or Skip blind
                 log::info!("Select or skip a blind");
-
                 let mut user_input = String::new();
                 std::io::stdin()
                     .read_line(&mut user_input)
@@ -59,11 +60,12 @@ async fn main() {
                         select_blind.skip().await.unwrap();
                     }
                     _ => {
-                        println!("Invalid input. Please enter Y or N.");
+                        println!("Invalid input. Please enter Select or Skip.");
                     }
                 }
             }
             _ => {
+                log::error!("(currently) Unimplemented state");
                 // Do another thing
             }
         }
