@@ -39,7 +39,7 @@ pub enum Deck {
     Painted,
     Anaglyph,
     Plasma,
-    Eclectic
+    Erratic
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
@@ -94,7 +94,7 @@ pub(crate) mod protocol {
                 Deck::Painted => "b_painted",
                 Deck::Anaglyph => "b_anaglyph",
                 Deck::Plasma => "b_plasma",
-                Deck::Eclectic => "b_eclectic",
+                Deck::Erratic => "b_erratic",
             })
         }
     }
