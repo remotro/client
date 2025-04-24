@@ -41,28 +41,9 @@ async fn main() {
                 let stake: Stake = serde_json::from_str(&stake_bundle).unwrap();
 
                 let select_blind = menu.new_run(deck, stake, None).await.unwrap();
-                
-                // Prompt the user to Select or Skip blind
-                log::info!("Select or skip a blind");
-                let mut user_input = String::new();
-                std::io::stdin()
-                    .read_line(&mut user_input)
-                    .expect("Failed to read line from stdin");
-
-                // Process the input
-                match user_input.trim().to_lowercase().as_str() {
-                    "select" => {
-                        println!("Selecting blind");
-                        select_blind.select().await.unwrap();
-                    }
-                    "skip" => {
-                        println!("Skipping blind");
-                        select_blind.skip().await.unwrap();
-                    }
-                    _ => {
-                        println!("Invalid input. Please enter Select or Skip.");
-                    }
-                }
+                println!("Small blind: {:?}", select_blind.small());
+                println!("Big blind: {:?}", select_blind.big());
+                println!("Boss blind: {:?}", select_blind.boss());
             }
             _ => {
                 log::error!("(currently) Unimplemented state");

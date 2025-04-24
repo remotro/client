@@ -1,18 +1,16 @@
 use protocol::BlindInfo;
+use serde::Deserialize;
 
 use crate::net::Connection;
 
 pub struct SelectBlind<'a> {
     info: protocol::BlindInfo,
-    connection: &'a mut Connection
+    connection: &'a mut Connection,
 }
 
 impl<'a> SelectBlind<'a> {
     pub(crate) fn new(info: BlindInfo, connection: &'a mut Connection) -> Self {
-        Self {
-            info,
-            connection
-        }
+        Self { info, connection }
     }
 
     pub async fn skip(self) -> Result<(), super::Error> {
@@ -24,22 +22,50 @@ impl<'a> SelectBlind<'a> {
         self.connection.request(protocol::SelectBlind).await??;
         Ok(())
     }
+
+    pub fn small(&self) -> PlainBlind {
+        self.info.small
+    }
+
+    pub fn big(&self) -> PlainBlind {
+        self.info.big
+    }
+
+    pub fn boss(&self) -> PlainBlind {
+        self.info.boss
+    }
+}
+
+#[derive(Deserialize, Clone, Copy, Debug)]
+pub struct PlainBlind {
+    chips: u32,
+    state: BlindState,
+}
+
+#[derive(Deserialize, Clone, Copy, Debug)]
+#[serde(rename_all = "PascalCase")]
+pub enum BlindState {
+    Select,
+    Skipped,
+    Upcoming,
+    Defeated,
 }
 
 pub(crate) mod protocol {
     use crate::net::protocol::{Packet, Request, Response};
     use serde::{Deserialize, Serialize};
 
+    use super::PlainBlind;
+
     #[derive(Deserialize)]
     pub struct BlindInfo {
-        small: u32,
-        big: u32,
-        boss: u32,
+        pub small: PlainBlind,
+        pub big: PlainBlind,
+        pub boss: PlainBlind,
     }
-    
-    impl Response for BlindInfo {
-    }
-    
+
+    impl Response for BlindInfo {}
+
     impl Packet for BlindInfo {
         fn kind() -> String {
             "blind_select/info".to_string()
@@ -71,5 +97,4 @@ pub(crate) mod protocol {
             "blind_select/skip".to_string()
         }
     }
-    
 }
