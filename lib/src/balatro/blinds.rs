@@ -87,7 +87,7 @@ pub enum Tag {
     Double,
     #[serde(rename = "tag_juggle")]
     Juggle,
-    #[serde(rename = "tag_d6")]
+    #[serde(rename = "tag_d_six")]
     D6,
     #[serde(rename = "tag_topup")]
     TopUp,
