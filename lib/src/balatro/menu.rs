@@ -2,6 +2,7 @@ use crate::net::Connection;
 use crate::balatro::blinds::SelectBlind;
 use super::Screen;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 pub struct Menu<'a> {
     connection: &'a mut Connection,
@@ -52,6 +53,52 @@ pub enum Stake {
     Purple,
     Orange,
     Gold
+}
+impl FromStr for Deck {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim().to_lowercase().as_str() {
+            "red" => Ok(Deck::Red),
+            "blue" => Ok(Deck::Blue),
+            "yellow" => Ok(Deck::Yellow),
+            "green" => Ok(Deck::Green),
+            "black" => Ok(Deck::Black),
+            "magic" => Ok(Deck::Magic),
+            "nebula" => Ok(Deck::Nebula),
+            "ghost" => Ok(Deck::Ghost),
+            "abandoned" => Ok(Deck::Abandoned),
+            "checkered" => Ok(Deck::Checkered),
+            "zodiac" => Ok(Deck::Zodiac),
+            "painted" => Ok(Deck::Painted),
+            "anaglyph" => Ok(Deck::Anaglyph),
+            "plasma" => Ok(Deck::Plasma),
+            "erratic" => Ok(Deck::Erratic),
+            _ => Err(format!("Invalid deck. Valid options are: {}", 
+                ["Red", "Blue", "Yellow", "Green", "Black", "Magic", "Nebula", 
+                 "Ghost", "Abandoned", "Checkered", "Zodiac", "Painted", 
+                 "Anaglyph", "Plasma", "Erratic"].join(", ")))
+        }
+    }
+}
+impl FromStr for Stake {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim().to_lowercase().as_str() {
+            "white" => Ok(Stake::White),
+            "red" => Ok(Stake::Red),
+            "green" => Ok(Stake::Green),
+            "black" => Ok(Stake::Black),
+            "blue" => Ok(Stake::Blue),
+            "purple" => Ok(Stake::Purple),
+            "orange" => Ok(Stake::Orange),
+            "gold" => Ok(Stake::Gold),
+            _ => Err(format!("Invalid stake. Valid options are: {}",
+                ["White", "Red", "Green", "Black", "Blue", "Purple", 
+                 "Orange", "Gold"].join(", ")))
+        }
+    }
 }
 
 #[derive(Serialize)]
