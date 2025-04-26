@@ -28,7 +28,7 @@ impl<'a> Menu<'a> {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub enum Deck {
     #[serde(rename = "b_red")]
     Red,
@@ -62,17 +62,17 @@ pub enum Deck {
     Erratic,
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Clone, Copy)]
+#[derive(Serialize_repr, Deserialize_repr, Clone, Copy, Debug)]
 #[repr(u8)]
 pub enum Stake {
-    White = 0,
-    Red = 1,
-    Green = 2,
-    Black = 3,
-    Blue = 4,
-    Purple = 5,
-    Orange = 6,
-    Gold = 7,
+    White = 1,
+    Red = 2,
+    Green = 3,
+    Black = 4,
+    Blue = 5,
+    Purple = 6,
+    Orange = 7,
+    Gold = 8,
 }
 
 #[derive(Serialize)]

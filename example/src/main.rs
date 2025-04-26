@@ -22,24 +22,11 @@ async fn main() {
         let screen = balatro.screen().await.unwrap();
         match screen {
             Screen::Menu(menu) => {
-                // Prompt the user to select Deck
-                println!("Select a deck:");
-                let mut deck = String::new();
-                std::io::stdin()
-                    .read_line(&mut deck)
-                    .expect("Failed to read line from stdin");
-                let deck_bundle = format!("{{ \"{}\": null }}", deck.trim());
-                let deck: Deck = serde_json::from_str(&deck_bundle).unwrap();
-                
-                // Prompt the user to select Stake
-                println!("Select a stake:");
-                let mut stake = String::new();
-                std::io::stdin()
-                    .read_line(&mut stake)
-                    .expect("Failed to read line from stdin");
-                let stake_bundle = format!("{{ \"{}\": null }}", stake.trim());
-                let stake: Stake = serde_json::from_str(&stake_bundle).unwrap();
-
+                // Let's assume we want to start a new run with the Red Deck on White Stake
+                let deck = Deck::Red;
+                let stake = Stake::White;
+                log::info!("Starting a new run with {:?} deck on {:?} stake in 5 seconds...", deck, stake);
+                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
                 let select_blind = menu.new_run(deck, stake, None).await.unwrap();
                 println!("Small blind: {:?}", select_blind.small());
                 println!("Big blind: {:?}", select_blind.big());
