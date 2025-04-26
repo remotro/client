@@ -1,4 +1,5 @@
 use log;
+use log::error;
 use remotro::{
     Remotro,
     balatro::{
@@ -23,22 +24,39 @@ async fn main() {
             match screen {
                 Screen::Menu(menu) => {
                     // Prompt the user to select Deck
-                    println!("Select a deck:");
-                    let mut deck = String::new();
-                    std::io::stdin()
-                        .read_line(&mut deck)
-                        .expect("Failed to read line from stdin");
-                    let deck_bundle = format!("{{ \"{}\": null }}", deck.trim());
-                    let deck: Deck = serde_json::from_str(&deck_bundle).unwrap();
+                    let deck: Deck = loop {
+                        println!("Select a deck:");
+                        let mut deck = String::new();
+                        if let Err(e) = std::io::stdin().read_line(&mut deck) {
+                            error!("{e}");
+                            continue;
+                        }
+                        let deck_bundle = format!("{{ \"{}\": null }}", deck.trim());
+                        match serde_json::from_str(&deck_bundle) {
+                            Ok(deck) => break deck,
+                            Err(e) => {
+                                error!("{e}");
+                                continue;
+                            },
+                        }
+                    };
                     
                     // Prompt the user to select Stake
-                    println!("Select a stake:");
-                    let mut stake = String::new();
-                    std::io::stdin()
-                        .read_line(&mut stake)
-                        .expect("Failed to read line from stdin");
-                    let stake_bundle = format!("{{ \"{}\": null }}", stake.trim());
-                    let stake: Stake = serde_json::from_str(&stake_bundle).unwrap();
+                    let stake: Stake = loop {
+                        println!("Select a stake:");
+                        let mut stake = String::new();
+                        if let Err(e) = std::io::stdin().read_line(&mut stake) {
+                            error!("{e}");
+                            continue;
+                        }
+                        let stake_bundle = format!("{{ \"{}\": null }}", stake.trim());
+
+                        match serde_json::from_str(&stake_bundle) {
+                            Ok(stake) => break stake,
+                            Err(e) => error!("{e}"),
+                        }
+                    };
+
                     let select_blind = menu.new_run(deck, stake, None).await.unwrap();
                 }
                 Screen::Blinds(blinds) => {
