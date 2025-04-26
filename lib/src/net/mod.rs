@@ -1,8 +1,8 @@
 pub mod protocol;
 mod tcp;
 
-use tcp::TcpStreamExt;
 use protocol::Request;
+use tcp::TcpStreamExt;
 use tokio::net::TcpListener;
 
 use std::borrow::Cow;
@@ -37,7 +37,6 @@ impl Connection {
         self.stream.recv().await
     }
 }
-
 
 #[derive(Debug)]
 pub enum Error {

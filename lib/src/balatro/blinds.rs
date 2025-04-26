@@ -1,7 +1,6 @@
+use crate::net::Connection;
 use protocol::BlindInfo;
 use serde::{Deserialize, Serialize};
-
-use crate::net::Connection;
 
 pub struct SelectBlind<'a> {
     info: protocol::BlindInfo,
@@ -104,7 +103,7 @@ pub enum Tag {
 pub struct BossBlind {
     pub kind: Boss,
     pub state: BlindState,
-    pub chips: u32
+    pub chips: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -180,7 +179,7 @@ pub(crate) mod protocol {
     use crate::net::protocol::{Packet, Request, Response};
     use serde::{Deserialize, Serialize};
 
-    use super::{BossBlind, SmallBlind, BigBlind};
+    use super::{BigBlind, BossBlind, SmallBlind};
 
     #[derive(Serialize, Deserialize)]
     pub struct BlindInfo {

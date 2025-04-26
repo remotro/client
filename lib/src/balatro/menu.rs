@@ -1,6 +1,5 @@
-use crate::net::Connection;
 use crate::balatro::blinds::SelectBlind;
-use super::Screen;
+use crate::net::Connection;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
@@ -8,12 +7,17 @@ pub struct Menu<'a> {
     connection: &'a mut Connection,
 }
 
-impl <'a> Menu<'a> {
+impl<'a> Menu<'a> {
     pub(crate) fn new(connection: &'a mut Connection) -> Self {
         Self { connection }
     }
 
-    pub async fn new_run(self, deck: Deck, stake: Stake, seed: Option<Seed>) -> Result<SelectBlind<'a>, super::Error> {
+    pub async fn new_run(
+        self,
+        deck: Deck,
+        stake: Stake,
+        seed: Option<Seed>,
+    ) -> Result<SelectBlind<'a>, super::Error> {
         let new_run = protocol::StartRun {
             back: deck,
             stake,
@@ -55,7 +59,7 @@ pub enum Deck {
     #[serde(rename = "b_plasma")]
     Plasma,
     #[serde(rename = "b_erratic")]
-    Erratic
+    Erratic,
 }
 
 #[derive(Serialize_repr, Deserialize_repr, Clone, Copy)]
@@ -75,8 +79,11 @@ pub enum Stake {
 pub struct Seed(String);
 
 pub(crate) mod protocol {
-    use crate::{balatro::blinds::protocol::BlindInfo, net::protocol::{Packet, Request}};
     use super::{Deck, Seed, Stake};
+    use crate::{
+        balatro::blinds::protocol::BlindInfo,
+        net::protocol::{Packet, Request},
+    };
     use serde::Serialize;
 
     // Hide serialization impls here since they're specific to Balatro's
@@ -92,11 +99,10 @@ pub(crate) mod protocol {
     impl Request for StartRun {
         type Expect = Result<BlindInfo, String>;
     }
-    
+
     impl Packet for StartRun {
         fn kind() -> String {
             "main_menu/start_run".to_string()
         }
     }
-
 }
