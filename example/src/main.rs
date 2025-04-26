@@ -7,6 +7,25 @@ use remotro::{
         menu::{Deck, Stake},
     },
 };
+use std::str::FromStr;
+
+fn get_input<T: FromStr<Err = String>>(prompt: &str) -> T {
+    loop {
+        println!("{prompt}");
+        let mut deck = String::new();
+        if let Err(e) = std::io::stdin().read_line(&mut deck) {
+            error!("{e}");
+            continue;
+        }
+        match deck.parse() {
+            Ok(deck) => return deck,
+            Err(e) => {
+                error!("{e}");
+                continue;
+            },
+        }
+    }
+}
 
 #[tokio::main]
 async fn main() {
@@ -24,38 +43,10 @@ async fn main() {
             match screen {
                 Screen::Menu(menu) => {
                     // Prompt the user to select Deck
-                    let deck: Deck = loop {
-                        println!("Select a deck:");
-                        let mut deck = String::new();
-                        if let Err(e) = std::io::stdin().read_line(&mut deck) {
-                            error!("{e}");
-                            continue;
-                        }
-                        let deck_bundle = format!("{{ \"{}\": null }}", deck.trim());
-                        match serde_json::from_str(&deck_bundle) {
-                            Ok(deck) => break deck,
-                            Err(e) => {
-                                error!("{e}");
-                                continue;
-                            },
-                        }
-                    };
+                    let deck: Deck = get_input("Select Deck:");
                     
                     // Prompt the user to select Stake
-                    let stake: Stake = loop {
-                        println!("Select a stake:");
-                        let mut stake = String::new();
-                        if let Err(e) = std::io::stdin().read_line(&mut stake) {
-                            error!("{e}");
-                            continue;
-                        }
-                        let stake_bundle = format!("{{ \"{}\": null }}", stake.trim());
-
-                        match serde_json::from_str(&stake_bundle) {
-                            Ok(stake) => break stake,
-                            Err(e) => error!("{e}"),
-                        }
-                    };
+                    let stake: Stake = get_input("Select stake");
 
                     let select_blind = menu.new_run(deck, stake, None).await.unwrap();
                 }
