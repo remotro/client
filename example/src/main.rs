@@ -1,11 +1,30 @@
-use log;
+use log::{debug, error, info, trace, warn};
 use remotro::{
-    Remotro,
     balatro::{
-        Screen,
         menu::{Deck, Stake},
+        Screen,
     },
+    Remotro,
 };
+use std::str::FromStr;
+
+fn get_input<T: FromStr<Err = String>>(prompt: &str) -> T {
+    loop {
+        println!("{prompt}");
+        let mut item = String::new();
+        if let Err(e) = std::io::stdin().read_line(&mut item) {
+            error!("{e}");
+            continue;
+        }
+        match item.parse() {
+            Ok(item) => return item,
+            Err(e) => {
+                error!("{e}");
+                continue;
+            }
+        }
+    }
+}
 
 #[tokio::main]
 async fn main() {
@@ -13,30 +32,65 @@ async fn main() {
 
     // Host a TCP socket
     let mut remotro = Remotro::host("127.0.0.1", 34143).await.unwrap();
-    log::info!("Remotro hosted on 127.0.0.1:34143");
-    loop {
-        // Wait for a Game to connect
-        let mut balatro = remotro.accept().await.unwrap();
+    info!("Remotro hosted on 127.0.0.1:34143");
 
-        // Check current screen in Game
-        let screen = balatro.screen().await.unwrap();
-        match screen {
-            Screen::Menu(menu) => {
-                // Let's assume we want to start a new run with the Red Deck on White Stake
-                let deck = Deck::Red;
-                let stake = Stake::White;
-                log::info!("Starting a new run with {:?} deck on {:?} stake in 5 seconds...", deck, stake);
-                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-                let select_blind = menu.new_run(deck, stake, None).await.unwrap();
-                println!("Small blind: {:?}", select_blind.small());
-                println!("Big blind: {:?}", select_blind.big());
-                println!("Boss blind: {:?}", select_blind.boss());
+    loop {
+        info!("Waiting for connection");
+        // Wait for a Game to connect
+        let mut balatro = match remotro.accept().await {
+            Ok(b) => {
+                info!("New connection accepted");
+                b
             }
-            _ => {
-                log::error!("(currently) Unimplemented state");
-                // Do another thing
+            Err(e) => {
+                error!("Connection Failed: {e}");
+                continue;
+            }
+        };
+        loop {
+            // Check current screen in Game
+            match balatro.screen().await {
+                Ok(screen) => match screen {
+                    Screen::Menu(menu) => {
+                        // Prompt the user to select Deck
+                        let deck: Deck = get_input("Select Deck:");
+
+                        // Prompt the user to select Stake
+                        let stake: Stake = get_input("Select stake");
+
+                        let blinds = menu.new_run(deck, stake, None).await.unwrap();
+                    /*}
+                    Screen::Blinds(blinds) => { - This is commented out until we have the lib able to return the state of the game*/
+                        println!("Blinds:");
+                        println!("Small blind: {:?}", blinds.small());
+                        println!("Big blind: {:?}", blinds.big());
+                        println!("Boss blind: {:?}", blinds.boss());
+                        println!("Select or skip the blind:");
+                        let mut user_input = String::new();
+                        std::io::stdin()
+                            .read_line(&mut user_input)
+                            .expect("Failed to read line from stdin");
+                        match user_input.trim().to_lowercase().as_str() {
+                            "select" => {
+                                println!("Selecting blind");
+                                blinds.select().await.unwrap();
+                            }
+                            "skip" => {
+                                println!("Skipping blind");
+                                blinds.skip().await.unwrap();
+                            }
+                            _ => {
+                                println!("Invalid input. Please enter Select or Skip.");
+                            }
+                        }
+                    }
+                    _ => continue, //Only needed because state removed, should remove later
+                },
+                Err(e) => {
+                    error!("Connection Failed: {e}");
+                    break;
+                }
             }
         }
-        loop {}
     }
 }
