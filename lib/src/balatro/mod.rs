@@ -1,5 +1,7 @@
 pub mod blinds;
 pub mod menu;
+pub mod hand;
+pub mod deck;
 
 use crate::net::Connection;
 
