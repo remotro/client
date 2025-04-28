@@ -58,9 +58,9 @@ async fn main() {
                         // Prompt the user to select Stake
                         let stake: Stake = get_input("Select stake");
 
-                        menu.new_run(deck, stake, None).await.unwrap();
-                    }
-                    Screen::Blinds(blinds) => {
+                        let blinds = menu.new_run(deck, stake, None).await.unwrap();
+                    /*}
+                    Screen::Blinds(blinds) => {*/
                         println!("Blinds:");
                         println!("Small blind: {:?}", blinds.small());
                         println!("Big blind: {:?}", blinds.big());
@@ -84,6 +84,7 @@ async fn main() {
                             }
                         }
                     }
+                    _ => continue,
                 },
                 Err(e) => {
                     error!("Connection Failed: {e}");

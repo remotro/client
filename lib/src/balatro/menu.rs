@@ -54,6 +54,7 @@ pub enum Stake {
     Orange,
     Gold
 }
+
 impl FromStr for Deck {
     type Err = String;
 
@@ -81,6 +82,7 @@ impl FromStr for Deck {
         }
     }
 }
+
 impl FromStr for Stake {
     type Err = String;
 
