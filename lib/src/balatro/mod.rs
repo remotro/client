@@ -1,5 +1,5 @@
-pub mod menu;
 pub mod blinds;
+pub mod menu;
 
 use crate::net::Connection;
 
