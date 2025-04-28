@@ -60,7 +60,7 @@ async fn main() {
 
                         let blinds = menu.new_run(deck, stake, None).await.unwrap();
                     /*}
-                    Screen::Blinds(blinds) => {*/
+                    Screen::Blinds(blinds) => { - This is commented out until we have the lib able to return the state of the game*/
                         println!("Blinds:");
                         println!("Small blind: {:?}", blinds.small());
                         println!("Big blind: {:?}", blinds.big());
@@ -84,7 +84,7 @@ async fn main() {
                             }
                         }
                     }
-                    _ => continue,
+                    _ => continue, //Only needed because state removed, should remove later
                 },
                 Err(e) => {
                     error!("Connection Failed: {e}");
