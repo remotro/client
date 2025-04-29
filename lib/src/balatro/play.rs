@@ -1,13 +1,13 @@
 use crate::net::Connection;
 use super::deck::Card;
 
-pub struct SelectHand<'a> {
-    info: protocol::HandInfo,
+pub struct Play<'a> {
+    info: protocol::PlayInfo,
     connection: &'a mut Connection,
 }
 
-impl<'a> SelectHand<'a> {
-    pub(crate) fn new(info: protocol::HandInfo,connection: &'a mut Connection) -> Self {
+impl<'a> Play<'a> {
+    pub(crate) fn new(info: protocol::PlayInfo, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
 
@@ -21,16 +21,16 @@ pub(crate) mod protocol {
     use crate::{balatro::deck::Card, net::protocol::{Packet, Response}};
 
     #[derive(Serialize, Deserialize, Clone)]
-    pub struct HandInfo {
+    pub struct PlayInfo {
         pub hand: Vec<Card>
     }
 
-    impl Response for HandInfo {
+    impl Response for PlayInfo {
     }
 
-    impl Packet for HandInfo {
+    impl Packet for PlayInfo {
         fn kind() -> String {
-            "select_hand/info".to_string()
+            "play/hand".to_string()
         }
     }
 }

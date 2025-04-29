@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Card {
     pub edition: Option<Edition>,
     pub enhancement: Option<Enhancement>,
@@ -10,7 +10,7 @@ pub struct Card {
     pub seal: Option<Seal>
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 #[serde(rename_all = "PascalCase")]
 pub enum Suit {
     Spades,
@@ -19,7 +19,7 @@ pub enum Suit {
     Diamonds
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 #[serde(rename_all = "PascalCase")]
 pub enum Rank {
     #[serde(rename = "Ace")]
@@ -47,7 +47,7 @@ pub enum Rank {
     King
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 #[serde(rename_all = "PascalCase")]
 pub enum Enhancement {
     #[serde(rename = "m_wild")]
@@ -68,7 +68,7 @@ pub enum Enhancement {
     Gold
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 #[serde(rename_all = "PascalCase")]
 pub enum Seal {
     #[serde(rename = "blue_seal")]
@@ -81,7 +81,7 @@ pub enum Seal {
     Gold
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum Edition {
     #[serde(rename = "e_base")]
     None,
