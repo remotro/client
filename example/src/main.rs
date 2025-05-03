@@ -73,7 +73,9 @@ async fn main() {
                             }
                             "skip" => {
                                 println!("Skipping blind");
-                                blinds.skip().await.unwrap();
+                                if let Err(e) = blinds.skip().await {
+                                    error!("{e}");
+                                }
                             }
                             _ => {
                                 println!("Invalid input. Please enter Select or Skip.");
@@ -135,7 +137,6 @@ async fn main() {
                             }
                         }
                     }
-                    _ => continue, //Only needed because state removed, should remove later
                 },
                 Err(e) => {
                     error!("Connection Failed: {e}");
