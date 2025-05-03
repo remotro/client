@@ -1,6 +1,7 @@
 use crate::net::Connection;
 use protocol::BlindInfo;
 use serde::{Deserialize, Serialize};
+use super::play::Play;
 
 pub struct SelectBlind<'a> {
     info: protocol::BlindInfo,
@@ -12,14 +13,14 @@ impl<'a> SelectBlind<'a> {
         Self { info, connection }
     }
 
-    pub async fn skip(self) -> Result<(), super::Error> {
-        self.connection.request(protocol::SkipBlind).await??;
-        Ok(())
+    pub async fn select(self) -> Result<Play<'a>, super::Error> {
+        let info = self.connection.request(protocol::SelectBlind).await??;
+        Ok(Play::new(info, self.connection))
     }
 
-    pub async fn select(self) -> Result<(), super::Error> {
-        self.connection.request(protocol::SelectBlind).await??;
-        Ok(())
+    pub async fn skip(self) -> Result<SelectBlind<'a>, super::Error> {
+        let info = self.connection.request(protocol::SkipBlind).await??;
+        Ok(Self { info, connection: self.connection })
     }
 
     pub fn small(&self) -> &SmallBlind {
@@ -176,7 +177,7 @@ pub enum BlindState {
 }
 
 pub(crate) mod protocol {
-    use crate::net::protocol::{Packet, Request, Response};
+    use crate::{balatro::play::protocol::PlayInfo, net::protocol::{Packet, Request, Response}};
     use serde::{Deserialize, Serialize};
 
     use super::{BigBlind, BossBlind, SmallBlind};
@@ -200,7 +201,7 @@ pub(crate) mod protocol {
     pub struct SelectBlind;
 
     impl Request for SelectBlind {
-        type Expect = Result<BlindInfo, String>;
+        type Expect = Result<PlayInfo, String>;
     }
 
     impl Packet for SelectBlind {
