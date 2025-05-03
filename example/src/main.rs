@@ -32,10 +32,10 @@ async fn main() {
                 println!("Big blind: {:?}", select_blind.big());
                 println!("Boss blind: {:?}", select_blind.boss());
                 tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-                let select_hand = select_blind.select().await.unwrap();
-                println!("Selected hand: {:?}", select_hand.hand());
-                
-                
+                let play = select_blind.select().await.unwrap();
+                println!("Selected hand: {:?}", play.hand());
+                let play = play.click(&[0, 1, 2]).await.unwrap();
+                println!("Updated hand: {:?}", play.hand());   
             }
             _ => {
                 log::error!("(currently) Unimplemented state");
