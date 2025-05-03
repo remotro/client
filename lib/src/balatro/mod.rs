@@ -2,7 +2,7 @@ pub mod blinds;
 pub mod menu;
 pub mod play;
 pub mod deck;
-
+pub mod overview;
 use crate::net::Connection;
 
 pub struct Balatro {

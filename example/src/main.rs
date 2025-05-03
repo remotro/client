@@ -1,10 +1,8 @@
 use log::{debug, error, info, trace, warn};
 use remotro::{
-    Remotro,
     balatro::{
-        Screen,
-        menu::{Deck, Stake},
-    },
+        menu::{Deck, Stake}, play::{DiscardResult, Play, PlayResult}, Screen
+    }, Remotro
 };
 use std::str::FromStr;
 
@@ -105,10 +103,32 @@ async fn main() {
                                 play.click(&indices).await.unwrap();
                             },
                             "play" => {
-                                play.play().await.unwrap();
+                                let result = play.play().await.unwrap();
+                                match result {
+                                    PlayResult::Again(play) => {
+                                        println!("must play again");
+                                    },
+                                    PlayResult::RoundOver(_) => {
+                                        println!("Round over");
+                                        break;
+                                    },
+                                    PlayResult::GameOver(_) => {
+                                        println!("Game over");
+                                        break;
+                                    },
+                                }
                             },
                             "discard" => {
-                                play.discard().await.unwrap();
+                                let result = play.discard().await.unwrap();
+                                match result {
+                                    DiscardResult::Again(play) => {
+                                        println!("must discard again");
+                                    },
+                                    DiscardResult::GameOver(_) => {
+                                        println!("Game over");
+                                        break;
+                                    },
+                                }
                             },
                             _ => {
                                 println!("Invalid input. Please enter Play, Select, or Discard.");
