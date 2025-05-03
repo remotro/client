@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::net::Connection;
 use super::{deck::Card, Error};
 
@@ -11,7 +13,7 @@ impl<'a> Play<'a> {
         Self { info, connection }
     }
 
-    pub fn hand(&self) -> &[Card] {
+    pub fn hand(&self) -> &[HandCard] {
         &self.info.hand
     }
 
@@ -21,13 +23,20 @@ impl<'a> Play<'a> {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct HandCard {
+    card: Option<Card>,
+    selected: bool,
+}
+
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
-    use crate::{balatro::deck::Card, net::protocol::{Packet, Request, Response}};
+    use crate::net::protocol::{Packet, Request, Response};
+    use super::HandCard;
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct PlayInfo {
-        pub hand: Vec<Card>
+        pub hand: Vec<HandCard>
     }
 
     impl Response for PlayInfo {
