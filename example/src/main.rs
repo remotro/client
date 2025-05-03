@@ -1,10 +1,10 @@
 use log::{debug, error, info, trace, warn};
 use remotro::{
-    balatro::{
-        menu::{Deck, Stake},
-        Screen,
-    },
     Remotro,
+    balatro::{
+        Screen,
+        menu::{Deck, Stake},
+    },
 };
 use std::str::FromStr;
 
@@ -54,11 +54,9 @@ async fn main() {
                     Screen::Menu(menu) => {
                         // Prompt the user to select Deck
                         let deck: Deck = get_input("Select Deck:");
-
                         // Prompt the user to select Stake
                         let stake: Stake = get_input("Select stake");
-
-                        let blinds = menu.new_run(deck, stake, None).await.unwrap();
+                        menu.new_run(deck, stake, None).await.unwrap();
                     }
                     Screen::SelectBlind(blinds) => {
                         println!("Blinds:");
@@ -87,17 +85,32 @@ async fn main() {
                     Screen::Play(play) => {
                         println!("Play:");
                         println!("Hand: {:?}", play.hand());
-                        println!("Select cards to play:");
+                        println!("Play or select cards to play:");
                         let mut user_input = String::new();
                         std::io::stdin()
                             .read_line(&mut user_input)
                             .expect("Failed to read line from stdin");
-                        let indices: Vec<u32> = user_input
-                            .trim()
-                            .split_whitespace()
-                            .map(|s| s.parse().unwrap())
-                            .collect();
-                        play.click(&indices).await.unwrap();
+                        match user_input.trim().to_lowercase().as_str() {
+                            "play" => {
+                                play.play().await.unwrap();
+                            }
+                            "select" => {
+                                println!("Select cards to play:");
+                                let mut user_input = String::new();
+                                std::io::stdin()
+                                    .read_line(&mut user_input)
+                                    .expect("Failed to read line from stdin");
+                                let indices: Vec<u32> = user_input
+                                    .trim()
+                                    .split_whitespace()
+                                    .map(|s| s.parse().unwrap())
+                                    .collect();
+                                play.click(&indices).await.unwrap();
+                            }
+                            _ => {
+                                println!("Invalid input. Please enter Play or Select.");
+                            }
+                        }
                     }
                     _ => continue, //Only needed because state removed, should remove later
                 },

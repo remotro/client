@@ -21,6 +21,11 @@ impl<'a> Play<'a> {
         let info = self.connection.request(protocol::PlayClick { indices: indices.to_vec() }).await??;
         Ok(Self::new(info, self.connection))
     }
+
+    pub async fn play(self) -> Result<Self, Error> {
+        let info = self.connection.request(protocol::PlayPlay).await??;
+        Ok(Self::new(info, self.connection))
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -60,6 +65,19 @@ pub(crate) mod protocol {
     impl Packet for PlayClick {
         fn kind() -> String {
             "play/click".to_string()
+        }
+    }
+
+    #[derive(Serialize, Deserialize, Clone)]
+    pub struct PlayPlay;
+
+    impl Request for PlayPlay {
+        type Expect = Result<PlayInfo, String>;
+    }
+
+    impl Packet for PlayPlay {
+        fn kind() -> String {
+            "play/play".to_string()
         }
     }
 }
