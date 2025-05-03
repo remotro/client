@@ -84,6 +84,21 @@ async fn main() {
                             }
                         }
                     }
+                    Screen::Play(play) => {
+                        println!("Play:");
+                        println!("Hand: {:?}", play.hand());
+                        println!("Select cards to play:");
+                        let mut user_input = String::new();
+                        std::io::stdin()
+                            .read_line(&mut user_input)
+                            .expect("Failed to read line from stdin");
+                        let indices: Vec<u32> = user_input
+                            .trim()
+                            .split_whitespace()
+                            .map(|s| s.parse().unwrap())
+                            .collect();
+                        play.click(&indices).await.unwrap();
+                    }
                     _ => continue, //Only needed because state removed, should remove later
                 },
                 Err(e) => {
