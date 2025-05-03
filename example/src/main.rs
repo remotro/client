@@ -59,8 +59,8 @@ async fn main() {
                         let stake: Stake = get_input("Select stake");
 
                         let blinds = menu.new_run(deck, stake, None).await.unwrap();
-                    /*}
-                    Screen::Blinds(blinds) => { - This is commented out until we have the lib able to return the state of the game*/
+                    }
+                    Screen::SelectBlind(blinds) => {
                         println!("Blinds:");
                         println!("Small blind: {:?}", blinds.small());
                         println!("Big blind: {:?}", blinds.big());

@@ -16,13 +16,20 @@ impl Balatro {
 
     /// Obtains the current state from the connected Balatro game.
     pub async fn screen(&mut self) -> Result<Screen, Error> {
-        Ok(Screen::Menu(menu::Menu::new(&mut self.connection)))
+        let info = self.connection.request(protocol::GetScreen).await??;
+        let screen = match info {
+            protocol::ScreenInfo::Menu(_) => Screen::Menu(menu::Menu::new(&mut self.connection)),
+            protocol::ScreenInfo::SelectBlind(blinds) => Screen::SelectBlind(blinds::SelectBlind::new(blinds, &mut self.connection)),
+            protocol::ScreenInfo::Play(play) => Screen::Play(play::Play::new(play, &mut self.connection)),
+        };
+        Ok(screen)
     }
 }
 
 pub enum Screen<'a> {
     Menu(menu::Menu<'a>),
-    Blinds(blinds::SelectBlind<'a>),
+    SelectBlind(blinds::SelectBlind<'a>),
+    Play(play::Play<'a>),
 }
 
 #[derive(Debug)]
@@ -48,5 +55,42 @@ impl From<crate::net::Error> for Error {
 impl From<String> for Error {
     fn from(err: String) -> Self {
         Error::Game(err)
+    }
+}
+
+pub(crate) mod protocol {
+    use serde::{Deserialize, Serialize};
+
+    use crate::net::protocol::{Packet, Request, Response};
+
+    use super::{blinds, menu, play, Screen};
+
+    #[derive(Serialize, Deserialize)]
+    pub struct GetScreen;
+
+    impl Request for GetScreen {
+        type Expect = Result<ScreenInfo, String>;
+    }
+
+    impl Packet for GetScreen {
+        fn kind() -> String {
+            "screen/get".to_string()
+        }
+    }
+
+    #[derive(Serialize, Deserialize)]
+    pub enum ScreenInfo {
+        // Stupid workaround to make serde happy with { Menu = [] }
+        Menu(Vec<()>),
+        SelectBlind(blinds::protocol::BlindInfo),
+        Play(play::protocol::PlayInfo),
+    }
+
+    impl Response for ScreenInfo {}
+
+    impl Packet for ScreenInfo {
+        fn kind() -> String {
+            "screen/current".to_string()
+        }
     }
 }
