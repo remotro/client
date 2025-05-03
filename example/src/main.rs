@@ -85,15 +85,12 @@ async fn main() {
                     Screen::Play(play) => {
                         println!("Play:");
                         println!("Hand: {:?}", play.hand());
-                        println!("Play or select cards to play:");
+                        println!("Select cards, play cards, or discard cards:");
                         let mut user_input = String::new();
                         std::io::stdin()
                             .read_line(&mut user_input)
                             .expect("Failed to read line from stdin");
                         match user_input.trim().to_lowercase().as_str() {
-                            "play" => {
-                                play.play().await.unwrap();
-                            }
                             "select" => {
                                 println!("Select cards to play:");
                                 let mut user_input = String::new();
@@ -106,9 +103,15 @@ async fn main() {
                                     .map(|s| s.parse().unwrap())
                                     .collect();
                                 play.click(&indices).await.unwrap();
-                            }
+                            },
+                            "play" => {
+                                play.play().await.unwrap();
+                            },
+                            "discard" => {
+                                play.discard().await.unwrap();
+                            },
                             _ => {
-                                println!("Invalid input. Please enter Play or Select.");
+                                println!("Invalid input. Please enter Play, Select, or Discard.");
                             }
                         }
                     }

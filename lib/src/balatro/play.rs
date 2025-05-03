@@ -26,6 +26,11 @@ impl<'a> Play<'a> {
         let info = self.connection.request(protocol::PlayPlay).await??;
         Ok(Self::new(info, self.connection))
     }
+
+    pub async fn discard(self) -> Result<Self, Error> {
+        let info = self.connection.request(protocol::PlayDiscard).await??;
+        Ok(Self::new(info, self.connection))
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -78,6 +83,19 @@ pub(crate) mod protocol {
     impl Packet for PlayPlay {
         fn kind() -> String {
             "play/play".to_string()
+        }
+    }
+
+    #[derive(Serialize, Deserialize, Clone)]
+    pub struct PlayDiscard;
+
+    impl Request for PlayDiscard {
+        type Expect = Result<PlayInfo, String>;
+    }
+
+    impl Packet for PlayDiscard {
+        fn kind() -> String {
+            "play/discard".to_string()
         }
     }
 }
