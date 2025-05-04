@@ -60,7 +60,7 @@ pub enum Tag {
     Negative,
     #[serde(rename = "tag_foil")]
     Foil,
-    #[serde(rename = "tag_holographic")]
+    #[serde(rename = "tag_holo")]
     Holographic,
     #[serde(rename = "tag_polychrome")]
     Polychrome,
