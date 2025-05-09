@@ -89,7 +89,7 @@ async fn main() {
                         println!("Score: {}", play.score());
                         println!("Hands: {}", play.hands());
                         println!("Discards: {}", play.discards());
-                        println!("Select cards, play cards, or discard cards:");
+                        println!("Select, Play, or Discard cards:");
                         let mut user_input = String::new();
                         std::io::stdin()
                             .read_line(&mut user_input)
