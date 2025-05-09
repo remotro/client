@@ -50,6 +50,7 @@ async fn main() {
             match balatro.screen().await {
                 Ok(screen) => match screen {
                     Screen::Menu(menu) => {
+                        println!("Main Menu:");
                         // Prompt the user to select Deck
                         let deck: Deck = get_input("Select Deck:");
                         // Prompt the user to select Stake
