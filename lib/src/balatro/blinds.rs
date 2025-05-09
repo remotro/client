@@ -39,14 +39,14 @@ impl<'a> SelectBlind<'a> {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SmallBlind {
     pub state: BlindState,
-    pub chips: u32,
+    pub chips: f64,
     pub tag: Tag,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BigBlind {
     pub state: BlindState,
-    pub chips: u32,
+    pub chips: f64,
     pub tag: Tag,
 }
 
@@ -104,7 +104,7 @@ pub enum Tag {
 pub struct BossBlind {
     pub kind: Boss,
     pub state: BlindState,
-    pub chips: u32,
+    pub chips: f64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
