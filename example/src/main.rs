@@ -105,31 +105,33 @@ async fn main() {
                                 play.click(&indices).await.unwrap();
                             },
                             "play" => {
-                                let result = play.play().await.unwrap();
+                                let result = play.play().await;
                                 match result {
-                                    PlayResult::Again(play) => {
-                                        println!("must play again");
+                                    Ok(PlayResult::Again(play)) => {
+                                        println!("Must play again");
                                     },
-                                    PlayResult::RoundOver(_) => {
+                                    Ok(PlayResult::RoundOver(_)) => {
                                         println!("Round over");
                                         break;
                                     },
-                                    PlayResult::GameOver(_) => {
+                                    Ok(PlayResult::GameOver(_)) => {
                                         println!("Game over");
                                         break;
                                     },
+                                    Err(e) => println!("{e}"),
                                 }
                             },
                             "discard" => {
-                                let result = play.discard().await.unwrap();
+                                let result = play.discard().await;
                                 match result {
-                                    DiscardResult::Again(play) => {
-                                        println!("must discard again");
+                                    Ok(DiscardResult::Again(play)) => {
+                                        println!("Must discard again");
                                     },
-                                    DiscardResult::GameOver(_) => {
+                                    Ok(DiscardResult::GameOver(_)) => {
                                         println!("Game over");
                                         break;
                                     },
+                                    Err(e) => println!("{e}"),
                                 }
                             },
                             _ => {
