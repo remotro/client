@@ -12,9 +12,20 @@ impl<'a> Play<'a> {
     pub(crate) fn new(info: protocol::PlayInfo, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
-
     pub fn hand(&self) -> &[HandCard] {
         &self.info.hand
+    }
+    pub fn requirement(&self) -> &f64 {
+        &self.info.requirement
+    }
+    pub fn score(&self) -> &f64 {
+        &self.info.score
+    }
+    pub fn hands(&self) -> &u8 {
+        &self.info.hands
+    }
+    pub fn discards(&self) -> &u8 {
+        &self.info.discards
     }
 
     pub async fn click(self, indices: &[u32]) -> Result<Self, Error> {
@@ -66,7 +77,11 @@ pub(crate) mod protocol {
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct PlayInfo {
-        pub hand: Vec<HandCard>
+        pub hand: Vec<HandCard>,
+        pub requirement: f64,
+        pub score: f64,
+        pub hands: u8,
+        pub discards: u8
     }
 
     impl Response for PlayInfo {
