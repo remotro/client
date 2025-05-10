@@ -27,6 +27,9 @@ impl<'a> Play<'a> {
     pub fn discards(&self) -> &u8 {
         &self.info.discards
     }
+    pub fn money(&self) -> &u32 {
+        &self.info.money
+    }
 
     pub async fn click(self, indices: &[u32]) -> Result<Self, Error> {
         let info = self.connection.request(protocol::PlayClick { indices: indices.to_vec() }).await??;
@@ -81,7 +84,8 @@ pub(crate) mod protocol {
         pub requirement: f64,
         pub score: f64,
         pub hands: u8,
-        pub discards: u8
+        pub discards: u8,
+        pub money: u32
     }
 
     impl Response for PlayInfo {

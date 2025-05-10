@@ -1,7 +1,9 @@
 use log::{debug, error, info, trace, warn};
 use remotro::{
     balatro::{
-        menu::{Deck, Stake}, play::{DiscardResult, Play, PlayResult}, Screen
+        menu::{Deck, Stake},
+        play::{DiscardResult, Play, PlayResult},
+        Screen
     }, Remotro
 };
 use std::str::FromStr;
@@ -90,6 +92,7 @@ async fn main() {
                         println!("Score: {}", play.score());
                         println!("Hands: {}", play.hands());
                         println!("Discards: {}", play.discards());
+                        println!("Money: ${}",play.money());
                         println!("Select, Play, or Discard cards:");
                         let mut user_input = String::new();
                         std::io::stdin()
@@ -119,7 +122,6 @@ async fn main() {
                                     },
                                     Ok(PlayResult::RoundOver(_)) => {
                                         println!("Round over");
-                                        break;
                                     },
                                     Ok(PlayResult::GameOver(_)) => {
                                         println!("Game over");
