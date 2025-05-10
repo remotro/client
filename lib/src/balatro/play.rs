@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::net::Connection;
-use super::{deck::Card, overview::{GameOverview, RoundOverview}, Error};
+use super::{deck::Card, overview::{GameOverview, RoundOverview}, Error, blinds::CurrentBlind};
 
 pub struct Play<'a> {
     info: protocol::PlayInfo,
@@ -15,6 +15,10 @@ impl<'a> Play<'a> {
 
     pub fn hand(&self) -> &[HandCard] {
         &self.info.hand
+    }
+
+    pub fn current_blind(&self) -> &CurrentBlind {
+        &self.info.current_blind
     }
 
     pub async fn click(self, indices: &[u32]) -> Result<Self, Error> {
@@ -62,10 +66,11 @@ pub struct HandCard {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::net::protocol::{Packet, Request, Response};
-    use super::HandCard;
+    use super::{HandCard, CurrentBlind};
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct PlayInfo {
+        pub current_blind: CurrentBlind,
         pub hand: Vec<HandCard>
     }
 

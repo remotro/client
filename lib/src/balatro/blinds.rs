@@ -23,28 +23,35 @@ impl<'a> SelectBlind<'a> {
         Ok(Self { info, connection: self.connection })
     }
 
-    pub fn small(&self) -> &SmallBlind {
+    pub fn small(&self) -> &SmallBlindChoice {
         &self.info.small
     }
 
-    pub fn big(&self) -> &BigBlind {
+    pub fn big(&self) -> &BigBlindChoice {
         &self.info.big
     }
 
-    pub fn boss(&self) -> &BossBlind {
+    pub fn boss(&self) -> &BossBlindChoice {
         &self.info.boss
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct SmallBlind {
+pub enum CurrentBlind {
+    Small { chips: u32 },
+    Big { chips: u32 },
+    Boss { kind: Boss, chips: u32 },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SmallBlindChoice {
     pub state: BlindState,
     pub chips: u32,
     pub tag: Tag,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct BigBlind {
+pub struct BigBlindChoice {
     pub state: BlindState,
     pub chips: u32,
     pub tag: Tag,
@@ -101,7 +108,7 @@ pub enum Tag {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct BossBlind {
+pub struct BossBlindChoice {
     pub kind: Boss,
     pub state: BlindState,
     pub chips: u32,
@@ -180,13 +187,13 @@ pub(crate) mod protocol {
     use crate::{balatro::play::protocol::PlayInfo, net::protocol::{Packet, Request, Response}};
     use serde::{Deserialize, Serialize};
 
-    use super::{BigBlind, BossBlind, SmallBlind};
+    use super::{BigBlindChoice, BossBlindChoice, SmallBlindChoice};
 
     #[derive(Serialize, Deserialize)]
     pub struct BlindInfo {
-        pub small: SmallBlind,
-        pub big: BigBlind,
-        pub boss: BossBlind,
+        pub small: SmallBlindChoice,
+        pub big: BigBlindChoice,
+        pub boss: BossBlindChoice,
     }
 
     impl Response for BlindInfo {}
