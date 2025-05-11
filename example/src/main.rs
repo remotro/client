@@ -1,8 +1,8 @@
-use log::{debug, error, info, trace, warn};
+use log::{error, info};
 use remotro::{
     balatro::{
         menu::{Deck, Stake},
-        play::{DiscardResult, Play, PlayResult},
+        play::{DiscardResult, PlayResult},
         Screen
     }, Remotro
 };

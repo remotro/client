@@ -63,7 +63,7 @@ pub(crate) mod protocol {
 
     use crate::net::protocol::{Packet, Request, Response};
 
-    use super::{blinds, menu, play, Screen};
+    use super::{blinds, play};
 
     #[derive(Serialize, Deserialize)]
     pub struct GetScreen;
