@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
-
-use crate::net::Connection;
+use crate::{balatro_enum, net::Connection};
 
 pub struct Shop<'a> {
     info: protocol::ShopInfo,
@@ -26,19 +25,6 @@ impl<'a> Shop<'a> {
         let info = self.connection.request(protocol::BuyBooster { index: index }).await;
         Ok(Self::new(info, self.connection))
     }
-}
-
-#[macro_export]
-macro_rules! balatro_enum {
-    ($name:ident { $($item:ident = $identifier:literal),* $(,)? }) => {
-        #[derive(Serialize, Deserialize, Clone, Debug)]
-        enum $name {
-            $(
-                #[serde(rename = $identifier)]
-                $item,
-            )*
-        }
-    };
 }
 
 balatro_enum!(Boosters {
@@ -92,8 +78,6 @@ balatro_enum!(Vouchers {
     TarotMerchant = "v_tarot_merchant",
     TarotTycoon = "v_tarot_tycoon",
 });
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
 
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
