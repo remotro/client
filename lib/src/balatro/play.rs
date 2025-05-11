@@ -13,12 +13,28 @@ impl<'a> Play<'a> {
         Self { info, connection }
     }
 
+    pub fn blind(&self) -> &CurrentBlind {
+        &self.info.current_blind
+    }
+
     pub fn hand(&self) -> &[HandCard] {
         &self.info.hand
     }
 
-    pub fn current_blind(&self) -> &CurrentBlind {
-        &self.info.current_blind
+    pub fn score(&self) -> &f64 {
+        &self.info.score
+    }
+
+    pub fn hands(&self) -> &u8 {
+        &self.info.hands
+    }
+
+    pub fn discards(&self) -> &u8 {
+        &self.info.discards
+    }
+
+    pub fn money(&self) -> &u32 {
+        &self.info.money
     }
 
     pub async fn click(self, indices: &[u32]) -> Result<Self, Error> {
@@ -71,7 +87,11 @@ pub(crate) mod protocol {
     #[derive(Serialize, Deserialize, Clone)]
     pub struct PlayInfo {
         pub current_blind: CurrentBlind,
-        pub hand: Vec<HandCard>
+        pub hand: Vec<HandCard>,
+        pub score: f64,
+        pub hands: u8,
+        pub discards: u8,
+        pub money: u32
     }
 
     impl Response for PlayInfo {
