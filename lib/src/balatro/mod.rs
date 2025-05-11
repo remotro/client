@@ -2,6 +2,8 @@ pub mod blinds;
 pub mod menu;
 pub mod play;
 pub mod deck;
+pub mod shop;
+pub mod util;
 pub mod overview;
 use crate::net::Connection;
 
@@ -21,6 +23,7 @@ impl Balatro {
             protocol::ScreenInfo::Menu(_) => Screen::Menu(menu::Menu::new(&mut self.connection)),
             protocol::ScreenInfo::SelectBlind(blinds) => Screen::SelectBlind(blinds::SelectBlind::new(blinds, &mut self.connection)),
             protocol::ScreenInfo::Play(play) => Screen::Play(play::Play::new(play, &mut self.connection)),
+            protocol::ScreenInfo::Shop(shop) => Screen::Shop(shop::Shop::new(shop, &mut self.connection)),
         };
         Ok(screen)
     }
@@ -30,6 +33,7 @@ pub enum Screen<'a> {
     Menu(menu::Menu<'a>),
     SelectBlind(blinds::SelectBlind<'a>),
     Play(play::Play<'a>),
+    Shop(shop::Shop<'a>),
 }
 
 #[derive(Debug)]
@@ -84,6 +88,7 @@ pub(crate) mod protocol {
         Menu(Vec<()>),
         SelectBlind(blinds::protocol::BlindInfo),
         Play(play::protocol::PlayInfo),
+        Shop(shop::protocol::ShopInfo),
     }
 
     impl Response for ScreenInfo {}
