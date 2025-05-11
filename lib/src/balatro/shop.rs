@@ -86,17 +86,92 @@ pub(crate) mod protocol {
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopInfo {
-        pub jokers: ,
-        pub vouchers: ,
-        pub boosters: ,
+        pub main: Vec<()>,
+        pub vouchers: Vec<Vouchers>,
+        pub boosters: Vec<Boosters>,
     }
 
     impl Response for ShopInfo {
+        type Expect = Result<ShopInfo, String>;
     }
 
     impl Packet for ShopInfo {
         fn kind() -> String {
             "shop/info".to_string()
+        }
+    }
+
+    #[derive(Serialize, Deserialize, Clone)]
+    pub struct ShopBuyMain {
+        pub index: u8
+    }
+
+    impl Request for ShopBuyMain {
+        type Expect = Result<ShopInfo, String>;
+    }
+
+    impl Packet for ShopBuyMain {
+        fn kind() -> String {
+            "shop/buymain".to_string()
+        }
+    }
+
+    #[derive(Serialize, Deserialize, Clone)]
+    pub struct ShopBuyUse {
+        pub index: u8
+    }
+
+    impl Request for ShopBuyUse {
+        type Expect = Result<ShopInfo, String>;
+    }
+
+    impl Packet for ShopBuyUse {
+        fn kind() -> String {
+            "shop/buyuse".toString()
+        }
+    }
+    
+    #[derive(Serialize, Deserialize, Clone)]
+    pub struct ShopBuyVoucher {
+        pub index: u8
+    }
+
+    impl Request for ShopBuyVoucher {
+        type Expect = Result<ShopInfo, String>;
+    }
+
+    impl Packet for ShopBuyVoucher {
+        fn kind() -> String {
+            "shop/buyvoucher".to_string()
+        }
+    }
+    
+    #[derive(Serialize, Deserialize, Clone)]
+    pub struct ShopBuyBooster {
+        pub index: u8
+    }
+
+    impl Request for ShopBuyBooster {
+        type Expect = Result<Vec<()>, String>;
+    }
+
+    impl Packet for ShopBuyBooster {
+        fn kind() -> String {
+            "shop/buybooster".to_string()
+        }
+    }
+
+    #[derive(Serialize, Deserialize, Clone)]
+    pub struct ShopContinue {
+    }
+    
+    impl Request for ShopContinue {
+        type Expect = Result<BlindInfo, String>;
+    }
+
+    impl Packet for ShopContinue {
+        fn kind() -> String {
+            "shop/continue".to_string()
         }
     }
 }
