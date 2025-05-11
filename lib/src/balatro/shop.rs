@@ -29,7 +29,7 @@ impl<'a> Shop<'a> {
 }
 
 #[macro_export]
-macro_rules! define_enum {
+macro_rules! balatro_enum {
     ($name:ident { $($item:ident = $identifier:literal),* $(,)? }) => {
         #[derive(Serialize, Deserialize, Clone, Debug)]
         enum $name {
@@ -41,7 +41,7 @@ macro_rules! define_enum {
     };
 }
 
-define_enum!(Boosters {
+balatro_enum!(Boosters {
     ArcanaNormal = "p_arcana_normal",
     ArcanaMega = "p_arcana_mega",
     ArcanaJumbo = "p_arcana_jumbo",
@@ -58,7 +58,7 @@ define_enum!(Boosters {
     StandardMega = "p_standard_mega",
     StandardJumbo = "p_standard_jumbo",
 });
-define_enum!(Vouchers {
+balatro_enum!(Vouchers {
     Blank = "v_blank",
     Antimatter = "v_antimatter",
     ClearanceSale = "v_clearance_sale",
