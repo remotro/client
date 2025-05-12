@@ -5,7 +5,20 @@ pub mod deck;
 pub mod shop;
 pub mod util;
 pub mod overview;
-use crate::net::Connection;
+
+pub mod jokers;
+pub mod consumables;
+use crate::{
+    net::Connection,
+    balatro::{
+        jokers::Joker,
+        consumables::{
+            Tarot,
+            Planet,
+            Spectral
+        }
+    }
+};
 
 pub struct Balatro {
     connection: Connection,

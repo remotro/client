@@ -1,3 +1,4 @@
+use serde::{Serialize, Deserialize};
 use crate::balatro_enum;
 balatro_enum!(Joker {
     Joker = "j_joker",
