@@ -101,10 +101,7 @@ pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::{
         net::protocol::{Packet, Request, Response},
-        balatro::{
-            Error, Joker, Planet, Tarot, Spectral,
-            blinds::protocol::BlindInfo
-        },
+        balatro::blinds::protocol::BlindInfo,
     };
     use super::{MainCard, Vouchers, Boosters};
 
