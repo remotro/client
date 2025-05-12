@@ -27,6 +27,14 @@ impl<'a> Shop<'a> {
     }
 }
 
+pub enum MainCard {
+    Joker,
+    Planet,
+    Tarot,
+    Spectral,
+    PlayingCard,
+}
+
 balatro_enum!(Boosters {
     ArcanaNormal = "p_arcana_normal",
     ArcanaMega = "p_arcana_mega",
@@ -81,12 +89,13 @@ balatro_enum!(Vouchers {
 
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
-    use crate::net::protocol::{Packet, Request, Response};
-    use super::{HandCard, CurrentBlind};
+    use crate::{balatro::blinds::protocol::BlindInfo,
+    net::protocol::{Packet, Request, Response}};
+    use super::{ShopCards, Joker, Planet, Tarot, Spectral};
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopInfo {
-        pub main: Vec<()>,
+        pub main: Vec<MainCard>,
         pub vouchers: Vec<Vouchers>,
         pub boosters: Vec<Boosters>,
     }
@@ -127,7 +136,7 @@ pub(crate) mod protocol {
 
     impl Packet for ShopBuyUse {
         fn kind() -> String {
-            "shop/buyuse".toString()
+            "shop/buyuse".to_string()
         }
     }
     
