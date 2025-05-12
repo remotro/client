@@ -1,7 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::net::Connection;
-use super::{deck::Card, overview::{GameOverview, RoundOverview}, Error, blinds::CurrentBlind};
+use super::{
+    deck::Card,
+    overview::{GameOverview, RoundOverview},
+    Error,blinds::CurrentBlind
+};
 
 pub struct Play<'a> {
     info: protocol::PlayInfo,
@@ -74,8 +78,7 @@ pub(crate) mod protocol {
         pub hand: Vec<HandCard>
     }
 
-    impl Response for PlayInfo {
-    }
+    impl Response for PlayInfo {}
 
     impl Packet for PlayInfo {
         fn kind() -> String {
@@ -131,8 +134,7 @@ pub(crate) mod protocol {
         GameOver(Vec<()>),
     }
 
-    impl Response for PlayResult {
-    }
+    impl Response for PlayResult {}
 
     impl Packet for PlayResult {
         fn kind() -> String {
@@ -146,8 +148,7 @@ pub(crate) mod protocol {
         GameOver(Vec<()>),
     }
 
-    impl Response for DiscardResult {
-    }
+    impl Response for DiscardResult {}
 
     impl Packet for DiscardResult {
         fn kind() -> String {

@@ -6,7 +6,7 @@ use crate::{balatro_enum, net::Connection,
         Tarot,
         Planet,
         Spectral,
-        deck::Card,
+        deck::Card
     }
 };
 
@@ -19,23 +19,24 @@ impl<'a> Shop<'a> {
         Self { info, connection }
     }
     pub async fn buy_main(self, index: u8) -> Result<Self, Error> {
-        let info = self.connection.request(protocol::ShopBuyMain { index: index }).await;
+        let info = self.connection.request(protocol::ShopBuyMain { index: index }).await??;
         Ok(Self::new(info, self.connection))
     }
     pub async fn buy_and_use(self, index: u8) -> Result<Self, Error> {
-        let info = self.connection.request(protocol::ShopBuyUse { index: index }).await;
+        let info = self.connection.request(protocol::ShopBuyUse { index: index }).await??;
         Ok(Self::new(info, self.connection))
     }
     pub async fn buy_voucher(self, index: u8) -> Result<Self, Error> {
-        let info = self.connection.request(protocol::ShopBuyVoucher { index: index }).await;
+        let info = self.connection.request(protocol::ShopBuyVoucher { index: index }).await??;
         Ok(Self::new(info, self.connection))
     }
     pub async fn buy_booster(self, index: u8) -> Result<Self, Error> {
-        let info = self.connection.request(protocol::ShopBuyBooster { index: index }).await;
+        let info = self.connection.request(protocol::ShopBuyBooster { index: index }).await??;
         Ok(Self::new(info, self.connection))
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum MainCard {
     Joker(Joker),
     Planet(Planet),
@@ -99,10 +100,11 @@ balatro_enum!(Vouchers {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::{
+        net::protocol::{Packet, Request, Response},
         balatro::{
             Error, Joker, Planet, Tarot, Spectral,
-            blinds::protocol::BlindInfo},
-        net::protocol::{Packet, Request, Response}
+            blinds::protocol::BlindInfo
+        },
     };
     use super::{MainCard, Vouchers, Boosters};
 
@@ -113,9 +115,7 @@ pub(crate) mod protocol {
         pub boosters: Vec<Boosters>,
     }
 
-    impl Response for ShopInfo {
-        type Expect = Result<ShopInfo, String>;
-    }
+    impl Response for ShopInfo {}
 
     impl Packet for ShopInfo {
         fn kind() -> String {
@@ -174,7 +174,7 @@ pub(crate) mod protocol {
     }
 
     impl Request for ShopBuyBooster {
-        type Expect = Result<Vec<()>, String>;
+        type Expect = Result<ShopInfo, String>;
     }
 
     impl Packet for ShopBuyBooster {
