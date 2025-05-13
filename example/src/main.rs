@@ -123,6 +123,13 @@ async fn main() {
                                     Ok(PlayResult::RoundOver(overview)) => {
                                         println!("Round over");
                                         println!("Total money: {}", overview.total_money());
+                                        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                                        let result = overview.cash_out().await;
+                                        match result {
+                                            Ok(_) => println!("Cash out successful"),
+                                            Err(e) => println!("{e}"),
+                                        }
+                                        break;
                                     },
                                     Ok(PlayResult::GameOver(_)) => {
                                         println!("Game over");
