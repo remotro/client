@@ -1,7 +1,9 @@
 use log::{debug, error, info, trace, warn};
 use remotro::{
     balatro::{
-        menu::{Deck, Stake}, play::{DiscardResult, Play, PlayResult}, Screen
+        menu::{Deck, Stake}, 
+        play::{DiscardResult, Play, PlayResult},
+        Screen
     }, Remotro
 };
 use std::str::FromStr;
@@ -136,6 +138,9 @@ async fn main() {
                                 println!("Invalid input. Please enter Play, Select, or Discard.");
                             }
                         }
+                    }
+                    Screen::Shop(shop) => {
+                        println!("Shop");
                     }
                 },
                 Err(e) => {
