@@ -120,8 +120,9 @@ async fn main() {
                                     Ok(PlayResult::Again(play)) => {
                                         println!("Must play again");
                                     },
-                                    Ok(PlayResult::RoundOver(_)) => {
+                                    Ok(PlayResult::RoundOver(overview)) => {
                                         println!("Round over");
+                                        println!("Total money: {}", overview.total_money());
                                     },
                                     Ok(PlayResult::GameOver(_)) => {
                                         println!("Game over");
