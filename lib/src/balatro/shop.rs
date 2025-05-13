@@ -1,12 +1,13 @@
 use serde::{Deserialize, Serialize};
-use crate::{balatro_enum, net::Connection, 
+use crate::{balatro_enum, net::Connection,
     balatro::{
         Error,
         Joker,
         Tarot,
         Planet,
         Spectral,
-        deck::Card
+        deck::Card,
+        blinds::SelectBlind,
     }
 };
 
@@ -33,6 +34,14 @@ impl<'a> Shop<'a> {
     pub async fn buy_booster(self, index: u8) -> Result<Self, Error> {
         let info = self.connection.request(protocol::ShopBuyBooster { index: index }).await??;
         Ok(Self::new(info, self.connection))
+    }
+    pub async fn reroll(self) -> Result<Self, Error> {
+        let info = self.connection.request(protocol::ShopReroll {}).await??;
+        Ok(Self::new(info, self.connection))
+    }
+    pub async fn leave_shop(self) -> Result<SelectBlind<'a>, Error> {
+        let info = self.connection.request(protocol::ShopContinue {}).await??;
+        Ok(SelectBlind::new(info, self.connection))
     }
 }
 
@@ -180,9 +189,22 @@ pub(crate) mod protocol {
         }
     }
 
+
     #[derive(Serialize, Deserialize, Clone)]
-    pub struct ShopContinue {
+    pub struct ShopReroll {}
+    
+    impl Request for ShopReroll {
+        type Expect = Result<ShopInfo, String>;
     }
+
+    impl Packet for ShopReroll {
+        fn kind() -> String {
+            "shop/reroll".to_string()
+        }
+    }
+
+    #[derive(Serialize, Deserialize, Clone)]
+    pub struct ShopContinue {}
     
     impl Request for ShopContinue {
         type Expect = Result<BlindInfo, String>;
