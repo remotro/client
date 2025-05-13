@@ -19,6 +19,16 @@ impl<'a> Shop<'a> {
     pub(crate) fn new(info: protocol::ShopInfo, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
+    pub fn main_cards(&self) -> &[MainCard] {
+        &self.info.main
+    }
+    pub fn vouchers(&self) -> &[Vouchers] {
+        &self.info.vouchers
+    }
+    pub fn boosters(&self) -> &[Boosters] {
+        &self.info.boosters
+    }
+
     pub async fn buy_main(self, index: u8) -> Result<Self, Error> {
         let info = self.connection.request(protocol::ShopBuyMain { index: index }).await??;
         Ok(Self::new(info, self.connection))
