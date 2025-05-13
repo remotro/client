@@ -46,14 +46,14 @@ pub enum CurrentBlind {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SmallBlindChoice {
     pub state: BlindState,
-    pub chips: u32,
+    pub chips: f64,
     pub tag: Tag,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BigBlindChoice {
     pub state: BlindState,
-    pub chips: u32,
+    pub chips: f64,
     pub tag: Tag,
 }
 
@@ -87,7 +87,7 @@ balatro_enum!(Tag {
 pub struct BossBlindChoice {
     pub kind: Boss,
     pub state: BlindState,
-    pub chips: u32,
+    pub chips: f64,
 }
 balatro_enum!(Boss {
     TheOx = "bl_ox",
