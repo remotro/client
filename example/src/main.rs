@@ -114,7 +114,6 @@ async fn main() {
                                     },
                                     PlayResult::RoundOver(_) => {
                                         println!("Round over");
-                                        break;
                                     },
                                     PlayResult::GameOver(_) => {
                                         println!("Game over");
