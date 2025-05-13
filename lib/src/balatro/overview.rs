@@ -20,6 +20,8 @@ impl<'a> RoundOverview<'a> {
                 protocol::EarningKind::Tag(t) => EarningKind::Tag(t.clone()),
                 protocol::EarningKind::Blind(_) => EarningKind::Blind,
                 protocol::EarningKind::Interest(_) => EarningKind::Interest,
+                protocol::EarningKind::Hands(h) => EarningKind::Hands(h),
+                protocol::EarningKind::Discards(d) => EarningKind::Discards(d),
             };
             Earning { kind, value: e.value }
         }).collect()
@@ -47,6 +49,8 @@ pub enum EarningKind {
     Tag(Tag),
     Blind,
     Interest,
+    Hands(u64),
+    Discards(u64),
 }
 
 pub struct GameOverview<'a> {
@@ -90,6 +94,8 @@ pub(crate) mod protocol {
         Tag(Tag),
         Blind(Vec<()>),
         Interest(Vec<()>),
+        Hands(u64),
+        Discards(u64),
     }
 
     #[derive(Serialize, Deserialize, Clone)]
