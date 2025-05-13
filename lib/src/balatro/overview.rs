@@ -1,6 +1,8 @@
 use crate::net::Connection;
 use crate::balatro::Error;
 
+use super::blinds::Tag;
+
 pub struct RoundOverview<'a> {
     connection: &'a mut Connection,
     info: protocol::RoundOverviewInfo,
@@ -11,14 +13,40 @@ impl<'a> RoundOverview<'a> {
         Self { info, connection }
     }
 
-    pub fn total_money(&self) -> u64 {
-        self.info.total_money
+    pub fn earnings(&self) -> Vec<Earning> {
+        self.info.earnings.iter().map(|e| {
+            let kind = match e.kind.clone() {
+                protocol::EarningKind::Joker(s) => EarningKind::Joker(s.clone()),
+                protocol::EarningKind::Tag(t) => EarningKind::Tag(t.clone()),
+                protocol::EarningKind::Blind(_) => EarningKind::Blind,
+                protocol::EarningKind::Interest(_) => EarningKind::Interest,
+            };
+            Earning { kind, value: e.value }
+        }).collect()
+    }
+
+    pub fn total_earned(&self) -> u64 {
+        self.info.total_earned
     }
 
     pub async fn cash_out(self) -> Result<(), Error> {
         let info = self.connection.request(protocol::CashOut).await??;
         Ok(())
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct Earning {
+    pub kind: EarningKind,
+    pub value: u64,
+}
+
+#[derive(Clone, Debug)]
+pub enum EarningKind {
+    Joker(String),
+    Tag(Tag),
+    Blind,
+    Interest,
 }
 
 pub struct GameOverview<'a> {
@@ -34,11 +62,12 @@ impl<'a> GameOverview<'a> {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
 
-    use crate::net::protocol::{Packet, Request, Response};
+    use crate::{balatro::blinds::Tag, net::protocol::{Packet, Request, Response}};
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct RoundOverviewInfo {
-        pub total_money: u64,
+        pub earnings: Vec<Earning>,
+        pub total_earned: u64,
     }
 
     impl Response for RoundOverviewInfo {}
@@ -47,6 +76,20 @@ pub(crate) mod protocol {
         fn kind() -> String {
             "overview/round".to_string()
         }
+    }
+
+    #[derive(Serialize, Deserialize, Clone)]
+    pub struct Earning {
+        pub kind: EarningKind,
+        pub value: u64,
+    }
+
+    #[derive(Serialize, Deserialize, Clone)]
+    pub enum EarningKind {
+        Joker(String),
+        Tag(Tag),
+        Blind(Vec<()>),
+        Interest(Vec<()>),
     }
 
     #[derive(Serialize, Deserialize, Clone)]
