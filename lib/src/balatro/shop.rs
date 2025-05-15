@@ -22,10 +22,10 @@ impl<'a> Shop<'a> {
     pub fn main_cards(&self) -> &[MainCard] {
         &self.info.main
     }
-    pub fn vouchers(&self) -> &[Vouchers] {
+    pub fn vouchers(&self) -> &[Voucher] {
         &self.info.vouchers
     }
-    pub fn boosters(&self) -> &[Boosters] {
+    pub fn boosters(&self) -> &[Booster] {
         &self.info.boosters
     }
 
@@ -63,8 +63,9 @@ pub enum MainCard {
     Spectral(Spectral),
     PlayingCard(Card),
 }
-
-balatro_enum!(Boosters {
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct BoosterItem { booster:Booster }
+balatro_enum!(Booster {
     ArcanaNormal = "p_arcana_normal",
     ArcanaMega = "p_arcana_mega",
     ArcanaJumbo = "p_arcana_jumbo",
@@ -81,7 +82,9 @@ balatro_enum!(Boosters {
     StandardMega = "p_standard_mega",
     StandardJumbo = "p_standard_jumbo",
 });
-balatro_enum!(Vouchers {
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct VoucherItem { voucher:Voucher }
+balatro_enum!(Voucher {
     Blank = "v_blank",
     Antimatter = "v_antimatter",
     ClearanceSale = "v_clearance_sale",
@@ -122,13 +125,13 @@ pub(crate) mod protocol {
         net::protocol::{Packet, Request, Response},
         balatro::blinds::protocol::BlindInfo,
     };
-    use super::{MainCard, Vouchers, Boosters};
+    use super::{MainCard, VoucherItem, BoosterItem};
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopInfo {
         pub main: Vec<MainCard>,
-        pub vouchers: Vec<Vouchers>,
-        pub boosters: Vec<Boosters>,
+        pub vouchers: Vec<VoucherItem>,
+        pub boosters: Vec<BoosterItem>,
     }
 
     impl Response for ShopInfo {}
