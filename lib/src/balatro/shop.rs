@@ -22,10 +22,10 @@ impl<'a> Shop<'a> {
     pub fn main_cards(&self) -> &[MainCard] {
         &self.info.main
     }
-    pub fn vouchers(&self) -> &[Voucher] {
+    pub fn vouchers(&self) -> &[VoucherItem] {
         &self.info.vouchers
     }
-    pub fn boosters(&self) -> &[Booster] {
+    pub fn boosters(&self) -> &[BoosterItem] {
         &self.info.boosters
     }
 
@@ -49,7 +49,7 @@ impl<'a> Shop<'a> {
         let info = self.connection.request(protocol::ShopReroll {}).await??;
         Ok(Self::new(info, self.connection))
     }
-    pub async fn leave_shop(self) -> Result<SelectBlind<'a>, Error> {
+    pub async fn leave(self) -> Result<SelectBlind<'a>, Error> {
         let info = self.connection.request(protocol::ShopContinue {}).await??;
         Ok(SelectBlind::new(info, self.connection))
     }
@@ -63,6 +63,7 @@ pub enum MainCard {
     Spectral(Spectral),
     PlayingCard(Card),
 }
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BoosterItem { booster:Booster }
 balatro_enum!(Booster {
@@ -82,6 +83,7 @@ balatro_enum!(Booster {
     StandardMega = "p_standard_mega",
     StandardJumbo = "p_standard_jumbo",
 });
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VoucherItem { voucher:Voucher }
 balatro_enum!(Voucher {
