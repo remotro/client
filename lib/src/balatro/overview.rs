@@ -1,5 +1,8 @@
 use crate::net::Connection;
-use crate::balatro::Error;
+use crate::balatro::{
+    Error,
+    shop::Shop,
+};
 
 pub struct RoundOverview<'a> {
     connection: &'a mut Connection,
@@ -15,9 +18,9 @@ impl<'a> RoundOverview<'a> {
         self.info.total_money
     }
 
-    pub async fn cash_out(self) -> Result<(), Error> {
+    pub async fn cash_out(self) -> Result<Shop<'a>, Error> {
         let info = self.connection.request(protocol::CashOut).await??;
-        Ok(())
+        Ok(Shop::new(info, self.connection))
     }
 }
 
@@ -33,8 +36,10 @@ impl<'a> GameOverview<'a> {
 
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
-
-    use crate::net::protocol::{Packet, Request, Response};
+    use crate::{
+        net::protocol::{Packet, Request, Response},
+        balatro::shop::protocol::ShopInfo,
+    };
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct RoundOverviewInfo {
@@ -53,23 +58,12 @@ pub(crate) mod protocol {
     pub struct CashOut;
 
     impl Request for CashOut {
-        type Expect = Result<ShopStubResult, String>;
+        type Expect = Result<ShopInfo, String>;
     }
 
     impl Packet for CashOut {
         fn kind() -> String {
             "overview/cash_out".to_string()
-        }
-    }
-
-    #[derive(Serialize, Deserialize, Clone)]
-    pub struct ShopStubResult(Vec<()>);
-    
-    impl Response for ShopStubResult {}
-
-    impl Packet for ShopStubResult {
-        fn kind() -> String {
-            "shop/info".to_string()
         }
     }
 }
