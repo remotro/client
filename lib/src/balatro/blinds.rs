@@ -81,6 +81,7 @@ balatro_enum!(Tag {
     Skip = "tag_skip",
     Orbital = "tag_orbital",
     Economy = "tag_economy",
+    Garbage = "tag_garbage",
 });
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
