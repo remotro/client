@@ -157,6 +157,12 @@ async fn main() {
                             }
                         }
                     }
+                    Screen::Shop(shop) => {
+                        println!("Shop");
+                        println!("Items: {:?}", shop.main_cards());
+                        println!("Vouchers: {:?}", shop.vouchers());
+                        println!("Boosters: {:?}", shop.boosters());
+                    }
                 },
                 Err(e) => {
                     error!("Connection Failed: {e}");

@@ -1,4 +1,4 @@
-use crate::net::Connection;
+use crate::{balatro_enum, net::Connection};
 use protocol::BlindInfo;
 use serde::{Deserialize, Serialize};
 use super::play::Play;
@@ -57,55 +57,32 @@ pub struct BigBlindChoice {
     pub tag: Tag,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum Tag {
-    #[serde(rename = "tag_uncommon")]
-    Uncommon,
-    #[serde(rename = "tag_rare")]
-    Rare,
-    #[serde(rename = "tag_negative")]
-    Negative,
-    #[serde(rename = "tag_foil")]
-    Foil,
-    #[serde(rename = "tag_holo")]
-    Holographic,
-    #[serde(rename = "tag_polychrome")]
-    Polychrome,
-    #[serde(rename = "tag_investment")]
-    Investment,
-    #[serde(rename = "tag_voucher")]
-    Voucher,
-    #[serde(rename = "tag_boss")]
-    Boss,
-    #[serde(rename = "tag_standard")]
-    Standard,
-    #[serde(rename = "tag_charm")]
-    Charm,
-    #[serde(rename = "tag_meteor")]
-    Meteor,
-    #[serde(rename = "tag_buffoon")]
-    Buffoon,
-    #[serde(rename = "tag_handy")]
-    Handy,
-    #[serde(rename = "tag_ethereal")]
-    Ethereal,
-    #[serde(rename = "tag_coupon")]
-    Coupon,
-    #[serde(rename = "tag_double")]
-    Double,
-    #[serde(rename = "tag_juggle")]
-    Juggle,
-    #[serde(rename = "tag_d_six")]
-    D6,
-    #[serde(rename = "tag_topup")]
-    TopUp,
-    #[serde(rename = "tag_skip")]
-    Skip,
-    #[serde(rename = "tag_orbital")]
-    Orbital,
-    #[serde(rename = "tag_economy")]
-    Economy,
-}
+balatro_enum!(Tag {
+    Uncommon = "tag_uncommon",
+    Rare = "tag_rare",
+    Negative = "tag_negative",
+    Foil = "tag_foil",
+    Holographic = "tag_holo",
+    Polychrome = "tag_polychrome",
+    Investment = "tag_investment",
+    Voucher = "tag_voucher",
+    Boss = "tag_boss",
+    Standard = "tag_standard",
+    Charm = "tag_charm",
+    Meteor = "tag_meteor",
+    Buffoon = "tag_buffoon",
+    Handy = "tag_handy",
+    Ethereal = "tag_ethereal",
+    Coupon = "tag_coupon",
+    Double = "tag_double",
+    Juggle = "tag_juggle",
+    D6 = "tag_d_six",
+    TopUp = "tag_top_up",
+    Skip = "tag_skip",
+    Orbital = "tag_orbital",
+    Economy = "tag_economy",
+    Garbage = "tag_garbage",
+});
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BossBlindChoice {
@@ -113,66 +90,36 @@ pub struct BossBlindChoice {
     pub state: BlindState,
     pub chips: f64,
 }
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum Boss {
-    #[serde(rename = "bl_ox")]
-    TheOx,
-    #[serde(rename = "bl_hook")]
-    TheHook,
-    #[serde(rename = "bl_mouth")]
-    TheMouth,
-    #[serde(rename = "bl_fish")]
-    TheFish,
-    #[serde(rename = "bl_club")]
-    TheClub,
-    #[serde(rename = "bl_manacle")]
-    TheManacle,
-    #[serde(rename = "bl_tooth")]
-    TheTooth,
-    #[serde(rename = "bl_wall")]
-    TheWall,
-    #[serde(rename = "bl_house")]
-    TheHouse,
-    #[serde(rename = "bl_mark")]
-    TheMark,
-    #[serde(rename = "bl_wheel")]
-    TheWheel,
-    #[serde(rename = "bl_arm")]
-    TheArm,
-    #[serde(rename = "bl_psychic")]
-    ThePsychic,
-    #[serde(rename = "bl_goad")]
-    TheGoad,
-    #[serde(rename = "bl_water")]
-    TheWater,
-    #[serde(rename = "bl_eye")]
-    TheEye,
-    #[serde(rename = "bl_plant")]
-    ThePlant,
-    #[serde(rename = "bl_needle")]
-    TheNeedle,
-    #[serde(rename = "bl_head")]
-    TheHead,
-    #[serde(rename = "bl_window")]
-    TheWindow,
-    #[serde(rename = "bl_serpent")]
-    TheSerpent,
-    #[serde(rename = "bl_pillar")]
-    ThePillar,
-    #[serde(rename = "bl_flint")]
-    TheFlint,
-    #[serde(rename = "bl_final_bell")]
-    CeruleanBell,
-    #[serde(rename = "bl_final_leaf")]
-    VerdantLeaf,
-    #[serde(rename = "bl_final_vessel")]
-    VioletVessel,
-    #[serde(rename = "bl_final_acorn")]
-    AmberAcorn,
-    #[serde(rename = "bl_final_heart")]
-    CrimsonHeart,
-}
+balatro_enum!(Boss {
+    TheOx = "bl_ox",
+    TheHook = "bl_hook",
+    TheMouth = "bl_mouth",
+    TheFish = "bl_fish",
+    TheClub = "bl_club",
+    TheManacle = "bl_manacle",
+    TheTooth = "bl_tooth",
+    TheWall = "bl_wall",
+    TheHouse = "bl_house",
+    TheMark = "bl_mark",
+    TheWheel = "bl_wheel",
+    TheArm = "bl_arm",
+    ThePsychic = "bl_psychic",
+    TheGoad = "bl_goad",
+    TheWater = "bl_water",
+    TheEye = "bl_eye",
+    ThePlant = "bl_plant",
+    TheNeedle = "bl_needle",
+    TheHead = "bl_head",
+    TheWindow = "bl_window",
+    TheSerpent = "bl_serpent",
+    ThePillar = "bl_pillar",
+    TheFlint = "bl_flint",
+    CeruleanBell = "bl_final_bell",
+    VerdantLeaf = "bl_final_leaf",
+    VioletVessel = "bl_final_vessel",
+    AmberAcorn = "bl_final_acorn",
+    CrimsonHeart = "bl_final_heart",
+});
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 #[serde(rename_all = "PascalCase")]
