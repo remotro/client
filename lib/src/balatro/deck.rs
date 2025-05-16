@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use crate::balatro_enum;
 
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -47,48 +48,27 @@ pub enum Rank {
     King
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-#[serde(rename_all = "PascalCase")]
-pub enum Enhancement {
-    #[serde(rename = "m_wild")]
-    Wild,
-    #[serde(rename = "m_glass")]
-    Glass,
-    #[serde(rename = "m_bonus")]
-    Bonus,
-    #[serde(rename = "m_mult")]
-    Mult,
-    #[serde(rename = "m_lucky")]
-    Lucky,
-    #[serde(rename = "m_steel")]
-    Steel,
-    #[serde(rename = "m_stone")]
-    Stone,
-    #[serde(rename = "m_gold")]
-    Gold
-}
+balatro_enum!(Enhancement {
+    Wild = "m_wild",
+    Glass = "m_glass",
+    Bonus = "m_bonus",
+    Mult = "m_mult",
+    Lucky = "m_lucky",
+    Steel = "m_steel",
+    Stone = "m_stone",
+    Gold = "m_gold"
+});
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-#[serde(rename_all = "PascalCase")]
-pub enum Seal {
-    #[serde(rename = "blue_seal")]
-    Blue,
-    #[serde(rename = "red_seal")]
-    Red,
-    #[serde(rename = "purple_seal")]
-    Purple,
-    #[serde(rename = "gold_seal")]
-    Gold
-}
+balatro_enum!(Seal {
+    Blue = "blue_seal",
+    Red = "red_seal",
+    Purple = "purple_seal",
+    Gold = "gold_seal"
+});
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-pub enum Edition {
-    #[serde(rename = "e_base")]
-    None,
-    #[serde(rename = "e_foil")]
-    Foil,
-    #[serde(rename = "e_holo")]
-    Holographic,
-    #[serde(rename = "e_polychrome")]
-    Polychrome
-}
+balatro_enum!(Edition {
+    None = "e_base",
+    Foil = "e_foil",
+    Holographic = "e_holo",
+    Polychrome = "e_polychrome"
+});
