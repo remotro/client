@@ -56,7 +56,12 @@ impl<'a> Shop<'a> {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum MainCard {
+pub struct MainCard {
+    item: Item,
+    price: u8,
+}
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum Item {
     Joker(Joker),
     Planet(Planet),
     Tarot(Tarot),
@@ -65,7 +70,7 @@ pub enum MainCard {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct BoosterItem { booster:Booster }
+pub struct BoosterItem { booster:Booster, price:u8 }
 balatro_enum!(Booster {
     ArcanaNormal = "p_arcana_normal",
     ArcanaMega = "p_arcana_mega",
@@ -85,7 +90,7 @@ balatro_enum!(Booster {
 });
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct VoucherItem { voucher:Voucher }
+pub struct VoucherItem { voucher:Voucher, price:u8 }
 balatro_enum!(Voucher {
     Blank = "v_blank",
     Antimatter = "v_antimatter",
