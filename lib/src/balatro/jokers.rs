@@ -17,7 +17,7 @@ balatro_enum!(Joker {
     Devious = "j_devious",
     Crafty = "j_crafty",
     Half = "j_half",
-    EightBall = "j_eight_ball",
+    EightBall = "j_8_ball",
     Stencil = "j_stencil",
     FourFingers = "j_four_fingers",
     Mime = "j_mime",
