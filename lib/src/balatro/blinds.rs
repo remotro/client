@@ -77,7 +77,7 @@ balatro_enum!(Tag {
     Double = "tag_double",
     Juggle = "tag_juggle",
     D6 = "tag_d_six",
-    TopUp = "tag_topup",
+    TopUp = "tag_top_up",
     Skip = "tag_skip",
     Orbital = "tag_orbital",
     Economy = "tag_economy",
