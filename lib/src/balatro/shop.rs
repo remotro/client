@@ -6,7 +6,7 @@ use crate::{balatro_enum, net::Connection,
         Tarot,
         Planet,
         Spectral,
-        deck::Card,
+        deck::{Card,Edition},
         blinds::SelectBlind,
     }
 };
@@ -59,6 +59,7 @@ impl<'a> Shop<'a> {
 pub struct MainCard {
     item: Item,
     price: u8,
+    edition: Edition,
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Item {

@@ -4,7 +4,8 @@ use crate::net::Connection;
 use super::{
     deck::Card,
     overview::{GameOverview, RoundOverview},
-    Error,blinds::CurrentBlind
+    Error,
+    blinds::CurrentBlind
 };
 
 pub struct Play<'a> {
