@@ -70,7 +70,7 @@ pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::{
         net::protocol::{Packet, Request, Response},
-        balatro::shop::protocol::ShopInfo,
+        balatro::{overview::Tag,shop::protocol::ShopInfo},
     };
 
     #[derive(Serialize, Deserialize, Clone)]
