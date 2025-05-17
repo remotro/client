@@ -3,22 +3,13 @@ pub mod menu;
 pub mod play;
 pub mod deck;
 pub mod shop;
+pub mod hud;
 pub mod util;
 pub mod overview;
-
 pub mod jokers;
 pub mod consumables;
-use crate::{
-    net::Connection,
-    balatro::{
-        jokers::JokerKind,
-        consumables::{
-            TarotKind,
-            PlanetKind,
-            SpectralKind
-        }
-    }
-};
+
+use crate::net::Connection;
 
 pub struct Balatro {
     connection: Connection,
@@ -78,7 +69,7 @@ impl From<String> for Error {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
 
-    use crate::net::protocol::{Packet, Request, Response};
+    use crate::net::{protocol::{Packet, Request, Response}, Connection};
 
     use super::{blinds, play, shop};
 
@@ -111,4 +102,10 @@ pub(crate) mod protocol {
             "screen/current".to_string()
         }
     }
+
+pub trait NewScreen {
+    type Info: Response;
+    fn new(info: Self::Info, connection: &mut Connection) -> Self;
+}
+
 }

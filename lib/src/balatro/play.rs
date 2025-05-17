@@ -30,16 +30,16 @@ impl<'a> Play<'a> {
         &self.info.score
     }
 
-    pub fn hands(&self) -> &u8 {
-        &self.info.hands
+    pub fn hands(&self) -> u32 {
+        self.info.hud.hands
     }
 
-    pub fn discards(&self) -> &u8 {
-        &self.info.discards
+    pub fn discards(&self) -> u32 {
+        self.info.hud.discards
     }
 
-    pub fn money(&self) -> &u32 {
-        &self.info.money
+    pub fn money(&self) -> u32 {
+        self.info.hud.money
     }
 
     pub async fn click(self, indices: &[u32]) -> Result<Self, Error> {
@@ -89,14 +89,14 @@ pub(crate) mod protocol {
     use crate::net::protocol::{Packet, Request, Response};
     use super::{HandCard, CurrentBlind};
     use crate::balatro::overview::protocol::RoundOverviewInfo;
+    use crate::balatro::hud::protocol::HudInfo;
+
     #[derive(Serialize, Deserialize, Clone)]
     pub struct PlayInfo {
         pub current_blind: CurrentBlind,
         pub hand: Vec<HandCard>,
         pub score: f64,
-        pub hands: u8,
-        pub discards: u8,
-        pub money: u32
+        pub hud: HudInfo,
     }
 
     impl Response for PlayInfo {}

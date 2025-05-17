@@ -67,7 +67,7 @@ pub enum MainCard {
     Planet(PlanetCard),
     Tarot(TarotCard),
     Spectral(SpectralCard),
-    PlayingCard(PlayingCard),
+    Playing(PlayingCard),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

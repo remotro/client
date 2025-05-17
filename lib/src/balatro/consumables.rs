@@ -2,6 +2,13 @@ use serde::{Deserialize, Serialize};
 use crate::balatro_enum;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum Consumable {
+    Planet(PlanetCard),
+    Tarot(TarotCard),
+    Spectral(SpectralCard)
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PlanetCard {
     pub kind: PlanetKind,
     pub price: u64,
