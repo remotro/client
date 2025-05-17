@@ -11,11 +11,11 @@ pub mod consumables;
 use crate::{
     net::Connection,
     balatro::{
-        jokers::Joker,
+        jokers::JokerKind,
         consumables::{
-            Tarot,
-            Planet,
-            Spectral
+            TarotKind,
+            PlanetKind,
+            SpectralKind
         }
     }
 };

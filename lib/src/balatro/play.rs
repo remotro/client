@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::net::Connection;
 use super::{
-    deck::Card,
+    deck::PlayingCard,
     overview::{GameOverview, RoundOverview},
     Error,
     blinds::CurrentBlind
@@ -80,7 +80,7 @@ pub enum DiscardResult<'a> {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct HandCard {
-    card: Option<Card>,
+    card: Option<PlayingCard>,
     selected: bool,
 }
 

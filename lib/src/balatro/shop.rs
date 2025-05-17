@@ -2,53 +2,59 @@ use serde::{Deserialize, Serialize};
 use crate::{balatro_enum, net::Connection,
     balatro::{
         Error,
-        Joker,
-        Tarot,
-        Planet,
-        Spectral,
-        deck::{Card,Edition},
+        deck::{PlayingCard},
         blinds::SelectBlind,
     }
 };
+use super::{consumables::{PlanetCard, SpectralCard, TarotCard}, jokers::Joker};
 
 pub struct Shop<'a> {
     info: protocol::ShopInfo,
     connection: &'a mut Connection,
 }
+
 impl<'a> Shop<'a> {
     pub(crate) fn new(info: protocol::ShopInfo, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
+
     pub fn main_cards(&self) -> &[MainCard] {
         &self.info.main
     }
+
     pub fn vouchers(&self) -> &[VoucherItem] {
         &self.info.vouchers
     }
+
     pub fn boosters(&self) -> &[BoosterItem] {
         &self.info.boosters
     }
 
     pub async fn buy_main(self, index: u8) -> Result<Self, Error> {
-        let info = self.connection.request(protocol::ShopBuyMain { index: index }).await??;
+        let info = self.connection.request(protocol::ShopBuyMain { index }).await??;
         Ok(Self::new(info, self.connection))
     }
+
     pub async fn buy_and_use(self, index: u8) -> Result<Self, Error> {
-        let info = self.connection.request(protocol::ShopBuyUse { index: index }).await??;
+        let info = self.connection.request(protocol::ShopBuyUse { index }).await??;
         Ok(Self::new(info, self.connection))
     }
+
     pub async fn buy_voucher(self, index: u8) -> Result<Self, Error> {
-        let info = self.connection.request(protocol::ShopBuyVoucher { index: index }).await??;
+        let info = self.connection.request(protocol::ShopBuyVoucher { index }).await??;
         Ok(Self::new(info, self.connection))
     }
+    
     pub async fn buy_booster(self, index: u8) -> Result<Self, Error> {
-        let info = self.connection.request(protocol::ShopBuyBooster { index: index }).await??;
+        let info = self.connection.request(protocol::ShopBuyBooster { index }).await??;
         Ok(Self::new(info, self.connection))
     }
+
     pub async fn reroll(self) -> Result<Self, Error> {
         let info = self.connection.request(protocol::ShopReroll {}).await??;
         Ok(Self::new(info, self.connection))
     }
+
     pub async fn leave(self) -> Result<SelectBlind<'a>, Error> {
         let info = self.connection.request(protocol::ShopContinue {}).await??;
         Ok(SelectBlind::new(info, self.connection))
@@ -56,18 +62,12 @@ impl<'a> Shop<'a> {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct MainCard {
-    item: Item,
-    price: u8,
-    edition: Edition,
-}
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum Item {
+pub enum MainCard {
     Joker(Joker),
-    Planet(Planet),
-    Tarot(Tarot),
-    Spectral(Spectral),
-    PlayingCard(Card),
+    Planet(PlanetCard),
+    Tarot(TarotCard),
+    Spectral(SpectralCard),
+    PlayingCard(PlayingCard),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -133,7 +133,7 @@ pub(crate) mod protocol {
         net::protocol::{Packet, Request, Response},
         balatro::blinds::protocol::BlindInfo,
     };
-    use super::{MainCard, VoucherItem, BoosterItem};
+    use super::{BoosterItem, MainCard, VoucherItem};
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopInfo {

@@ -5,6 +5,7 @@ use crate::balatro::{
 };
 
 use super::blinds::Tag;
+use super::jokers::JokerKind;
 
 pub struct RoundOverview<'a> {
     connection: &'a mut Connection,
@@ -19,7 +20,7 @@ impl<'a> RoundOverview<'a> {
     pub fn earnings(&self) -> Vec<Earning> {
         self.info.earnings.iter().map(|e| {
             let kind = match e.kind.clone() {
-                protocol::EarningKind::Joker(s) => EarningKind::Joker(s.clone()),
+                protocol::EarningKind::Joker(k) => EarningKind::Joker(k),
                 protocol::EarningKind::Tag(t) => EarningKind::Tag(t.clone()),
                 protocol::EarningKind::Blind(_) => EarningKind::Blind,
                 protocol::EarningKind::Interest(_) => EarningKind::Interest,
@@ -48,7 +49,7 @@ pub struct Earning {
 
 #[derive(Clone, Debug)]
 pub enum EarningKind {
-    Joker(String),
+    Joker(JokerKind),
     Tag(Tag),
     Blind,
     Interest,
@@ -69,8 +70,7 @@ impl<'a> GameOverview<'a> {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::{
-        net::protocol::{Packet, Request, Response},
-        balatro::{overview::Tag,shop::protocol::ShopInfo},
+        balatro::{jokers::JokerKind, overview::Tag, shop::protocol::ShopInfo}, net::protocol::{Packet, Request, Response}
     };
 
     #[derive(Serialize, Deserialize, Clone)]
@@ -95,7 +95,7 @@ pub(crate) mod protocol {
 
     #[derive(Serialize, Deserialize, Clone)]
     pub enum EarningKind {
-        Joker(String),
+        Joker(JokerKind),
         Tag(Tag),
         Blind(Vec<()>),
         Interest(Vec<()>),
