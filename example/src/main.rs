@@ -94,6 +94,10 @@ async fn main() {
                         println!("Hands: {}", hud.hands());
                         println!("Discards: {}", hud.discards());
                         println!("Money: ${}",hud.money());
+                        println!("Jokers: {:?}", hud.jokers());
+                        println!("Consumables: {:?}", hud.consumables());
+                        println!("Round: {}", hud.round());
+                        println!("Ante: {}", hud.ante());
                         let play = hud.back();
                         println!("Select, Play, or Discard cards:");
                         let mut user_input = String::new();
@@ -163,6 +167,26 @@ async fn main() {
                         println!("Items: {:?}", shop.main_cards());
                         println!("Vouchers: {:?}", shop.vouchers());
                         println!("Boosters: {:?}", shop.boosters());
+                        let hud = shop.hud();
+                        println!("Hands: {}", hud.hands());
+                        println!("Discards: {}", hud.discards());
+                        println!("Money: ${}",hud.money());
+                        println!("Jokers: {:?}", hud.jokers());
+                        println!("Consumables: {:?}", hud.consumables());
+                        println!("Round: {}", hud.round());
+                        println!("Ante: {}", hud.ante());
+                        let shop = hud.back();
+                        println!("Select item:");
+                        let mut user_input = String::new();
+                        std::io::stdin()
+                            .read_line(&mut user_input)
+                            .expect("Failed to read line from stdin");
+                        let index: u8 = user_input
+                            .trim()
+                            .parse().unwrap();
+                        if let Err(e) = shop.buy_main(index).await {
+                            println!("{e}");
+                        }
                     }
                 },
                 Err(e) => {

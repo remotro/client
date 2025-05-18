@@ -6,7 +6,7 @@ use crate::{balatro_enum, net::Connection,
         blinds::SelectBlind,
     }
 };
-use super::{consumables::{PlanetCard, SpectralCard, TarotCard}, jokers::Joker};
+use super::{consumables::{PlanetCard, SpectralCard, TarotCard}, hud::Hud, jokers::Joker, protocol::NewScreen};
 
 pub struct Shop<'a> {
     info: protocol::ShopInfo,
@@ -14,10 +14,6 @@ pub struct Shop<'a> {
 }
 
 impl<'a> Shop<'a> {
-    pub(crate) fn new(info: protocol::ShopInfo, connection: &'a mut Connection) -> Self {
-        Self { info, connection }
-    }
-
     pub fn main_cards(&self) -> &[MainCard] {
         &self.info.main
     }
@@ -28,6 +24,10 @@ impl<'a> Shop<'a> {
 
     pub fn boosters(&self) -> &[Booster] {
         &self.info.boosters
+    }
+
+    pub fn hud(self) -> Hud<'a, protocol::ShopInfo> {
+        Hud::new(self.info, self.connection)
     }
 
     pub async fn buy_main(self, index: u8) -> Result<Self, Error> {
@@ -58,6 +58,13 @@ impl<'a> Shop<'a> {
     pub async fn leave(self) -> Result<SelectBlind<'a>, Error> {
         let info = self.connection.request(protocol::ShopContinue {}).await??;
         Ok(SelectBlind::new(info, self.connection))
+    }
+}
+
+impl<'a> NewScreen<'a> for Shop<'a> {
+    type Info = protocol::ShopInfo;
+    fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
+        Self { info, connection }
     }
 }
 
@@ -132,13 +139,13 @@ balatro_enum!(VoucherKind {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::{
-        net::protocol::{Packet, Request, Response},
-        balatro::blinds::protocol::BlindInfo,
+        balatro::{blinds::protocol::BlindInfo, hud::protocol::{HudCompatible, HudInfo}}, net::protocol::{Packet, Request, Response}
     };
-    use super::{Booster, MainCard, Voucher};
+    use super::{Booster, MainCard, Shop, Voucher};
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopInfo {
+        pub hud: HudInfo,
         pub main: Vec<MainCard>,
         pub vouchers: Vec<Voucher>,
         pub boosters: Vec<Booster>,
@@ -149,6 +156,16 @@ pub(crate) mod protocol {
     impl Packet for ShopInfo {
         fn kind() -> String {
             "shop/info".to_string()
+        }
+    }
+
+    impl<'a> HudCompatible<'a> for ShopInfo {
+        type Screen = Shop<'a>;
+        fn kind_prefix() -> &'static str {
+            "shop"
+        }
+        fn hud_info(&self) -> &HudInfo {
+            &self.hud
         }
     }
 

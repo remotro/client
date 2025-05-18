@@ -110,7 +110,7 @@ pub enum UseConsumableResult<'a, I: HudCompatible<'a>> {
     GameOver(GameOverview<'a>),
 }
 
-pub mod protocol {
+pub(crate) mod protocol {
     use crate::balatro::jokers::Joker;
     use crate::balatro::consumables::Consumable;
     use crate::balatro::protocol::NewScreen;

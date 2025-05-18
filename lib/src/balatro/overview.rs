@@ -6,6 +6,7 @@ use crate::balatro::{
 
 use super::blinds::Tag;
 use super::jokers::JokerKind;
+use super::protocol::NewScreen;
 
 pub struct RoundOverview<'a> {
     connection: &'a mut Connection,
