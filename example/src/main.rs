@@ -67,38 +67,60 @@ async fn quickrun(mut balatro: Balatro) {
         let shop = use_hud(shop.hud());
         println!("< shopping >");
         let hud = shop.hud();
+        let joker_count = hud.jokers().len();
+        let consumable_count = hud.consumables().len();
         let mut shop = use_hud(hud);
-        let mut bought_joker = false;
-        for (i, card) in shop.main_cards().iter().enumerate() {
+        for (i, card) in shop.main_cards().to_vec().iter().enumerate() {
             if let MainCard::Joker(joker) = card {
+                if joker_count >= 2 {
+                    continue;
+                }
                 println!("< buying joker {} {:?} >", i, joker);
                 shop = shop.buy_main(i as u8).await.unwrap();
-                bought_joker = true;
+                println!("--- SHOP WITH JOKER ---");
+                println!("Items: {:?}", shop.main_cards());
+                println!("Vouchers: {:?}", shop.vouchers());
+                println!("Boosters: {:?}", shop.boosters());
+                shop = use_hud(shop.hud());
+                break;
+            } else {
+                if consumable_count >= 2 {
+                    continue;
+                }
+                println!("< buying consumable {} {:?} >", i, card);
+                shop = shop.buy_main(i as u8).await.unwrap();
+                println!("--- SHOP WITH CONSUMABLE ---");
+                println!("Items: {:?}", shop.main_cards());
+                println!("Vouchers: {:?}", shop.vouchers());
+                println!("Boosters: {:?}", shop.boosters());
+                shop = use_hud(shop.hud());
                 break;
             }
         }
-        if !bought_joker {
-            println!("< no joker found >");
-            blind_select = shop.leave().await.unwrap();
-            continue;
-        }
-        println!("--- SHOP WITH JOKER ---");
-        println!("Items: {:?}", shop.main_cards());
-        println!("Vouchers: {:?}", shop.vouchers());
-        println!("Boosters: {:?}", shop.boosters());
-        shop = use_hud(shop.hud());
         blind_select = shop.leave().await.unwrap();
         let hud = blind_select.hud();
         let joker_count = hud.jokers().len();
+        let consumable_count = hud.consumables().len();
         blind_select = use_hud(hud);
-        if joker_count == 2 {
-            println!("< enough jokers >");
+        if joker_count == 2 && consumable_count == 2 {
+            println!("< enough jokers and consumables >");
             break;
         }
     }
     println!("< moving joker >");
     let hud = blind_select.hud().move_joker(0, 1).await.unwrap();
+    blind_select = use_hud(hud);
+    println!("<moving consumable >");
+    let hud = blind_select.hud().move_consumable(0, 1).await.unwrap();
+    blind_select = use_hud(hud);
+    println!("< selling joker >");
+    let hud = blind_select.hud().sell_joker(0).await.unwrap();
+    blind_select = use_hud(hud);
+    println!("< selling consumable >");
+    let hud = blind_select.hud().sell_consumable(0).await.unwrap();
     use_hud(hud);
+    
+    
 }
 
 fn use_hud<'a, T: HudCompatible<'a>>(hud: Hud<'a, T>) -> T::Screen {
