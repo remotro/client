@@ -38,60 +38,67 @@ macro_rules! as_variant {
 async fn quickrun(mut balatro: Balatro) {
     let screen = as_variant!(balatro.screen().await.unwrap(), Screen::Menu);
     println!("< starting run >");
-    let blind_select = screen.new_run(Deck::Red, Stake::White, None).await.unwrap();
-    println!("--- BLIND SELECT ---");
-    println!("Small: {:?}", blind_select.small());
-    println!("Big: {:?}", blind_select.big());
-    println!("Boss: {:?}", blind_select.boss());
-    let blind_select = use_hud(blind_select.hud());
-    println!("< selecting blind >");
-    let play=  blind_select.select().await.unwrap();
-    println!("--- PLAY ---");
-    println!("Hand: {:?}", play.hand());
-    println!("Blind: {:?}", play.blind());
-    println!("Score: {}", play.score());
-    let play = use_hud(play.hud());
-    println!("< playing >");
-    let overview = as_variant!(play.click(&[0]).await.unwrap().play().await.unwrap(), PlayResult::RoundOver);
-    println!("--- OVERVIEW ---");
-    println!("Total money: {}", overview.total_earned());
-    println!("Earnings: {:?}", overview.earnings());
-    let overview = use_hud(overview.hud());
-    println!("< cashing out >");
-    let shop = overview.cash_out().await.unwrap();
-    println!("--- SHOP ---");
-    println!("Items: {:?}", shop.main_cards());
-    println!("Vouchers: {:?}", shop.vouchers());
-    println!("Boosters: {:?}", shop.boosters());
-    let shop = use_hud(shop.hud());
-    println!("< shopping >");
-    let hud = shop.hud();
-    let mut shop = use_hud(hud);
-    let mut bought_joker = false;
-    for (i, card) in shop.main_cards().iter().enumerate() {
-        if let MainCard::Joker(joker) = card {
-            println!("< buying joker {} {:?} >", i, joker);
-            shop = shop.buy_main(i as u8).await.unwrap();
-            bought_joker = true;
+    let mut blind_select = screen.new_run(Deck::Red, Stake::White, None).await.unwrap();
+    loop {
+        println!("--- BLIND SELECT ---");
+        println!("Small: {:?}", blind_select.small());
+        println!("Big: {:?}", blind_select.big());
+        println!("Boss: {:?}", blind_select.boss());
+        blind_select = use_hud(blind_select.hud());
+        println!("< selecting blind >");
+        let play=  blind_select.select().await.unwrap();
+        println!("--- PLAY ---");
+        println!("Hand: {:?}", play.hand());
+        println!("Blind: {:?}", play.blind());
+        println!("Score: {}", play.score());
+        let play = use_hud(play.hud());
+        println!("< playing >");
+        let overview = as_variant!(play.click(&[0]).await.unwrap().play().await.unwrap(), PlayResult::RoundOver);
+        println!("--- OVERVIEW ---");
+        println!("Total money: {}", overview.total_earned());
+        println!("Earnings: {:?}", overview.earnings());
+        let overview = use_hud(overview.hud());
+        println!("< cashing out >");
+        let shop = overview.cash_out().await.unwrap();
+        println!("--- SHOP ---");
+        println!("Items: {:?}", shop.main_cards());
+        println!("Vouchers: {:?}", shop.vouchers());
+        println!("Boosters: {:?}", shop.boosters());
+        let shop = use_hud(shop.hud());
+        println!("< shopping >");
+        let hud = shop.hud();
+        let mut shop = use_hud(hud);
+        let mut bought_joker = false;
+        for (i, card) in shop.main_cards().iter().enumerate() {
+            if let MainCard::Joker(joker) = card {
+                println!("< buying joker {} {:?} >", i, joker);
+                shop = shop.buy_main(i as u8).await.unwrap();
+                bought_joker = true;
+                break;
+            }
+        }
+        if !bought_joker {
+            println!("< no joker found >");
+            blind_select = shop.leave().await.unwrap();
+            continue;
+        }
+        println!("--- SHOP WITH JOKER ---");
+        println!("Items: {:?}", shop.main_cards());
+        println!("Vouchers: {:?}", shop.vouchers());
+        println!("Boosters: {:?}", shop.boosters());
+        shop = use_hud(shop.hud());
+        blind_select = shop.leave().await.unwrap();
+        let hud = blind_select.hud();
+        let joker_count = hud.jokers().len();
+        blind_select = use_hud(hud);
+        if joker_count == 2 {
+            println!("< enough jokers >");
             break;
         }
     }
-    if !bought_joker {
-        println!("< no joker found >");
-        return;
-    }
-    println!("--- SHOP WITH JOKER ---");
-    println!("Items: {:?}", shop.main_cards());
-    println!("Vouchers: {:?}", shop.vouchers());
-    println!("Boosters: {:?}", shop.boosters());
-    shop = use_hud(shop.hud());
-    println!("< sold joker >");
-    shop = shop.hud().sell_joker(0).await.unwrap().back();
-    println!("--- SHOP WITHOUT JOKER ---");
-    println!("Items: {:?}", shop.main_cards());
-    println!("Vouchers: {:?}", shop.vouchers());
-    println!("Boosters: {:?}", shop.boosters());
-    shop = use_hud(shop.hud());
+    println!("< moving joker >");
+    let hud = blind_select.hud().move_joker(0, 1).await.unwrap();
+    use_hud(hud);
 }
 
 fn use_hud<'a, T: HudCompatible<'a>>(hud: Hud<'a, T>) -> T::Screen {
