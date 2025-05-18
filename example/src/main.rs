@@ -1,9 +1,7 @@
 use log::{error, info};
 use remotro::{
     balatro::{
-        menu::{Deck, Stake},
-        play::{DiscardResult, PlayResult},
-        Screen
+        hud::{Hud, HudCompatible}, menu::{Deck, Stake}, play::{DiscardResult, PlayResult}, shop::MainCard, Balatro, Screen
     }, Remotro
 };
 use std::str::FromStr;
@@ -24,6 +22,57 @@ fn get_input<T: FromStr<Err = String>>(prompt: &str) -> T {
             }
         }
     }
+}
+
+macro_rules! as_variant {
+    ($screen:expr, $variant:path) => {
+        if let $variant(screen) = $screen {
+            screen
+        } else {
+            println!("Not in variant");
+            return;
+        }
+    }
+}
+
+async fn quickrun(mut balatro: Balatro) {
+    let screen = as_variant!(balatro.screen().await.unwrap(), Screen::Menu);
+    let over = as_variant!(screen.new_run(Deck::Red, Stake::White, None).await.unwrap()
+        .select().await.unwrap()
+            .click(&[0]).await.unwrap()
+            .play().await.unwrap(), PlayResult::RoundOver);
+    let shop = over.cash_out().await.unwrap();
+    let hud = shop.hud();
+    let mut shop = use_hud(hud);
+    let mut bought_joker = false;
+    for (i, card) in shop.main_cards().iter().enumerate() {
+        if let MainCard::Joker(joker) = card {
+            println!("Buying joker {} {:?}", i, joker);
+            shop = shop.buy_main(i as u8).await.unwrap();
+            bought_joker = true;
+            break;
+        }
+    }
+    if !bought_joker {
+        println!("No joker found");
+        return;
+    }
+    println!("Bought joker");
+    shop = use_hud(shop.hud());
+    shop = shop.hud().sell_joker(0).await.unwrap().back();
+    println!("Sold joker");
+    shop = use_hud(shop.hud());
+}
+
+fn use_hud<'a, T: HudCompatible<'a>>(hud: Hud<'a, T>) -> T::Screen {
+    println!("Hands: {:?}", hud.hands());
+    println!("Discards: {:?}", hud.discards());
+    println!("Money: {:?}", hud.money());
+    println!("Jokers: {:?}", hud.jokers());
+    println!("Consumables: {:?}", hud.consumables());
+    println!("Round: {:?}", hud.round());
+    println!("Ante: {:?}", hud.ante());
+    hud.back()
 }
 
 #[tokio::main]
@@ -47,6 +96,23 @@ async fn main() {
                 continue;
             }
         };
+        // prompt user to select quickrun or normal run
+        let mut user_input = String::new();
+        std::io::stdin()
+            .read_line(&mut user_input)
+            .expect("Failed to read line from stdin");
+        match user_input.trim().to_lowercase().as_str() {
+            "quickrun" => {
+                quickrun(balatro).await;
+                return;
+            }
+            "normalrun" => {
+            }
+            _ => {
+                error!("Invalid input. Please enter quickrun or normalrun.");
+                continue;
+            }
+        }
         loop {
             // Check current screen in Game
             match balatro.screen().await {
@@ -61,6 +127,7 @@ async fn main() {
                     }
                     Screen::SelectBlind(blinds) => {
                         println!("Blinds:");
+                        let blinds = use_hud(blinds.hud());
                         println!("Small blind: {:?}", blinds.small());
                         println!("Big blind: {:?}", blinds.big());
                         println!("Boss blind: {:?}", blinds.boss());
@@ -90,15 +157,7 @@ async fn main() {
                         println!("Hand: {:?}", play.hand());
                         println!("Blind: {:?}", play.blind());
                         println!("Score: {}", play.score());
-                        let hud = play.hud();
-                        println!("Hands: {}", hud.hands());
-                        println!("Discards: {}", hud.discards());
-                        println!("Money: ${}",hud.money());
-                        println!("Jokers: {:?}", hud.jokers());
-                        println!("Consumables: {:?}", hud.consumables());
-                        println!("Round: {}", hud.round());
-                        println!("Ante: {}", hud.ante());
-                        let play = hud.back();
+                        let play = use_hud(play.hud());
                         println!("Select, Play, or Discard cards:");
                         let mut user_input = String::new();
                         std::io::stdin()
@@ -128,6 +187,7 @@ async fn main() {
                                     },
                                     Ok(PlayResult::RoundOver(overview)) => {
                                         println!("Round over");
+                                        let overview = use_hud(overview.hud());
                                         println!("Total money: {}", overview.total_earned());
                                         println!("Earnings: {:?}", overview.earnings());
                                         tokio::time::sleep(std::time::Duration::from_secs(5)).await;
@@ -168,26 +228,24 @@ async fn main() {
                         println!("Vouchers: {:?}", shop.vouchers());
                         println!("Boosters: {:?}", shop.boosters());
                         let hud = shop.hud();
-                        println!("Hands: {}", hud.hands());
-                        println!("Discards: {}", hud.discards());
-                        println!("Money: ${}",hud.money());
-                        println!("Jokers: {:?}", hud.jokers());
-                        println!("Consumables: {:?}", hud.consumables());
-                        println!("Round: {}", hud.round());
-                        println!("Ante: {}", hud.ante());
-                        let shop = hud.back();
-                        println!("Select item:");
-                        let mut user_input = String::new();
-                        std::io::stdin()
-                            .read_line(&mut user_input)
-                            .expect("Failed to read line from stdin");
-                        let index: u8 = user_input
-                            .trim()
-                            .parse().unwrap();
-                        if let Err(e) = shop.buy_main(index).await {
-                            println!("{e}");
+                        let mut shop = use_hud(hud);
+                        let mut bought_joker = false;
+                        for (i, card) in shop.main_cards().iter().enumerate() {
+                            if let MainCard::Joker(joker) = card {
+                                println!("Buying joker {}", i);
+                                shop = shop.buy_main(i as u8).await.unwrap();
+                                bought_joker = true;
+                                break;
+                            }
                         }
+                        if !bought_joker {
+                            println!("No joker found");
+                            break;
+                        }
+                        shop = use_hud(shop.hud());
+                        shop = shop.hud().sell_joker(0).await.unwrap().back();
                     }
+                        
                 },
                 Err(e) => {
                     error!("Connection Failed: {e}");
