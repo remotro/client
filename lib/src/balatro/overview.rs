@@ -5,6 +5,7 @@ use crate::balatro::{
 };
 
 use super::blinds::Tag;
+use super::hud::Hud;
 use super::jokers::JokerKind;
 use super::protocol::NewScreen;
 
@@ -26,6 +27,10 @@ impl<'a> RoundOverview<'a> {
             };
             Earning { kind, value: e.value }
         }).collect()
+    }
+
+    pub fn hud(self) -> Hud<'a, protocol::RoundOverviewInfo> {
+        Hud::new(self.info, self.connection)
     }
 
     pub fn total_earned(&self) -> u64 {

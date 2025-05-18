@@ -11,6 +11,8 @@ pub mod consumables;
 
 use crate::net::Connection;
 use crate::balatro::protocol::NewScreen;
+
+
 pub struct Balatro {
     connection: Connection,
 }

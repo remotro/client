@@ -1,11 +1,11 @@
-use protocol::HudCompatible;
-
 use super::consumables::Consumable;
 use super::jokers::Joker;
 use super::overview::GameOverview;
 use super::Error;
 use crate::balatro::protocol::NewScreen;
 use crate::net::Connection;
+
+pub use protocol::HudCompatible;
 
 pub struct Hud<'a, I: HudCompatible<'a>> {
     connection: &'a mut Connection,
@@ -155,7 +155,7 @@ pub(crate) mod protocol {
 
     impl<'a, I: HudCompatible<'a>> Packet for MoveJoker<'a, I> {
         fn kind() -> String {
-            format!("hud/jokers/move/{}", I::kind_prefix())
+            format!("{}/hud/jokers/move", I::kind_prefix())
         }
     }
 
@@ -171,7 +171,7 @@ pub(crate) mod protocol {
 
     impl<'a, I: HudCompatible<'a>> Packet for SellJoker<'a, I> {
         fn kind() -> String {
-            format!("hud/jokers/sell/{}", I::kind_prefix())
+            format!("{}/hud/jokers/sell", I::kind_prefix())
         }
     }
 
@@ -188,7 +188,7 @@ pub(crate) mod protocol {
 
     impl<'a, I: HudCompatible<'a>> Packet for MoveConsumable<'a, I> {
         fn kind() -> String {
-            format!("hud/consumables/move/{}", I::kind_prefix())
+            format!("{}/hud/consumables/move", I::kind_prefix())
         }
     }
 
@@ -204,7 +204,7 @@ pub(crate) mod protocol {
 
     impl<'a, I: HudCompatible<'a>> Packet for UseConsumable<'a, I> {
         fn kind() -> String {
-            format!("hud/consumables/use/{}", I::kind_prefix())
+            format!("{}/hud/consumables/use", I::kind_prefix())
         }
     }
 
@@ -220,7 +220,7 @@ pub(crate) mod protocol {
 
     impl<'a, I: HudCompatible<'a>> Packet for SellConsumable<'a, I> {
         fn kind() -> String {
-            format!("hud/consumables/sell/{}", I::kind_prefix())
+            format!("{}/hud/consumables/sell", I::kind_prefix())
         }
     }
 }
