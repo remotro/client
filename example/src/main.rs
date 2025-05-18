@@ -90,9 +90,11 @@ async fn main() {
                         println!("Hand: {:?}", play.hand());
                         println!("Blind: {:?}", play.blind());
                         println!("Score: {}", play.score());
-                        println!("Hands: {}", play.hands());
-                        println!("Discards: {}", play.discards());
-                        println!("Money: ${}",play.money());
+                        let hud = play.hud();
+                        println!("Hands: {}", hud.hands());
+                        println!("Discards: {}", hud.discards());
+                        println!("Money: ${}",hud.money());
+                        let play = hud.back();
                         println!("Select, Play, or Discard cards:");
                         let mut user_input = String::new();
                         std::io::stdin()
@@ -130,7 +132,6 @@ async fn main() {
                                             Ok(_) => println!("Cash out successful"),
                                             Err(e) => println!("{e}"),
                                         }
-                                        break;
                                     },
                                     Ok(PlayResult::GameOver(_)) => {
                                         println!("Game over");

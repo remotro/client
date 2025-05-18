@@ -1,7 +1,7 @@
 use crate::{balatro_enum, net::Connection};
 use protocol::BlindInfo;
 use serde::{Deserialize, Serialize};
-use super::play::Play;
+use super::{play::Play, protocol::NewScreen};
 
 pub struct SelectBlind<'a> {
     info: protocol::BlindInfo,

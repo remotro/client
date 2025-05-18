@@ -2,16 +2,17 @@ use protocol::HudCompatible;
 
 use super::consumables::Consumable;
 use super::jokers::Joker;
+use super::overview::GameOverview;
 use super::Error;
 use crate::balatro::protocol::NewScreen;
 use crate::net::Connection;
 
-pub struct Hud<'a, I: HudCompatible> {
+pub struct Hud<'a, I: HudCompatible<'a>> {
     connection: &'a mut Connection,
     info: I,
 }
 
-impl<'a, I: HudCompatible> Hud<'a, I> {
+impl<'a, I: HudCompatible<'a>> Hud<'a, I> {
     pub(crate) fn new(info: I, connection: &'a mut Connection) -> Self {
         Self { connection, info }
     }
@@ -44,7 +45,10 @@ impl<'a, I: HudCompatible> Hud<'a, I> {
         &self.info.hud_info().jokers
     }
 
-    pub async fn move_joker(self, from: u32, to: u32) -> Result<Self, Error> {
+    pub async fn move_joker(self, from: u32, to: u32) -> Result<Self, Error>
+    where
+        I: 'a,
+    {
         let new_info = self
             .connection
             .request(protocol::MoveJoker { from, to, _marker: std::marker::PhantomData })
@@ -52,7 +56,10 @@ impl<'a, I: HudCompatible> Hud<'a, I> {
         Ok(Self::new(new_info, self.connection))
     }
 
-    pub async fn sell_joker(self, index: u32) -> Result<Self, Error> {
+    pub async fn sell_joker(self, index: u32) -> Result<Self, Error>
+    where
+        I: 'a,
+    {
         let new_info = self
             .connection
             .request(protocol::SellJoker { index, _marker: std::marker::PhantomData })
@@ -64,7 +71,10 @@ impl<'a, I: HudCompatible> Hud<'a, I> {
         &self.info.hud_info().consumables
     }
 
-    pub async fn move_consumable(self, from: u32, to: u32) -> Result<Self, Error> {
+    pub async fn move_consumable(self, from: u32, to: u32) -> Result<Self, Error>
+    where
+        I: 'a,
+    {
         let new_info = self
             .connection
             .request(protocol::MoveConsumable { from, to, _marker: std::marker::PhantomData })
@@ -72,21 +82,32 @@ impl<'a, I: HudCompatible> Hud<'a, I> {
         Ok(Self::new(new_info, self.connection))
     }
 
-    pub async fn use_consumable(self, index: u32) -> Result<Self, Error> {
+    pub async fn use_consumable(self, index: u32) -> Result<UseConsumableResult<'a, I>, Error>
+    where
+        I: 'a,
+    {
         let new_info = self
             .connection
             .request(protocol::UseConsumable { index, _marker: std::marker::PhantomData })
             .await??;
-        Ok(Self::new(new_info, self.connection))
+        Ok(UseConsumableResult::Used(Self::new(new_info, self.connection)))
     }
 
-    pub async fn sell_consumable(self, index: u32) -> Result<Self, Error> {
+    pub async fn sell_consumable(self, index: u32) -> Result<Self, Error>
+    where
+        I: 'a,
+    {
         let new_info = self
             .connection
             .request(protocol::SellConsumable { index, _marker: std::marker::PhantomData })
             .await??;
         Ok(Self::new(new_info, self.connection))
     }
+}
+
+pub enum UseConsumableResult<'a, I: HudCompatible<'a>> {
+    Used(Hud<'a, I>),
+    GameOver(GameOverview<'a>),
 }
 
 pub mod protocol {
@@ -96,8 +117,8 @@ pub mod protocol {
     use crate::net::protocol::{Packet, Request, Response};
     use serde::{Deserialize, Serialize};
 
-    pub trait HudCompatible: Response {
-        type Screen: NewScreen<Info = Self>;
+    pub trait HudCompatible<'a>: Response {
+        type Screen: NewScreen<'a, Info = Self>;
         fn kind_prefix() -> &'static str;
         fn hud_info(&self) -> &HudInfo;
     }
@@ -122,82 +143,82 @@ pub mod protocol {
     }
 
     #[derive(Serialize, Clone, Debug)]
-    pub struct MoveJoker<I: HudCompatible> {
+    pub struct MoveJoker<'a, I: HudCompatible<'a>> {
         pub from: u32,
         pub to: u32,
-        pub _marker: std::marker::PhantomData<I>,
+        pub _marker: std::marker::PhantomData<&'a I>,
     }
 
-    impl<I: HudCompatible> Request for MoveJoker<I> {
+    impl<'a, I: HudCompatible<'a>> Request for MoveJoker<'a, I> {
         type Expect = Result<I, String>;
     }
 
-    impl<I: HudCompatible> Packet for MoveJoker<I> {
+    impl<'a, I: HudCompatible<'a>> Packet for MoveJoker<'a, I> {
         fn kind() -> String {
             format!("hud/jokers/move/{}", I::kind_prefix())
         }
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
-    pub struct SellJoker<I: HudCompatible> {
+    pub struct SellJoker<'a, I: HudCompatible<'a>> {
         pub index: u32,
-        pub _marker: std::marker::PhantomData<I>,
+        pub _marker: std::marker::PhantomData<&'a I>,
     }
 
-    impl<I: HudCompatible> Request for SellJoker<I> {
+    impl<'a, I: HudCompatible<'a>> Request for SellJoker<'a, I> {
         type Expect = Result<I, String>;
     }
 
-    impl<I: HudCompatible> Packet for SellJoker<I> {
+    impl<'a, I: HudCompatible<'a>> Packet for SellJoker<'a, I> {
         fn kind() -> String {
             format!("hud/jokers/sell/{}", I::kind_prefix())
         }
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
-    pub struct MoveConsumable<I: HudCompatible> {
+    pub struct MoveConsumable<'a, I: HudCompatible<'a>> {
         pub from: u32,
         pub to: u32,
-        pub _marker: std::marker::PhantomData<I>,
+        pub _marker: std::marker::PhantomData<&'a I>,
     }
 
-    impl<I: HudCompatible> Request for MoveConsumable<I> {
+    impl<'a, I: HudCompatible<'a>> Request for MoveConsumable<'a, I> {
         type Expect = Result<I, String>;
     }
 
-    impl<I: HudCompatible> Packet for MoveConsumable<I> {
+    impl<'a, I: HudCompatible<'a>> Packet for MoveConsumable<'a, I> {
         fn kind() -> String {
             format!("hud/consumables/move/{}", I::kind_prefix())
         }
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
-    pub struct UseConsumable<I: HudCompatible> {
+    pub struct UseConsumable<'a, I: HudCompatible<'a>> {
         pub index: u32,
-        pub _marker: std::marker::PhantomData<I>,
+        pub _marker: std::marker::PhantomData<&'a I>,
     }
 
-    impl<I: HudCompatible> Request for UseConsumable<I> {
+    impl<'a, I: HudCompatible<'a>> Request for UseConsumable<'a, I> {
         type Expect = Result<I, String>;
     }
 
-    impl<I: HudCompatible> Packet for UseConsumable<I> {
+    impl<'a, I: HudCompatible<'a>> Packet for UseConsumable<'a, I> {
         fn kind() -> String {
             format!("hud/consumables/use/{}", I::kind_prefix())
         }
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
-    pub struct SellConsumable<I: HudCompatible> {
+    pub struct SellConsumable<'a, I: HudCompatible<'a>> {
         pub index: u32,
-        pub _marker: std::marker::PhantomData<I>,
+        pub _marker: std::marker::PhantomData<&'a I>,
     }
 
-    impl<I: HudCompatible> Request for SellConsumable<I> {
+    impl<'a, I: HudCompatible<'a>> Request for SellConsumable<'a, I> {
         type Expect = Result<I, String>;
     }
 
-    impl<I: HudCompatible> Packet for SellConsumable<I> {
+    impl<'a, I: HudCompatible<'a>> Packet for SellConsumable<'a, I> {
         fn kind() -> String {
             format!("hud/consumables/sell/{}", I::kind_prefix())
         }

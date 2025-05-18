@@ -10,7 +10,7 @@ pub mod jokers;
 pub mod consumables;
 
 use crate::net::Connection;
-
+use crate::balatro::protocol::NewScreen;
 pub struct Balatro {
     connection: Connection,
 }
@@ -103,9 +103,9 @@ pub(crate) mod protocol {
         }
     }
 
-pub trait NewScreen {
-    type Info: Response;
-    fn new(info: Self::Info, connection: &mut Connection) -> Self;
-}
+    pub trait NewScreen<'a> {
+        type Info: Response;
+        fn new(info: Self::Info, connection: &'a mut Connection) -> Self;
+    }
 
 }

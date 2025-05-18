@@ -2,10 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::net::Connection;
 use super::{
-    deck::PlayingCard,
-    overview::{GameOverview, RoundOverview},
-    Error,
-    blinds::CurrentBlind
+    blinds::CurrentBlind, deck::PlayingCard, hud::Hud, overview::{GameOverview, RoundOverview}, protocol::NewScreen, Error
 };
 
 pub struct Play<'a> {
@@ -14,10 +11,6 @@ pub struct Play<'a> {
 }
 
 impl<'a> Play<'a> {
-    pub(crate) fn new(info: protocol::PlayInfo, connection: &'a mut Connection) -> Self {
-        Self { info, connection }
-    }
-
     pub fn blind(&self) -> &CurrentBlind {
         &self.info.current_blind
     }
@@ -26,20 +19,12 @@ impl<'a> Play<'a> {
         &self.info.hand
     }
 
-    pub fn score(&self) -> &f64 {
-        &self.info.score
+    pub fn score(&self) -> f64 {
+        self.info.score
     }
 
-    pub fn hands(&self) -> u32 {
-        self.info.hud.hands
-    }
-
-    pub fn discards(&self) -> u32 {
-        self.info.hud.discards
-    }
-
-    pub fn money(&self) -> u32 {
-        self.info.hud.money
+    pub fn hud(self) -> Hud<'a, protocol::PlayInfo> {
+        Hud::new(self.info, self.connection)
     }
 
     pub async fn click(self, indices: &[u32]) -> Result<Self, Error> {
@@ -67,6 +52,13 @@ impl<'a> Play<'a> {
     }
 }
 
+impl<'a> NewScreen<'a> for Play<'a> {
+    type Info = protocol::PlayInfo;
+    fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
+        Self { info, connection }
+    }
+}
+
 pub enum PlayResult<'a> {
     Again(Play<'a>),
     RoundOver(RoundOverview<'a>),
@@ -86,10 +78,13 @@ pub struct HandCard {
 
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
+    use crate::balatro::hud::Hud;
     use crate::net::protocol::{Packet, Request, Response};
-    use super::{HandCard, CurrentBlind};
+    use super::{CurrentBlind, HandCard, Play};
     use crate::balatro::overview::protocol::RoundOverviewInfo;
-    use crate::balatro::hud::protocol::HudInfo;
+    use crate::balatro::hud::protocol::{HudCompatible, HudInfo};
+
+    pub type PlayHud<'a> = Hud<'a, PlayInfo>;
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct PlayInfo {
@@ -104,6 +99,16 @@ pub(crate) mod protocol {
     impl Packet for PlayInfo {
         fn kind() -> String {
             "play/hand".to_string()
+        }
+    }
+
+    impl<'a> HudCompatible<'a> for PlayInfo {
+        type Screen = Play<'a>;
+        fn kind_prefix() -> &'static str {
+            "play"
+        }
+        fn hud_info(&self) -> &HudInfo {
+            &self.hud
         }
     }
 
