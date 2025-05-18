@@ -14,10 +14,6 @@ pub struct RoundOverview<'a> {
 }
 
 impl<'a> RoundOverview<'a> {
-    pub(crate) fn new(info: protocol::RoundOverviewInfo, connection: &'a mut Connection) -> Self {
-        Self { info, connection }
-    }
-
     pub fn earnings(&self) -> Vec<Earning> {
         self.info.earnings.iter().map(|e| {
             let kind = match e.kind.clone() {
@@ -39,6 +35,13 @@ impl<'a> RoundOverview<'a> {
     pub async fn cash_out(self) -> Result<Shop<'a>, Error> {
         let info = self.connection.request(protocol::CashOut).await??;
         Ok(Shop::new(info, self.connection))
+    }
+}
+
+impl<'a> NewScreen<'a> for RoundOverview<'a> {
+    type Info = protocol::RoundOverviewInfo;
+    fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
+        Self { info, connection }
     }
 }
 
@@ -69,13 +72,14 @@ impl<'a> GameOverview<'a> {
 }
 
 pub(crate) mod protocol {
-    use serde::{Deserialize, Serialize};
     use crate::{
-        balatro::{jokers::JokerKind, overview::Tag, shop::protocol::ShopInfo}, net::protocol::{Packet, Request, Response}
+        balatro::{hud::protocol::{HudCompatible, HudInfo}, jokers::JokerKind, overview::Tag, shop::protocol::ShopInfo}, net::protocol::{Packet, Request, Response}
     };
+    use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct RoundOverviewInfo {
+        pub hud: HudInfo,
         pub earnings: Vec<Earning>,
         pub total_earned: u64,
     }
@@ -85,6 +89,16 @@ pub(crate) mod protocol {
     impl Packet for RoundOverviewInfo {
         fn kind() -> String {
             "overview/round".to_string()
+        }
+    }
+
+    impl<'a> HudCompatible<'a> for RoundOverviewInfo {
+        type Screen = super::RoundOverview<'a>;
+        fn kind_prefix() -> &'static str {
+            "overview"
+        }
+        fn hud_info(&self) -> &HudInfo {
+            &self.hud
         }
     }
 
