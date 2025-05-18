@@ -1,7 +1,7 @@
 use log::{error, info};
 use remotro::{
     balatro::{
-        hud::{Hud, HudCompatible}, menu::{Deck, Stake}, play::{DiscardResult, PlayResult}, shop::MainCard, Balatro, Screen
+        hud::{Hud, HudCompatible, UseConsumableResult}, menu::{Deck, Stake}, play::{DiscardResult, PlayResult}, shop::MainCard, Balatro, Screen
     }, Remotro
 };
 use std::str::FromStr;
@@ -118,9 +118,17 @@ async fn quickrun(mut balatro: Balatro) {
     blind_select = use_hud(hud);
     println!("< selling consumable >");
     let hud = blind_select.hud().sell_consumable(0).await.unwrap();
-    use_hud(hud);
-    
-    
+    blind_select = use_hud(hud);
+    println!("< using consumable >");
+    let hud = blind_select.hud().use_consumable(0).await.unwrap();
+    match hud {
+        UseConsumableResult::Used(hud) => {
+            use_hud(hud);
+        }
+        UseConsumableResult::GameOver(_) => {
+            println!("Game over");
+        }
+    }
 }
 
 fn use_hud<'a, T: HudCompatible<'a>>(hud: Hud<'a, T>) -> T::Screen {
