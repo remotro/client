@@ -8,6 +8,7 @@ pub mod util;
 pub mod overview;
 pub mod jokers;
 pub mod consumables;
+pub mod boosters;
 
 use crate::net::Connection;
 use crate::balatro::protocol::NewScreen;
@@ -34,7 +35,6 @@ impl Balatro {
         Ok(screen)
     }
 }
-
 pub enum Screen<'a> {
     Menu(menu::Menu<'a>),
     SelectBlind(blinds::SelectBlind<'a>),

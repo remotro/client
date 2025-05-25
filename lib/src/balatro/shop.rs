@@ -6,7 +6,7 @@ use crate::{balatro_enum, net::Connection,
         blinds::SelectBlind,
     }
 };
-use super::{consumables::{PlanetCard, SpectralCard, TarotCard}, hud::Hud, jokers::Joker, protocol::NewScreen};
+use super::{boosters::BoosterKind, consumables::{PlanetCard, SpectralCard, TarotCard}, hud::Hud, jokers::Joker, protocol::NewScreen};
 
 pub struct Shop<'a> {
     info: protocol::ShopInfo,
@@ -79,24 +79,6 @@ pub enum MainCard {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Booster { kind: BoosterKind, price: u8 }
-
-balatro_enum!(BoosterKind {
-    ArcanaNormal = "p_arcana_normal",
-    ArcanaMega = "p_arcana_mega",
-    ArcanaJumbo = "p_arcana_jumbo",
-    BuffoonNormal = "p_buffoon_normal",
-    BuffoonMega = "p_buffoon_mega",
-    BuffoonJumbo = "p_buffoon_jumbo",
-    CelestialNormal = "p_celestial_normal",
-    CelestialMega = "p_celestial_mega",
-    CelestialJumbo = "p_celestial_jumbo",
-    SpectralNormal = "p_spectral_normal",
-    SpectralMega = "p_spectral_mega",
-    SpectralJumbo = "p_spectral_jumbo",
-    StandardNormal = "p_standard_normal",
-    StandardMega = "p_standard_mega",
-    StandardJumbo = "p_standard_jumbo",
-});
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Voucher { kind: VoucherKind, price: u8 }
