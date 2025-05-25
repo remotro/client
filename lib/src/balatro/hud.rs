@@ -1,127 +1,128 @@
+use super::Error;
 use super::consumables::Consumable;
 use super::jokers::Joker;
 use super::overview::GameOverview;
-use super::Error;
 use crate::balatro::protocol::NewScreen;
-use crate::net::Connection;
 
-pub use protocol::HudCompatible;
+#[allow(async_fn_in_trait)]
+pub trait Hud<'a>: Sized + NewScreen<'a> {
+    fn hands(&self) -> u32;
 
-pub struct Hud<'a, I: HudCompatible<'a>> {
-    connection: &'a mut Connection,
-    info: I,
+    fn discards(&self) -> u32;
+
+    fn round(&self) -> u32;
+
+    fn ante(&self) -> u32;
+
+    fn money(&self) -> u32;
+
+    fn jokers(&self) -> &[Joker];
+
+    async fn move_joker(self, from: u32, to: u32) -> Result<Self, Error>;
+
+    async fn sell_joker(self, index: u32) -> Result<Self, Error>;
+
+    fn consumables(&self) -> &[Consumable];
+
+    async fn move_consumable(self, from: u32, to: u32) -> Result<Self, Error>;
+
+    async fn use_consumable(self, index: u32) -> Result<UseConsumableResult<'a, Self>, Error>;
+
+    async fn sell_consumable(self, index: u32) -> Result<Self, Error>;
 }
 
-impl<'a, I: HudCompatible<'a>> Hud<'a, I> {
-    pub(crate) fn new(info: I, connection: &'a mut Connection) -> Self {
-        Self { connection, info }
-    }
-
-    pub fn back(self) -> I::Screen {
-        I::Screen::new(self.info, self.connection)
-    }
-
-    pub fn hands(&self) -> u32 {
-        self.info.hud_info().hands
-    }
-
-    pub fn discards(&self) -> u32 {
-        self.info.hud_info().discards
-    }
-
-    pub fn round(&self) -> u32 {
-        self.info.hud_info().round
-    }
-
-    pub fn ante(&self) -> u32 {
-        self.info.hud_info().ante
-    }
-
-    pub fn money(&self) -> u32 {
-        self.info.hud_info().money
-    }
-
-    pub fn jokers(&self) -> &[Joker] {
-        &self.info.hud_info().jokers
-    }
-
-    pub async fn move_joker(self, from: u32, to: u32) -> Result<Self, Error>
-    where
-        I: 'a,
-    {
-        let new_info = self
-            .connection
-            .request(protocol::MoveJoker { from, to, _marker: std::marker::PhantomData })
-            .await??;
-        Ok(Self::new(new_info, self.connection))
-    }
-
-    pub async fn sell_joker(self, index: u32) -> Result<Self, Error>
-    where
-        I: 'a,
-    {
-        let new_info = self
-            .connection
-            .request(protocol::SellJoker { index, _marker: std::marker::PhantomData })
-            .await??;
-        Ok(Self::new(new_info, self.connection))
-    }
-
-    pub fn consumables(&self) -> &[Consumable] {
-        &self.info.hud_info().consumables
-    }
-
-    pub async fn move_consumable(self, from: u32, to: u32) -> Result<Self, Error>
-    where
-        I: 'a,
-    {
-        let new_info = self
-            .connection
-            .request(protocol::MoveConsumable { from, to, _marker: std::marker::PhantomData })
-            .await??;
-        Ok(Self::new(new_info, self.connection))
-    }
-
-    pub async fn use_consumable(self, index: u32) -> Result<UseConsumableResult<'a, I>, Error>
-    where
-        I: 'a,
-    {
-        let new_info = self
-            .connection
-            .request(protocol::UseConsumable { index, _marker: std::marker::PhantomData })
-            .await??;
-        Ok(UseConsumableResult::Used(Self::new(new_info, self.connection)))
-    }
-
-    pub async fn sell_consumable(self, index: u32) -> Result<Self, Error>
-    where
-        I: 'a,
-    {
-        let new_info = self
-            .connection
-            .request(protocol::SellConsumable { index, _marker: std::marker::PhantomData })
-            .await??;
-        Ok(Self::new(new_info, self.connection))
-    }
-}
-
-pub enum UseConsumableResult<'a, I: HudCompatible<'a>> {
-    Used(Hud<'a, I>),
+pub enum UseConsumableResult<'a, S: Hud<'a>> {
+    Used(S),
     GameOver(GameOverview<'a>),
 }
 
+#[macro_export]
+macro_rules! impl_hud {
+    ($($t:ident),*) => {
+        $(
+            impl<'a> $crate::balatro::hud::Hud<'a> for $t<'a> {
+                fn hands(&self) -> u32 {
+                    self.info.hud.hands
+                }
+
+                fn discards(&self) -> u32 {
+                    self.info.hud.discards
+                }
+
+                fn round(&self) -> u32 {
+                    self.info.hud.round
+                }
+
+                fn ante(&self) -> u32 {
+                    self.info.hud.ante
+                }
+
+                fn money(&self) -> u32 {
+                    self.info.hud.money
+                }
+
+                fn jokers(&self) -> &[$crate::balatro::jokers::Joker] {
+                    &self.info.hud.jokers
+                }
+
+                async fn move_joker(self, from: u32, to: u32) -> Result<Self, $crate::balatro::Error> {
+                    let new_info = self
+                        .connection
+                        .request($crate::balatro::hud::protocol::MoveJoker { from, to, _marker: std::marker::PhantomData::<&$t> })
+                        .await??;
+                    Ok(Self::new(new_info, self.connection))
+                }
+
+                async fn sell_joker(self, index: u32) -> Result<Self, $crate::balatro::Error> {
+                    let new_info = self
+                        .connection
+                        .request($crate::balatro::hud::protocol::SellJoker { index, _marker: std::marker::PhantomData::<&$t> })
+                        .await??;
+                    Ok(Self::new(new_info, self.connection))
+                }
+
+                fn consumables(&self) -> &[$crate::balatro::consumables::Consumable] {
+                    &self.info.hud.consumables
+                }
+
+                async fn move_consumable(self, from: u32, to: u32) -> Result<Self, $crate::balatro::Error> {
+                    let new_info = self
+                        .connection
+                        .request($crate::balatro::hud::protocol::MoveConsumable { from, to, _marker: std::marker::PhantomData::<&$t> })
+                        .await??;
+                    Ok(Self::new(new_info, self.connection))
+                }
+
+                async fn use_consumable(self, index: u32) -> Result<$crate::balatro::hud::UseConsumableResult<'a, Self>, $crate::balatro::Error> {
+                    let new_info = self
+                        .connection
+                        .request($crate::balatro::hud::protocol::UseConsumable { index, _marker: std::marker::PhantomData::<&$t> })
+                        .await??;
+                    match new_info {
+                        $crate::balatro::hud::protocol::UseConsumableResult::Used(new_info) => Ok($crate::balatro::hud::UseConsumableResult::Used(Self::new(new_info, self.connection))),
+                        $crate::balatro::hud::protocol::UseConsumableResult::GameOver => Ok($crate::balatro::hud::UseConsumableResult::GameOver($crate::balatro::overview::GameOverview::new(self.connection))),
+                    }
+                }
+
+                async fn sell_consumable(self, index: u32) -> Result<Self, $crate::balatro::Error> {
+                    let new_info = self
+                        .connection
+                        .request($crate::balatro::hud::protocol::SellConsumable { index, _marker: std::marker::PhantomData::<&$t> })
+                        .await??;
+                    Ok(Self::new(new_info, self.connection))
+                }
+            }
+        )*
+    };
+}
+
 pub(crate) mod protocol {
-    use crate::balatro::jokers::Joker;
     use crate::balatro::consumables::Consumable;
-    use crate::balatro::protocol::NewScreen;
+    use crate::balatro::jokers::Joker;
     use crate::net::protocol::{Packet, Request, Response};
     use serde::{Deserialize, Serialize};
 
-    pub trait HudCompatible<'a>: Response {
-        type Screen: NewScreen<'a, Info = Self>;
-        fn kind_prefix() -> &'static str;
-        fn hud_info(&self) -> &HudInfo;
-    }
+    use super::Hud;
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
     pub struct HudInfo {
@@ -143,84 +144,98 @@ pub(crate) mod protocol {
     }
 
     #[derive(Serialize, Clone, Debug)]
-    pub struct MoveJoker<'a, I: HudCompatible<'a>> {
+    pub struct MoveJoker<'a, S: Hud<'a>> {
         pub from: u32,
         pub to: u32,
-        pub _marker: std::marker::PhantomData<&'a I>,
+        pub _marker: std::marker::PhantomData<&'a S>,
     }
 
-    impl<'a, I: HudCompatible<'a>> Request for MoveJoker<'a, I> {
-        type Expect = Result<I, String>;
+    impl<'a, S: Hud<'a>> Request for MoveJoker<'a, S> {
+        type Expect = Result<S::Info, String>;
     }
 
-    impl<'a, I: HudCompatible<'a>> Packet for MoveJoker<'a, I> {
+    impl<'a, S: Hud<'a>> Packet for MoveJoker<'a, S> {
         fn kind() -> String {
-            format!("{}/hud/jokers/move", I::kind_prefix())
+            format!("{}/hud/jokers/move", S::name())
         }
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
-    pub struct SellJoker<'a, I: HudCompatible<'a>> {
+    pub struct SellJoker<'a, S: Hud<'a>> {
         pub index: u32,
-        pub _marker: std::marker::PhantomData<&'a I>,
+        pub _marker: std::marker::PhantomData<&'a S>,
     }
 
-    impl<'a, I: HudCompatible<'a>> Request for SellJoker<'a, I> {
-        type Expect = Result<I, String>;
+    impl<'a, S: Hud<'a>> Request for SellJoker<'a, S> {
+        type Expect = Result<S::Info, String>;
     }
 
-    impl<'a, I: HudCompatible<'a>> Packet for SellJoker<'a, I> {
+    impl<'a, S: Hud<'a>> Packet for SellJoker<'a, S> {
         fn kind() -> String {
-            format!("{}/hud/jokers/sell", I::kind_prefix())
+            format!("{}/hud/jokers/sell", S::name())
         }
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
-    pub struct MoveConsumable<'a, I: HudCompatible<'a>> {
+    pub struct MoveConsumable<'a, S: Hud<'a>> {
         pub from: u32,
         pub to: u32,
-        pub _marker: std::marker::PhantomData<&'a I>,
+        pub _marker: std::marker::PhantomData<&'a S>,
     }
 
-    impl<'a, I: HudCompatible<'a>> Request for MoveConsumable<'a, I> {
-        type Expect = Result<I, String>;
+    impl<'a, S: Hud<'a>> Request for MoveConsumable<'a, S> {
+        type Expect = Result<S::Info, String>;
     }
 
-    impl<'a, I: HudCompatible<'a>> Packet for MoveConsumable<'a, I> {
+    impl<'a, S: Hud<'a>> Packet for MoveConsumable<'a, S> {
         fn kind() -> String {
-            format!("{}/hud/consumables/move", I::kind_prefix())
+            format!("{}/hud/consumables/move", S::name())
         }
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
-    pub struct UseConsumable<'a, I: HudCompatible<'a>> {
+    pub struct UseConsumable<'a, S: Hud<'a>> {
         pub index: u32,
-        pub _marker: std::marker::PhantomData<&'a I>,
+        pub _marker: std::marker::PhantomData<&'a S>,
     }
 
-    impl<'a, I: HudCompatible<'a>> Request for UseConsumable<'a, I> {
-        type Expect = Result<I, String>;
+    impl<'a, S: Hud<'a>> Request for UseConsumable<'a, S> {
+        type Expect = Result<UseConsumableResult<'a, S>, String>;
     }
 
-    impl<'a, I: HudCompatible<'a>> Packet for UseConsumable<'a, I> {
+    impl<'a, S: Hud<'a>> Packet for UseConsumable<'a, S> {
         fn kind() -> String {
-            format!("{}/hud/consumables/use", I::kind_prefix())
+            format!("{}/hud/consumables/use", S::name())
         }
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
-    pub struct SellConsumable<'a, I: HudCompatible<'a>> {
-        pub index: u32,
-        pub _marker: std::marker::PhantomData<&'a I>,
+    pub enum UseConsumableResult<'a, S: Hud<'a>> {
+        Used(S::Info),
+        GameOver,
     }
 
-    impl<'a, I: HudCompatible<'a>> Request for SellConsumable<'a, I> {
-        type Expect = Result<I, String>;
-    }
+    impl<'a, S: Hud<'a>> Response for UseConsumableResult<'a, S> {}
 
-    impl<'a, I: HudCompatible<'a>> Packet for SellConsumable<'a, I> {
+    impl<'a, S: Hud<'a>> Packet for UseConsumableResult<'a, S> {
         fn kind() -> String {
-            format!("{}/hud/consumables/sell", I::kind_prefix())
+            format!("{}/hud/consumables/use", S::name())
+        }
+    }
+
+    #[derive(Serialize, Deserialize, Clone, Debug)]
+    pub struct SellConsumable<'a, S: Hud<'a>> {
+        pub index: u32,
+        pub _marker: std::marker::PhantomData<&'a S>,
+    }
+
+    impl<'a, S: Hud<'a>> Request for SellConsumable<'a, S> {
+        type Expect = Result<S::Info, String>;
+    }
+
+    impl<'a, S: Hud<'a>> Packet for SellConsumable<'a, S> {
+        fn kind() -> String {
+            format!("{}/hud/consumables/sell", S::name())
         }
     }
 }

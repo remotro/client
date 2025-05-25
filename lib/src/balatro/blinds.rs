@@ -1,7 +1,6 @@
 use crate::{balatro_enum, net::Connection};
-use protocol::BlindInfo;
 use serde::{Deserialize, Serialize};
-use super::{hud::Hud, play::Play, protocol::NewScreen};
+use super::{play::Play, protocol::NewScreen};
 
 pub struct SelectBlind<'a> {
     info: protocol::BlindInfo,
@@ -19,10 +18,6 @@ impl<'a> SelectBlind<'a> {
         Ok(Self { info, connection: self.connection })
     }
 
-    pub fn hud(self) -> Hud<'a, protocol::BlindInfo> {
-        Hud::new(self.info, self.connection)
-    }
-
     pub fn small(&self) -> &SmallBlindChoice {
         &self.info.blinds.small
     }
@@ -36,12 +31,17 @@ impl<'a> SelectBlind<'a> {
     }
 }
 
-impl<'a> NewScreen<'a> for SelectBlind<'a> {
+impl<'a> NewScreen<'a> for SelectBlind<'a> {    
     type Info = protocol::BlindInfo;
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
+    fn name() -> &'static str {
+        "blind_select"
+    }
 }
+
+crate::impl_hud!(SelectBlind);
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum CurrentBlind {
@@ -138,7 +138,7 @@ pub enum BlindState {
 }
 
 pub(crate) mod protocol {
-    use crate::{balatro::{hud::protocol::{HudCompatible, HudInfo}, play::protocol::PlayInfo}, net::protocol::{Packet, Request, Response}};
+    use crate::{balatro::{hud::protocol::HudInfo, play::protocol::PlayInfo}, net::protocol::{Packet, Request, Response}};
     use serde::{Deserialize, Serialize};
 
     use super::{BigBlindChoice, BossBlindChoice, SmallBlindChoice};
@@ -154,17 +154,6 @@ pub(crate) mod protocol {
     impl Packet for BlindInfo {
         fn kind() -> String {
             "blind_select/info".to_string()
-        }
-    }
-
-
-    impl<'a> HudCompatible<'a> for BlindInfo {
-        type Screen = super::SelectBlind<'a>;
-        fn kind_prefix() -> &'static str {
-            "blind_select"
-        }
-        fn hud_info(&self) -> &HudInfo {
-            &self.hud
         }
     }
 

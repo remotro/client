@@ -3,6 +3,7 @@ pub mod menu;
 pub mod play;
 pub mod deck;
 pub mod shop;
+#[macro_use]
 pub mod hud;
 pub mod util;
 pub mod overview;
@@ -107,6 +108,7 @@ pub(crate) mod protocol {
 
     pub trait NewScreen<'a> {
         type Info: Response;
+        fn name() -> &'static str;
         fn new(info: Self::Info, connection: &'a mut Connection) -> Self;
     }
 
