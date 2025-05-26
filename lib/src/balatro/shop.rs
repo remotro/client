@@ -136,9 +136,9 @@ balatro_enum!(VoucherKind {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::{
-        balatro::{blinds::protocol::BlindInfo, boosters::protocol::{BuffoonBoosterInfo, CelestialBoosterInfo, SpectralBoosterInfo, StandardBoosterInfo, TarotBoosterInfo}, hud::protocol::HudInfo}, net::protocol::{Packet, Request, Response}
+        balatro::{blinds::protocol::BlindInfo, boosters::{OpenBuffoon, OpenCelestial, OpenSpectral, OpenStandard, OpenTarot}, hud::protocol::HudInfo, Screen}, net::protocol::{Packet, Request, Response}
     };
-    use super::{Booster, MainCard, Voucher};
+    use super::{Booster, MainCard, Shop, Voucher};
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopInfo {
@@ -219,11 +219,11 @@ pub(crate) mod protocol {
 
     #[derive(Deserialize)]
     pub enum BoughtBooster<'a> {
-        Buffoon(BuffoonBoosterInfo<'a, ShopInfo>),
-        Celestial(CelestialBoosterInfo<'a, ShopInfo>),
-        Spectral(SpectralBoosterInfo<'a, ShopInfo>),
-        Standard(StandardBoosterInfo<'a, ShopInfo>),
-        Tarot(TarotBoosterInfo<'a, ShopInfo>),
+        Buffoon(<OpenBuffoon<'a, Shop<'a>> as Screen<'a>>::Info),
+        Celestial(<OpenCelestial<'a, Shop<'a>> as Screen<'a>>::Info),
+        Spectral(<OpenSpectral<'a, Shop<'a>> as Screen<'a>>::Info),
+        Standard(<OpenStandard<'a, Shop<'a>> as Screen<'a>>::Info),
+        Tarot(<OpenTarot<'a, Shop<'a>> as Screen<'a>>::Info),
     }
 
     impl Response for BoughtBooster<'_> {}
