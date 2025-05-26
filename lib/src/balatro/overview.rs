@@ -6,7 +6,7 @@ use crate::balatro::{
 
 use super::blinds::Tag;
 use super::jokers::JokerKind;
-use super::protocol::NewScreen;
+use super::Screen;
 pub struct RoundOverview<'a> {
     connection: &'a mut Connection,
     info: protocol::RoundOverviewInfo,
@@ -37,7 +37,7 @@ impl<'a> RoundOverview<'a> {
     }
 }
 
-impl<'a> NewScreen<'a> for RoundOverview<'a> {
+impl<'a> Screen<'a> for RoundOverview<'a> {
     type Info = protocol::RoundOverviewInfo;
     fn name() -> &'static str {
         "overview"

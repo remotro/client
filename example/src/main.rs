@@ -1,7 +1,7 @@
 use log::{error, info};
 use remotro::{
     balatro::{
-        hud::{Hud, UseConsumableResult}, menu::{Deck, Stake}, play::{DiscardResult, PlayResult}, shop::MainCard, Balatro, Screen
+        hud::{Hud, UseConsumableResult}, menu::{Deck, Stake}, play::{DiscardResult, PlayResult}, shop::MainCard, Balatro, CurrentScreen
     }, Remotro
 };
 use std::str::FromStr;
@@ -36,7 +36,7 @@ macro_rules! as_variant {
 }
 
 async fn quickrun(mut balatro: Balatro) {
-    let screen = as_variant!(balatro.screen().await.unwrap(), Screen::Menu);
+    let screen = as_variant!(balatro.screen().await.unwrap(), CurrentScreen::Menu);
     println!("< starting run >");
     let mut blind_select = screen.new_run(Deck::Red, Stake::White, None).await.unwrap();
     loop {
@@ -182,7 +182,7 @@ async fn main() {
             // Check current screen in Game
             match balatro.screen().await {
                 Ok(screen) => match screen {
-                    Screen::Menu(menu) => {
+                    CurrentScreen::Menu(menu) => {
                         println!("Main Menu:");
                         // Prompt the user to select Deck
                         let deck: Deck = get_input("Select Deck:");
@@ -190,7 +190,7 @@ async fn main() {
                         let stake: Stake = get_input("Select stake");
                         menu.new_run(deck, stake, None).await.unwrap();
                     }
-                    Screen::SelectBlind(blinds) => {
+                    CurrentScreen::SelectBlind(blinds) => {
                         println!("Blinds:");
                         use_hud(&blinds);
                         println!("Small blind: {:?}", blinds.small());
@@ -217,7 +217,7 @@ async fn main() {
                             }
                         }
                     }
-                    Screen::Play(play) => {
+                    CurrentScreen::Play(play) => {
                         println!("Play:");
                         println!("Hand: {:?}", play.hand());
                         println!("Blind: {:?}", play.blind());
@@ -287,7 +287,7 @@ async fn main() {
                             }
                         }
                     }
-                    Screen::Shop(mut shop) => {
+                    CurrentScreen::Shop(mut shop) => {
                         println!("Shop");
                         println!("Items: {:?}", shop.main_cards());
                         println!("Vouchers: {:?}", shop.vouchers());

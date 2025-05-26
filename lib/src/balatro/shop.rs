@@ -6,7 +6,7 @@ use crate::{balatro_enum, net::Connection,
         blinds::SelectBlind,
     }
 };
-use super::{consumables::{PlanetCard, SpectralCard, TarotCard}, jokers::Joker, protocol::NewScreen};
+use super::{consumables::{PlanetCard, SpectralCard, TarotCard}, jokers::Joker, Screen};
 
 pub struct Shop<'a> {
     info: protocol::ShopInfo,
@@ -57,7 +57,7 @@ impl<'a> Shop<'a> {
     }
 }
 
-impl<'a> NewScreen<'a> for Shop<'a> {
+impl<'a> Screen<'a> for Shop<'a> {
     type Info = protocol::ShopInfo;
     fn name() -> &'static str {
         "shop"

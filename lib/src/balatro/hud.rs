@@ -2,10 +2,10 @@ use super::Error;
 use super::consumables::Consumable;
 use super::jokers::Joker;
 use super::overview::GameOverview;
-use crate::balatro::protocol::NewScreen;
+use crate::balatro::Screen;
 
 #[allow(async_fn_in_trait)]
-pub trait Hud<'a>: Sized + NewScreen<'a> {
+pub trait Hud<'a>: Sized + Screen<'a> {
     fn hands(&self) -> u32;
 
     fn discards(&self) -> u32;

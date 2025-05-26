@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::net::Connection;
 use super::{
-    blinds::CurrentBlind, deck::PlayingCard, overview::{GameOverview, RoundOverview}, protocol::NewScreen, Error
+    blinds::CurrentBlind, deck::PlayingCard, overview::{GameOverview, RoundOverview}, Screen, Error
 };
 
 pub struct Play<'a> {
@@ -48,7 +48,7 @@ impl<'a> Play<'a> {
     }
 }
 
-impl<'a> NewScreen<'a> for Play<'a> {
+impl<'a> Screen<'a> for Play<'a> {
     type Info = protocol::PlayInfo;
     fn name() -> &'static str {
         "play"

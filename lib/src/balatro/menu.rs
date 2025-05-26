@@ -1,10 +1,8 @@
-use crate::balatro::blinds::SelectBlind;
+use crate::balatro::{Screen, blinds::SelectBlind};
 use crate::net::Connection;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use serde_repr::{Deserialize_repr, Serialize_repr};
-
-use super::protocol::NewScreen;
 
 pub struct Menu<'a> {
     connection: &'a mut Connection,

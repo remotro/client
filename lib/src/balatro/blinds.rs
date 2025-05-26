@@ -1,6 +1,6 @@
 use crate::{balatro_enum, net::Connection};
 use serde::{Deserialize, Serialize};
-use super::{play::Play, protocol::NewScreen};
+use super::{play::Play, Screen};
 
 pub struct SelectBlind<'a> {
     info: protocol::BlindInfo,
@@ -31,7 +31,7 @@ impl<'a> SelectBlind<'a> {
     }
 }
 
-impl<'a> NewScreen<'a> for SelectBlind<'a> {    
+impl<'a> Screen<'a> for SelectBlind<'a> {    
     type Info = protocol::BlindInfo;
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
