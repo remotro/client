@@ -1,7 +1,7 @@
 use log::{error, info};
 use remotro::{
     balatro::{
-        hud::{Hud, UseConsumableResult}, menu::{Deck, Stake}, play::{DiscardResult, PlayResult}, shop::MainCard, Balatro, CurrentScreen
+        hud::{Hud, UseConsumableResult}, menu::{Deck, Stake}, play::{DiscardResult, PlayResult}, shop::{BoughtBooster, MainCard}, boosters::Open, Balatro, CurrentScreen
     }, Remotro
 };
 use std::str::FromStr;
@@ -39,94 +39,28 @@ async fn quickrun(mut balatro: Balatro) {
     let screen = as_variant!(balatro.screen().await.unwrap(), CurrentScreen::Menu);
     println!("< starting run >");
     let mut blind_select = screen.new_run(Deck::Red, Stake::White, None).await.unwrap();
-    loop {
-        println!("--- BLIND SELECT ---");
-        println!("Small: {:?}", blind_select.small());
-        println!("Big: {:?}", blind_select.big());
-        println!("Boss: {:?}", blind_select.boss());
-        use_hud(&blind_select);
-        println!("< selecting blind >");
-        let play=  blind_select.select().await.unwrap();
-        println!("--- PLAY ---");
-        println!("Hand: {:?}", play.hand());
-        println!("Blind: {:?}", play.blind());
-        println!("Score: {}", play.score());
-        use_hud(&play);
-        println!("< playing >");
-        let overview = as_variant!(play.click(&[0]).await.unwrap().play().await.unwrap(), PlayResult::RoundOver);
-        println!("--- OVERVIEW ---");
-        println!("Total money: {}", overview.total_earned());
-        println!("Earnings: {:?}", overview.earnings());
-        use_hud(&overview);
-        println!("< cashing out >");
-        let mut shop = overview.cash_out().await.unwrap();
-        println!("--- SHOP ---");
-        println!("Items: {:?}", shop.main_cards());
-        println!("Vouchers: {:?}", shop.vouchers());
-        println!("Boosters: {:?}", shop.boosters());
-        use_hud(&shop);
-        println!("< shopping >");
-        let joker_count = shop.jokers().len();
-        let consumable_count = shop.consumables().len();
-        use_hud(&shop);
-        for (i, card) in shop.main_cards().to_vec().iter().enumerate() {
-            if let MainCard::Joker(joker) = card {
-                if joker_count >= 2 {
-                    continue;
-                }
-                println!("< buying joker {} {:?} >", i, joker);
-                shop = shop.buy_main(i as u8).await.unwrap();
-                println!("--- SHOP WITH JOKER ---");
-                println!("Items: {:?}", shop.main_cards());
-                println!("Vouchers: {:?}", shop.vouchers());
-                println!("Boosters: {:?}", shop.boosters());
-                use_hud(&shop);
-                break;
-            } else {
-                if consumable_count >= 2 {
-                    continue;
-                }
-                println!("< buying consumable {} {:?} >", i, card);
-                shop = shop.buy_main(i as u8).await.unwrap();
-                println!("--- SHOP WITH CONSUMABLE ---");
-                println!("Items: {:?}", shop.main_cards());
-                println!("Vouchers: {:?}", shop.vouchers());
-                println!("Boosters: {:?}", shop.boosters());
-                use_hud(&shop);
-                break;
-            }
+    let mut play_result = blind_select.select().await.unwrap().click(&[0]).await.unwrap().play().await.unwrap();
+    let overview = as_variant!(play_result, PlayResult::RoundOver);
+    let mut shop = overview.cash_out().await.unwrap();
+    let mut booster = shop.buy_booster(0).await.unwrap();
+    match booster {
+        BoughtBooster::Arcana(arcana) => {
+            println!("bought arcana {:?}", arcana.options());
         }
-        blind_select = shop.leave().await.unwrap();
-        let joker_count = blind_select.jokers().len();
-        let consumable_count = blind_select.consumables().len();
-        use_hud(&blind_select);
-        if joker_count == 2 && consumable_count == 2 {
-            println!("< enough jokers and consumables >");
-            break;
+        BoughtBooster::Buffoon(buffoon) => {
+            println!("bought buffoon {:?}", buffoon.options());
+        }
+        BoughtBooster::Celestial(celestial) => {
+            println!("bought celestial {:?}", celestial.options());
+        }
+        BoughtBooster::Spectral(spectral) => {
+            println!("bought spectral {:?}", spectral.options());
+        }
+        BoughtBooster::Standard(standard) => {
+            println!("bought standard {:?}", standard.options());
         }
     }
-    println!("< moving joker >");
-    blind_select = blind_select.move_joker(0, 1).await.unwrap();
-    use_hud(&blind_select);
-    println!("<moving consumable >");
-    blind_select = blind_select.move_consumable(0, 1).await.unwrap();
-    use_hud(&blind_select);
-    println!("< selling joker >");
-    blind_select = blind_select.sell_joker(0).await.unwrap();
-    use_hud(&blind_select);
-    println!("< selling consumable >");
-    blind_select = blind_select.sell_consumable(0).await.unwrap();
-    use_hud(&blind_select);
-    println!("< using consumable >");
-    let result = blind_select.use_consumable(0).await.unwrap();
-    match result {
-        UseConsumableResult::Used(select_blind) => {
-            use_hud(&select_blind);
-        }
-        UseConsumableResult::GameOver(_) => {
-            println!("Game over");
-        }
-    }
+    
 }
 
 fn use_hud<'a, T: Hud<'a>>(hud: &T) {
