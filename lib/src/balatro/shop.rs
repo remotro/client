@@ -6,7 +6,7 @@ use crate::{balatro_enum, net::Connection,
         blinds::SelectBlind,
     }
 };
-use super::{boosters::{BoosterKind, OpenBuffoon, OpenCelestial, OpenSpectral, OpenStandard, OpenTarot}, consumables::{PlanetCard, SpectralCard, TarotCard}, jokers::Joker, Screen};
+use super::{boosters::{BoosterPackKind, OpenBuffoonPack, OpenCelestialPack, OpenSpectralPack, OpenStandardPack, OpenArcanaPack}, consumables::{PlanetCard, SpectralCard, TarotCard}, jokers::Joker, Screen};
 
 pub struct Shop<'a> {
     info: protocol::ShopInfo,
@@ -22,7 +22,7 @@ impl<'a> Shop<'a> {
         &self.info.vouchers
     }
 
-    pub fn boosters(&self) -> &[Booster] {
+    pub fn boosters(&self) -> &[BoosterPack] {
         &self.info.boosters
     }
 
@@ -44,11 +44,11 @@ impl<'a> Shop<'a> {
     pub async fn buy_booster(self, index: u8) -> Result<BoughtBooster<'a>, Error> {
         let info = self.connection.request(protocol::ShopBuyBooster { index, _r_marker: std::marker::PhantomData }).await??;
         match info {
-            protocol::BoughtBooster::Buffoon(info) => Ok(BoughtBooster::Buffoon(OpenBuffoon::new(info, self.connection))),
-            protocol::BoughtBooster::Celestial(info) => Ok(BoughtBooster::Celestial(OpenCelestial::new(info, self.connection))),
-            protocol::BoughtBooster::Spectral(info) => Ok(BoughtBooster::Spectral(OpenSpectral::new(info, self.connection))),
-            protocol::BoughtBooster::Standard(info) => Ok(BoughtBooster::Standard(OpenStandard::new(info, self.connection))),
-            protocol::BoughtBooster::Tarot(info) => Ok(BoughtBooster::Tarot(OpenTarot::new(info, self.connection))),
+            protocol::BoughtBooster::Buffoon(info) => Ok(BoughtBooster::Buffoon(OpenBuffoonPack::new(info, self.connection))),
+            protocol::BoughtBooster::Celestial(info) => Ok(BoughtBooster::Celestial(OpenCelestialPack::new(info, self.connection))),
+            protocol::BoughtBooster::Spectral(info) => Ok(BoughtBooster::Spectral(OpenSpectralPack::new(info, self.connection))),
+            protocol::BoughtBooster::Standard(info) => Ok(BoughtBooster::Standard(OpenStandardPack::new(info, self.connection))),
+            protocol::BoughtBooster::Arcana(info) => Ok(BoughtBooster::Arcana(OpenArcanaPack::new(info, self.connection))),
         }
     }
 
@@ -85,14 +85,14 @@ pub enum MainCard {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Booster { kind: BoosterKind, price: u8 }
+pub struct BoosterPack { kind: BoosterPackKind, price: u8 }
 
 pub enum BoughtBooster<'a> {
-    Tarot(OpenTarot<'a, Shop<'a>>),
-    Buffoon(OpenBuffoon<'a, Shop<'a>>),
-    Celestial(OpenCelestial<'a, Shop<'a>>),
-    Spectral(OpenSpectral<'a, Shop<'a>>),
-    Standard(OpenStandard<'a, Shop<'a>>),
+    Arcana(OpenArcanaPack<'a, Shop<'a>>),
+    Buffoon(OpenBuffoonPack<'a, Shop<'a>>),
+    Celestial(OpenCelestialPack<'a, Shop<'a>>),
+    Spectral(OpenSpectralPack<'a, Shop<'a>>),
+    Standard(OpenStandardPack<'a, Shop<'a>>),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -136,16 +136,16 @@ balatro_enum!(VoucherKind {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::{
-        balatro::{blinds::protocol::BlindInfo, boosters::{OpenBuffoon, OpenCelestial, OpenSpectral, OpenStandard, OpenTarot}, hud::protocol::HudInfo, Screen}, net::protocol::{Packet, Request, Response}
+        balatro::{blinds::protocol::BlindInfo, boosters::{OpenBuffoonPack, OpenCelestialPack, OpenSpectralPack, OpenStandardPack, OpenArcanaPack}, hud::protocol::HudInfo, Screen}, net::protocol::{Packet, Request, Response}
     };
-    use super::{Booster, MainCard, Shop, Voucher};
+    use super::{BoosterPack, MainCard, Shop, Voucher};
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopInfo {
         pub hud: HudInfo,
         pub main: Vec<MainCard>,
         pub vouchers: Vec<Voucher>,
-        pub boosters: Vec<Booster>,
+        pub boosters: Vec<BoosterPack>,
     }
 
     impl Response for ShopInfo {}
@@ -219,11 +219,11 @@ pub(crate) mod protocol {
 
     #[derive(Deserialize)]
     pub enum BoughtBooster<'a> {
-        Buffoon(<OpenBuffoon<'a, Shop<'a>> as Screen<'a>>::Info),
-        Celestial(<OpenCelestial<'a, Shop<'a>> as Screen<'a>>::Info),
-        Spectral(<OpenSpectral<'a, Shop<'a>> as Screen<'a>>::Info),
-        Standard(<OpenStandard<'a, Shop<'a>> as Screen<'a>>::Info),
-        Tarot(<OpenTarot<'a, Shop<'a>> as Screen<'a>>::Info),
+        Buffoon(<OpenBuffoonPack<'a, Shop<'a>> as Screen<'a>>::Info),
+        Celestial(<OpenCelestialPack<'a, Shop<'a>> as Screen<'a>>::Info),
+        Spectral(<OpenSpectralPack<'a, Shop<'a>> as Screen<'a>>::Info),
+        Standard(<OpenStandardPack<'a, Shop<'a>> as Screen<'a>>::Info),
+        Arcana(<OpenArcanaPack<'a, Shop<'a>> as Screen<'a>>::Info),
     }
 
     impl Response for BoughtBooster<'_> {}

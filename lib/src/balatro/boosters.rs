@@ -3,7 +3,7 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::{balatro_enum, net::Connection, balatro::Error};
 use super::{consumables::{PlanetKind, SpectralKind, TarotKind}, deck::PlayingCard, jokers::Joker, overview::GameOverview, Screen};
 
-balatro_enum!(BoosterKind {
+balatro_enum!(BoosterPackKind {
     ArcanaNormal = "p_arcana_normal",
     ArcanaMega = "p_arcana_mega",
     ArcanaJumbo = "p_arcana_jumbo",
@@ -21,20 +21,23 @@ balatro_enum!(BoosterKind {
     StandardJumbo = "p_standard_jumbo",
 });
 
-pub trait OpenBooster<'a>: Sized + Screen<'a> {
+#[allow(async_fn_in_trait)]
+pub trait OpenBoosterPack<'a>: Sized + Screen<'a> {
     type Options: for<'de> Deserialize<'de>;
     type ReturnTo: Screen<'a>;
-    fn booster(&self) -> BoosterKind;
+    fn booster(&self) -> BoosterPackKind;
     fn selections_left(&self) -> SelectionsLeft;
     fn options(&self) -> &[Self::Options];
     async fn skip(self) -> Result<Self::ReturnTo, Error>;
 }
 
-pub trait OpenPlainBooster<'a>: Sized + OpenBooster<'a> {
-    async fn select(self, index: u32) -> Result<PlainSelectResult<'a, Self>, Error>;
+#[allow(async_fn_in_trait)]
+pub trait OpenBareBoosterPack<'a>: Sized + OpenBoosterPack<'a> {
+    async fn select(self, index: u32) -> Result<BareSelectResult<'a, Self>, Error>;
 }
 
-pub trait OpenCardBooster<'a>: Sized + OpenBooster<'a> {
+#[allow(async_fn_in_trait)]
+pub trait OpenCardBoosterPack<'a>: Sized + OpenBoosterPack<'a> {
     async fn hand(&self) -> &[BoosterCard];
     async fn click(self, indices: &[u32]) -> Result<Self, Error>;
     async fn select(self, index: u32) -> Result<HandSelectResult<'a, Self>, Error>;
@@ -46,12 +49,12 @@ pub struct BoosterCard {
     selected: bool,
 }
 
-macro_rules! impl_open_booster {
+macro_rules! impl_open_booster_pack {
     ($ty:ident, $options:ty) => {
-        impl<'a, S : Screen<'a>> OpenBooster<'a> for $ty<'a, S> {
+        impl<'a, S : Screen<'a>> OpenBoosterPack<'a> for $ty<'a, S> {
             type Options = $options;
             type ReturnTo = S;
-            fn booster(&self) -> BoosterKind {
+            fn booster(&self) -> BoosterPackKind {
                 self.info.booster
             }
         
@@ -64,7 +67,7 @@ macro_rules! impl_open_booster {
             }
         
             async fn skip(self) -> Result<Self::ReturnTo, Error> {
-                let response = self.connection.request(protocol::SkipBooster::<'a, Self> {
+                let response = self.connection.request(protocol::BoosterPackSkip::<'a, Self> {
                     _r_marker: std::marker::PhantomData,
                 }).await??;
                 Ok(Self::ReturnTo::new(response, self.connection))
@@ -73,37 +76,37 @@ macro_rules! impl_open_booster {
     };
 }
 
-macro_rules! impl_open_plain_booster {
+macro_rules! impl_open_Bare_booster_pack {
     ($ty:ident, $options:ty) => {
-        impl_open_booster!($ty, $options);
+        impl_open_booster_pack!($ty, $options);
 
-        impl<'a, S : Screen<'a>> OpenPlainBooster<'a> for $ty<'a, S> {
-            async fn select(self, index: u32) -> Result<PlainSelectResult<'a, Self>, Error> {
-                let response = self.connection.request(protocol::SelectBoosterOption::<'a, Self, protocol::BoosterSelectResult<'a, Self>> {
+        impl<'a, S : Screen<'a>> OpenBareBoosterPack<'a> for $ty<'a, S> {
+            async fn select(self, index: u32) -> Result<BareSelectResult<'a, Self>, Error> {
+                let response = self.connection.request(protocol::OpenBoosterPackSelect::<'a, Self, protocol::BareBoosterPackSelectResult<'a, Self>> {
                     index,
                     _r_marker: std::marker::PhantomData,
                     _r_marker2: std::marker::PhantomData,
                 }).await??;
                 match response {
-                    protocol::BoosterSelectResult::Again(info) => Ok(PlainSelectResult::Again(Self::new(info, self.connection))),
-                    protocol::BoosterSelectResult::Done(result) => Ok(PlainSelectResult::Done(S::new(result, self.connection))),
+                    protocol::BareBoosterPackSelectResult::Again(info) => Ok(BareSelectResult::Again(Self::new(info, self.connection))),
+                    protocol::BareBoosterPackSelectResult::Done(result) => Ok(BareSelectResult::Done(S::new(result, self.connection))),
                 }
             }
         }
     };
 }
 
-macro_rules! impl_open_card_booster {
+macro_rules! impl_open_card_booster_pack {
     ($ty:ident, $options:ty) => {
-        impl_open_booster!($ty, $options);
+        impl_open_booster_pack!($ty, $options);
 
-        impl<'a, S : Screen<'a> + 'a> OpenCardBooster<'a> for $ty<'a, S> {
+        impl<'a, S : Screen<'a> + 'a> OpenCardBoosterPack<'a> for $ty<'a, S> {
             async fn hand(&self) -> &[BoosterCard] {
                 &self.info.hand
             }
             
             async fn click(self, indices: &[u32]) -> Result<Self, Error> {
-                let response = self.connection.request(protocol::ClickCardBooster::<'a, Self> {
+                let response = self.connection.request(protocol::CardBoosterPackClick::<'a, Self> {
                     indices: indices.to_vec(),
                     _r_marker: std::marker::PhantomData,
                     _c_marker: std::marker::PhantomData,
@@ -112,15 +115,15 @@ macro_rules! impl_open_card_booster {
             }
 
             async fn select(self, index: u32) -> Result<HandSelectResult<'a, Self>, Error> {
-                let response = self.connection.request(protocol::SelectBoosterOption::<'a, Self, protocol::CardBoosterSelectResult<'a, Self>> {
+                let response = self.connection.request(protocol::OpenBoosterPackSelect::<'a, Self, protocol::CardBoosterPackSelectResult<'a, Self>> {
                     index,
                     _r_marker: std::marker::PhantomData,
                     _r_marker2: std::marker::PhantomData,
                 }).await??;
                 match response {
-                    protocol::CardBoosterSelectResult::Again(info) => Ok(HandSelectResult::Again(Self::new(info, self.connection))),
-                    protocol::CardBoosterSelectResult::Done(result) => Ok(HandSelectResult::Done(S::new(result, self.connection))),
-                    protocol::CardBoosterSelectResult::GameOver => Ok(HandSelectResult::GameOver(GameOverview::new(self.connection))),
+                    protocol::CardBoosterPackSelectResult::Again(info) => Ok(HandSelectResult::Again(Self::new(info, self.connection))),
+                    protocol::CardBoosterPackSelectResult::Done(result) => Ok(HandSelectResult::Done(S::new(result, self.connection))),
+                    protocol::CardBoosterPackSelectResult::GameOver => Ok(HandSelectResult::GameOver(GameOverview::new(self.connection))),
                 }
             }
         }
@@ -128,32 +131,32 @@ macro_rules! impl_open_card_booster {
 }
 
 
-pub struct OpenTarot<'a, S : Screen<'a> + 'a> {
-    info: protocol::OpenCardBoosterInfo<'a, Self>,
+pub struct OpenArcanaPack<'a, S : Screen<'a> + 'a> {
+    info: protocol::OpenCardBoosterPackInfo<'a, Self>,
     connection: &'a mut Connection,
 }
 
-impl_open_card_booster!(OpenTarot, TarotOption);
+impl_open_card_booster_pack!(OpenArcanaPack, TarotOption);
 
-impl <'a, S : Screen<'a>> Screen<'a> for OpenTarot<'a, S> {
-    type Info = protocol::OpenCardBoosterInfo<'a, Self>;
+impl <'a, S : Screen<'a>> Screen<'a> for OpenArcanaPack<'a, S> {
+    type Info = protocol::OpenCardBoosterPackInfo<'a, Self>;
     fn name() -> &'static str {
-        "tarot"
+        "arcana"
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
 }
 
-pub struct OpenBuffoon<'a, S : Screen<'a> + 'a> {
-    info: protocol::OpenBoosterInfo<'a, Self>,
+pub struct OpenBuffoonPack<'a, S : Screen<'a> + 'a> {
+    info: protocol::OpenBoosterPackInfo<'a, Self>,
     connection: &'a mut Connection,
 }
 
-impl_open_plain_booster!(OpenBuffoon, Joker);
+impl_open_Bare_booster_pack!(OpenBuffoonPack, Joker);
 
-impl <'a, S : Screen<'a>> Screen<'a> for OpenBuffoon<'a, S> {
-    type Info = protocol::OpenBoosterInfo<'a, Self>;
+impl <'a, S : Screen<'a>> Screen<'a> for OpenBuffoonPack<'a, S> {
+    type Info = protocol::OpenBoosterPackInfo<'a, Self>;
     fn name() -> &'static str {
         "buffoon"
     }
@@ -162,15 +165,15 @@ impl <'a, S : Screen<'a>> Screen<'a> for OpenBuffoon<'a, S> {
     }
 }
 
-pub struct OpenCelestial<'a, S : Screen<'a> + 'a> {
-    info: protocol::OpenBoosterInfo<'a, Self>,
+pub struct OpenCelestialPack<'a, S : Screen<'a> + 'a> {
+    info: protocol::OpenBoosterPackInfo<'a, Self>,
     connection: &'a mut Connection,
 }
 
-impl_open_plain_booster!(OpenCelestial, PlanetOption);
+impl_open_Bare_booster_pack!(OpenCelestialPack, PlanetOption);
 
-impl <'a, S : Screen<'a>> Screen<'a> for OpenCelestial<'a, S> {
-    type Info = protocol::OpenBoosterInfo<'a, Self>;
+impl <'a, S : Screen<'a>> Screen<'a> for OpenCelestialPack<'a, S> {
+    type Info = protocol::OpenBoosterPackInfo<'a, Self>;
     fn name() -> &'static str {
         "celestial"
     }
@@ -179,15 +182,15 @@ impl <'a, S : Screen<'a>> Screen<'a> for OpenCelestial<'a, S> {
     }
 }
 
-pub struct OpenSpectral<'a, S : Screen<'a> + 'a> {
-    info: protocol::OpenCardBoosterInfo<'a, Self>,
+pub struct OpenSpectralPack<'a, S : Screen<'a> + 'a> {
+    info: protocol::OpenCardBoosterPackInfo<'a, Self>,
     connection: &'a mut Connection,
 }
 
-impl_open_card_booster!(OpenSpectral, SpectralOption);
+impl_open_card_booster_pack!(OpenSpectralPack, SpectralOption);
 
-impl <'a, S : Screen<'a>> Screen<'a> for OpenSpectral<'a, S> {
-    type Info = protocol::OpenCardBoosterInfo<'a, Self>;
+impl <'a, S : Screen<'a>> Screen<'a> for OpenSpectralPack<'a, S> {
+    type Info = protocol::OpenCardBoosterPackInfo<'a, Self>;
     fn name() -> &'static str {
         "spectral"
     }
@@ -196,15 +199,15 @@ impl <'a, S : Screen<'a>> Screen<'a> for OpenSpectral<'a, S> {
     }
 }
 
-pub struct OpenStandard<'a, S : Screen<'a> + 'a> {
-    info: protocol::OpenBoosterInfo<'a, Self>,
+pub struct OpenStandardPack<'a, S : Screen<'a> + 'a> {
+    info: protocol::OpenBoosterPackInfo<'a, Self>,
     connection: &'a mut Connection,
 }
 
-impl_open_plain_booster!(OpenStandard, PlayingCard);
+impl_open_Bare_booster_pack!(OpenStandardPack, PlayingCard);
 
-impl <'a, S : Screen<'a>> Screen<'a> for OpenStandard<'a, S> {
-    type Info = protocol::OpenBoosterInfo<'a, Self>;
+impl <'a, S : Screen<'a>> Screen<'a> for OpenStandardPack<'a, S> {
+    type Info = protocol::OpenBoosterPackInfo<'a, Self>;
     fn name() -> &'static str {
         "standard"
     }
@@ -220,12 +223,12 @@ pub enum SelectionsLeft {
     Two = 2,
 }
 
-pub enum PlainSelectResult<'a, O: OpenPlainBooster<'a>> {
+pub enum BareSelectResult<'a, O: OpenBareBoosterPack<'a>> {
     Again(O),
     Done(O::ReturnTo),
 }
 
-pub enum HandSelectResult<'a, O: OpenCardBooster<'a>> {
+pub enum HandSelectResult<'a, O: OpenCardBoosterPack<'a>> {
     Again(O),
     Done(O::ReturnTo),
     GameOver(GameOverview<'a>),
@@ -253,117 +256,117 @@ pub enum PlanetOption {
 
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
-    use crate::{balatro::{deck::PlayingCard, jokers::Joker}, net::protocol::{Packet, Request, Response}};
-    use super::{BoosterKind, BoosterCard, OpenBooster, OpenCardBooster, PlanetOption, SelectionsLeft, SpectralOption, TarotOption};
+    use crate::net::protocol::{Packet, Request, Response};
+    use super::{BoosterPackKind, BoosterCard, OpenBoosterPack, OpenCardBoosterPack, SelectionsLeft};
     use crate::balatro::Screen;
 
     #[derive(Deserialize)]
-    pub struct OpenBoosterInfo<'a, B: OpenBooster<'a>> {
-        pub booster: BoosterKind,
+    pub struct OpenBoosterPackInfo<'a, B: OpenBoosterPack<'a>> {
+        pub booster: BoosterPackKind,
         pub options: Vec<B::Options>,
         pub selections_left: SelectionsLeft
     }
 
-    impl<'a, B: OpenBooster<'a>> Response for OpenBoosterInfo<'a, B> {}
+    impl<'a, B: OpenBoosterPack<'a>> Response for OpenBoosterPackInfo<'a, B> {}
 
-    impl<'a, B: OpenBooster<'a>> Packet for OpenBoosterInfo<'a, B> {
+    impl<'a, B: OpenBoosterPack<'a>> Packet for OpenBoosterPackInfo<'a, B> {
         fn kind() -> String {
-            format!("open_booster/{}/info", B::name())
+            format!("open_booster_pack/{}/info", B::name())
         }
     }
 
     #[derive(Deserialize)]
-    pub struct OpenCardBoosterInfo<'a, B: OpenCardBooster<'a>> {
-        pub booster: BoosterKind,
+    pub struct OpenCardBoosterPackInfo<'a, B: OpenCardBoosterPack<'a>> {
+        pub booster: BoosterPackKind,
         pub options: Vec<B::Options>,
         pub selections_left: SelectionsLeft,
         pub hand: Vec<BoosterCard>
     }
 
-    impl<'a, B: OpenCardBooster<'a>> Response for OpenCardBoosterInfo<'a, B> {}
+    impl<'a, B: OpenCardBoosterPack<'a>> Response for OpenCardBoosterPackInfo<'a, B> {}
 
-    impl<'a, B: OpenCardBooster<'a>> Packet for OpenCardBoosterInfo<'a, B> {
+    impl<'a, B: OpenCardBoosterPack<'a>> Packet for OpenCardBoosterPackInfo<'a, B> {
         fn kind() -> String {
-            format!("open_booster/{}/info", B::name())
+            format!("open_booster_pack/{}/info", B::name())
         }
     }
 
     #[derive(Serialize)]
-    pub struct SelectBoosterOption<'a, B: OpenBooster<'a>, R: Response> {
+    pub struct OpenBoosterPackSelect<'a, B: OpenBoosterPack<'a>, R: Response> {
         pub index: u32,
         pub _r_marker: std::marker::PhantomData<&'a B>,
         pub _r_marker2: std::marker::PhantomData<R>,
     }
 
-    impl<'a, B: OpenBooster<'a>, R: Response> Request for SelectBoosterOption<'a, B, R> {
+    impl<'a, B: OpenBoosterPack<'a>, R: Response> Request for OpenBoosterPackSelect<'a, B, R> {
         type Expect = Result<R, String>;
     }
 
-    impl<'a, B: OpenBooster<'a>, R: Response> Packet for SelectBoosterOption<'a, B, R> {
+    impl<'a, B: OpenBoosterPack<'a>, R: Response> Packet for OpenBoosterPackSelect<'a, B, R> {
         fn kind() -> String {
-            format!("open_booster/{}/select", B::name())
+            format!("open_booster_pack/{}/select", B::name())
         }
     }
     
     #[derive(Deserialize)]
-    pub enum BoosterSelectResult<'a, B: OpenBooster<'a>> {
+    pub enum BareBoosterPackSelectResult<'a, B: OpenBoosterPack<'a>> {
         Again(B::Info),
         Done(<B::ReturnTo as Screen<'a>>::Info),
     }
 
-    impl<'a, B: OpenBooster<'a>> Response for BoosterSelectResult<'a, B> {}
+    impl<'a, B: OpenBoosterPack<'a>> Response for BareBoosterPackSelectResult<'a, B> {}
 
-    impl<'a, B: OpenBooster<'a>> Packet for BoosterSelectResult<'a, B> {
+    impl<'a, B: OpenBoosterPack<'a>> Packet for BareBoosterPackSelectResult<'a, B> {
         fn kind() -> String {
-            format!("open_booster/{}/select", B::name())
+            format!("open_booster_pack/{}/select", B::name())
         }
     }
 
     #[derive(Deserialize)]
-    pub enum CardBoosterSelectResult<'a, B: OpenCardBooster<'a>> {
+    pub enum CardBoosterPackSelectResult<'a, B: OpenCardBoosterPack<'a>> {
         Again(B::Info),
         Done(<B::ReturnTo as Screen<'a>>::Info),
         GameOver,
     }
 
-    impl<'a, B: OpenCardBooster<'a>> Response for CardBoosterSelectResult<'a, B> {}
+    impl<'a, B: OpenCardBoosterPack<'a>> Response for CardBoosterPackSelectResult<'a, B> {}
 
-    impl<'a, B: OpenCardBooster<'a>> Packet for CardBoosterSelectResult<'a, B> {
+    impl<'a, B: OpenCardBoosterPack<'a>> Packet for CardBoosterPackSelectResult<'a, B> {
         fn kind() -> String {
-            format!("open_booster/{}/select", B::name())
+            format!("open_booster_pack/{}/select", B::name())
         }
     }
     
 
     #[derive(Serialize)]
-    pub struct SkipBooster<'a, B: OpenBooster<'a>> {
+    pub struct BoosterPackSkip<'a, B: OpenBoosterPack<'a>> {
         pub _r_marker: std::marker::PhantomData<&'a B>,
     }
 
-    impl<'a, B: OpenBooster<'a>> Request for SkipBooster<'a, B> {
+    impl<'a, B: OpenBoosterPack<'a>> Request for BoosterPackSkip<'a, B> {
         type Expect = Result<<B::ReturnTo as Screen<'a>>::Info, String>;
     }
 
-    impl<'a, B: OpenBooster<'a>> Packet for SkipBooster<'a, B> {
+    impl<'a, B: OpenBoosterPack<'a>> Packet for BoosterPackSkip<'a, B> {
         fn kind() -> String {
-            format!("open_booster/{}/skip", B::name())
+            format!("open_booster_pack/{}/skip", B::name())
         }
     }
 
     #[derive(Serialize)]
-    pub struct ClickCardBooster<'a, B: OpenCardBooster<'a>> {
+    pub struct CardBoosterPackClick<'a, B: OpenCardBoosterPack<'a>> {
         pub indices: Vec<u32>,
         pub _r_marker: std::marker::PhantomData<&'a B>,
         pub _c_marker: std::marker::PhantomData<&'a B>,
     }
 
-    impl<'a, B: OpenCardBooster<'a>> Request for ClickCardBooster<'a, B> {
-        type Expect = Result<OpenCardBoosterInfo<'a, B>, String>;
+    impl<'a, B: OpenCardBoosterPack<'a>> Request for CardBoosterPackClick<'a, B> {
+        type Expect = Result<OpenCardBoosterPackInfo<'a, B>, String>;
     }   
 
-    impl<'a, B: OpenCardBooster<'a>> Packet for ClickCardBooster<'a, B> {
+    impl<'a, B: OpenCardBoosterPack<'a>> Packet for CardBoosterPackClick<'a, B> {
         fn kind() -> String {
-            format!("open_booster/{}/click", B::name())
+            format!("open_booster_pack/{}/click", B::name())
         }
     }
     

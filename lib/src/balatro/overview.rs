@@ -17,7 +17,7 @@ impl<'a> RoundOverview<'a> {
         self.info.earnings.iter().map(|e| {
             let kind = match e.kind.clone() {
                 protocol::EarningKind::Joker(k) => EarningKind::Joker(k),
-                protocol::EarningKind::Tag(t) => EarningKind::Tag(t.clone()),
+                protocol::EarningKind::Tag(t) => EarningKind::Tag(t),
                 protocol::EarningKind::Blind(_) => EarningKind::Blind,
                 protocol::EarningKind::Interest(_) => EarningKind::Interest,
                 protocol::EarningKind::Hands(h) => EarningKind::Hands(h),
