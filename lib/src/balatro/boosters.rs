@@ -4,8 +4,7 @@ use protocol::{BoosterSelect, BoosterSelectResult, BoosterSkip};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::{balatro_enum, net::Connection, balatro::Error};
-
-use super::protocol::NewScreen;
+use super::Screen;
 
 balatro_enum!(BoosterKind {
     ArcanaNormal = "p_arcana_normal",
@@ -25,12 +24,12 @@ balatro_enum!(BoosterKind {
     StandardJumbo = "p_standard_jumbo",
 });
 
-pub struct OpenBooster<'a, C : for<'de> Deserialize<'de>, R : NewScreen<'a>> {
+pub struct OpenBooster<'a, C : for<'de> Deserialize<'de>, S : Screen<'a>> {
     connection: &'a mut Connection,
-    info: protocol::BoosterInfo<'a, C, R::Info>,
+    info: protocol::BoosterInfo<'a, C, S::Info>,
 }
 
-impl <'a, C : for<'de> Deserialize<'de>, R : NewScreen<'a>> OpenBooster<'a, C, R> {
+impl <'a, C : for<'de> Deserialize<'de>, S : Screen<'a>> OpenBooster<'a, C, S> {
     pub fn booster(&self) -> BoosterKind {
         self.info.booster
     }
@@ -43,28 +42,31 @@ impl <'a, C : for<'de> Deserialize<'de>, R : NewScreen<'a>> OpenBooster<'a, C, R
         &self.info.options
     }
 
-    async fn skip(self) -> Result<R, Error> {
-        let response = self.connection.request(BoosterSkip::<'a, R::Info> {
+    async fn skip(self) -> Result<S, Error> {
+        let response = self.connection.request(BoosterSkip::<'a, S::Info> {
             _r_marker: std::marker::PhantomData,
         }).await?;
-        Ok(R::new(response, self.connection))
+        Ok(S::new(response, self.connection))
     }
 
-    async fn select(self, index: u32) -> Result<SelectResult<'a, C, R>, Error> {
-        let response = self.connection.request(BoosterSelect::<'a, C, R::Info> {
+    async fn select(self, index: u32) -> Result<SelectResult<'a, C, S>, Error> {
+        let response = self.connection.request(BoosterSelect::<'a, C, S::Info> {
             index,
             _r_marker: std::marker::PhantomData,
             _c_marker: std::marker::PhantomData,
         }).await?;
         match response {
             BoosterSelectResult::Again(info) => Ok(SelectResult::Again(OpenBooster::new(info, self.connection))),
-            BoosterSelectResult::Done(result) => Ok(SelectResult::Done(R::new(result, self.connection))),
+            BoosterSelectResult::Done(result) => Ok(SelectResult::Done(S::new(result, self.connection))),
         }
     }
 }
 
-impl <'a, C : for<'de> Deserialize<'de>, R : NewScreen<'a>> NewScreen<'a> for OpenBooster<'a, C, R> {
-    type Info = protocol::BoosterInfo<'a, C, R::Info>;
+impl <'a, C : for<'de> Deserialize<'de>, S : Screen<'a>> Screen<'a> for OpenBooster<'a, C, S> {
+    type Info = protocol::BoosterInfo<'a, C, S::Info>;
+    fn name() -> &'static str {
+        "booster"
+    }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
@@ -77,9 +79,9 @@ pub enum SelectionsLeft {
     Two = 2,
 }
 
-pub enum SelectResult<'a, C : DeserializeOwned, R : NewScreen<'a>> {
-    Again(OpenBooster<'a, C, R>),
-    Done(R),
+pub enum SelectResult<'a, C : DeserializeOwned, S : Screen<'a>> {
+    Again(OpenBooster<'a, C, S>),
+    Done(S),
 }
 
 pub(crate) mod protocol {

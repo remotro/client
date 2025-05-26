@@ -5,10 +5,8 @@ use crate::balatro::{
 };
 
 use super::blinds::Tag;
-use super::hud::Hud;
 use super::jokers::JokerKind;
-use super::protocol::NewScreen;
-
+use super::Screen;
 pub struct RoundOverview<'a> {
     connection: &'a mut Connection,
     info: protocol::RoundOverviewInfo,
@@ -29,10 +27,6 @@ impl<'a> RoundOverview<'a> {
         }).collect()
     }
 
-    pub fn hud(self) -> Hud<'a, protocol::RoundOverviewInfo> {
-        Hud::new(self.info, self.connection)
-    }
-
     pub fn total_earned(&self) -> u64 {
         self.info.total_earned
     }
@@ -43,12 +37,17 @@ impl<'a> RoundOverview<'a> {
     }
 }
 
-impl<'a> NewScreen<'a> for RoundOverview<'a> {
+impl<'a> Screen<'a> for RoundOverview<'a> {
     type Info = protocol::RoundOverviewInfo;
+    fn name() -> &'static str {
+        "overview"
+    }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
 }
+
+crate::impl_hud!(RoundOverview);
 
 #[derive(Clone, Debug)]
 pub struct Earning {
@@ -78,7 +77,7 @@ impl<'a> GameOverview<'a> {
 
 pub(crate) mod protocol {
     use crate::{
-        balatro::{hud::protocol::{HudCompatible, HudInfo}, jokers::JokerKind, overview::Tag, shop::protocol::ShopInfo}, net::protocol::{Packet, Request, Response}
+        balatro::{hud::protocol::HudInfo, jokers::JokerKind, overview::Tag, shop::protocol::ShopInfo}, net::protocol::{Packet, Request, Response}
     };
     use serde::{Deserialize, Serialize};
 
@@ -94,16 +93,6 @@ pub(crate) mod protocol {
     impl Packet for RoundOverviewInfo {
         fn kind() -> String {
             "overview/round".to_string()
-        }
-    }
-
-    impl<'a> HudCompatible<'a> for RoundOverviewInfo {
-        type Screen = super::RoundOverview<'a>;
-        fn kind_prefix() -> &'static str {
-            "overview"
-        }
-        fn hud_info(&self) -> &HudInfo {
-            &self.hud
         }
     }
 

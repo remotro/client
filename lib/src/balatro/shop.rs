@@ -6,7 +6,7 @@ use crate::{balatro_enum, net::Connection,
         blinds::SelectBlind,
     }
 };
-use super::{boosters::BoosterKind, consumables::{PlanetCard, SpectralCard, TarotCard}, hud::Hud, jokers::Joker, protocol::NewScreen};
+use super::{boosters::BoosterKind, consumables::{PlanetCard, SpectralCard, TarotCard}, hud::Hud, jokers::Joker, Screen};
 
 pub struct Shop<'a> {
     info: protocol::ShopInfo,
@@ -24,10 +24,6 @@ impl<'a> Shop<'a> {
 
     pub fn boosters(&self) -> &[Booster] {
         &self.info.boosters
-    }
-
-    pub fn hud(self) -> Hud<'a, protocol::ShopInfo> {
-        Hud::new(self.info, self.connection)
     }
 
     pub async fn buy_main(self, index: u8) -> Result<Self, Error> {
@@ -61,12 +57,17 @@ impl<'a> Shop<'a> {
     }
 }
 
-impl<'a> NewScreen<'a> for Shop<'a> {
+impl<'a> Screen<'a> for Shop<'a> {
     type Info = protocol::ShopInfo;
+    fn name() -> &'static str {
+        "shop"
+    }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
 }
+
+crate::impl_hud!(Shop);
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum MainCard {
@@ -121,9 +122,9 @@ balatro_enum!(VoucherKind {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::{
-        balatro::{blinds::protocol::BlindInfo, hud::protocol::{HudCompatible, HudInfo}}, net::protocol::{Packet, Request, Response}
+        balatro::{blinds::protocol::BlindInfo, hud::protocol::HudInfo}, net::protocol::{Packet, Request, Response}
     };
-    use super::{Booster, MainCard, Shop, Voucher};
+    use super::{Booster, MainCard, Voucher};
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopInfo {
@@ -138,16 +139,6 @@ pub(crate) mod protocol {
     impl Packet for ShopInfo {
         fn kind() -> String {
             "shop/info".to_string()
-        }
-    }
-
-    impl<'a> HudCompatible<'a> for ShopInfo {
-        type Screen = Shop<'a>;
-        fn kind_prefix() -> &'static str {
-            "shop"
-        }
-        fn hud_info(&self) -> &HudInfo {
-            &self.hud
         }
     }
 

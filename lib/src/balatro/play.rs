@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::net::Connection;
 use super::{
-    blinds::CurrentBlind, deck::PlayingCard, hud::Hud, overview::{GameOverview, RoundOverview}, protocol::NewScreen, Error
+    blinds::CurrentBlind, deck::PlayingCard, overview::{GameOverview, RoundOverview}, Screen, Error
 };
 
 pub struct Play<'a> {
@@ -21,10 +21,6 @@ impl<'a> Play<'a> {
 
     pub fn score(&self) -> f64 {
         self.info.score
-    }
-
-    pub fn hud(self) -> Hud<'a, protocol::PlayInfo> {
-        Hud::new(self.info, self.connection)
     }
 
     pub async fn click(self, indices: &[u32]) -> Result<Self, Error> {
@@ -52,12 +48,17 @@ impl<'a> Play<'a> {
     }
 }
 
-impl<'a> NewScreen<'a> for Play<'a> {
+impl<'a> Screen<'a> for Play<'a> {
     type Info = protocol::PlayInfo;
+    fn name() -> &'static str {
+        "play"
+    }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
 }
+
+crate::impl_hud!(Play);
 
 pub enum PlayResult<'a> {
     Again(Play<'a>),
@@ -78,13 +79,10 @@ pub struct HandCard {
 
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
-    use crate::balatro::hud::Hud;
     use crate::net::protocol::{Packet, Request, Response};
-    use super::{CurrentBlind, HandCard, Play};
+    use super::{CurrentBlind, HandCard};
     use crate::balatro::overview::protocol::RoundOverviewInfo;
-    use crate::balatro::hud::protocol::{HudCompatible, HudInfo};
-
-    pub type PlayHud<'a> = Hud<'a, PlayInfo>;
+    use crate::balatro::hud::protocol::HudInfo;
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct PlayInfo {
@@ -99,16 +97,6 @@ pub(crate) mod protocol {
     impl Packet for PlayInfo {
         fn kind() -> String {
             "play/hand".to_string()
-        }
-    }
-
-    impl<'a> HudCompatible<'a> for PlayInfo {
-        type Screen = Play<'a>;
-        fn kind_prefix() -> &'static str {
-            "play"
-        }
-        fn hud_info(&self) -> &HudInfo {
-            &self.hud
         }
     }
 
