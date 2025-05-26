@@ -24,10 +24,10 @@ balatro_enum!(BoosterKind {
     StandardJumbo = "p_standard_jumbo",
 });
 
-pub type OpenTarot<'a, S> = OpenBooster<'a, TarotKind, S>;
+pub type OpenTarot<'a, S> = OpenBooster<'a, TarotOption, S>;
 pub type OpenBuffoon<'a, S> = OpenBooster<'a, Joker, S>;
-pub type OpenCelestial<'a, S> = OpenBooster<'a, PlanetKind, S>;
-pub type OpenSpectral<'a, S> = OpenBooster<'a, SpectralKind, S>;
+pub type OpenCelestial<'a, S> = OpenBooster<'a, PlanetOption, S>;
+pub type OpenSpectral<'a, S> = OpenBooster<'a, SpectralOption, S>;
 pub type OpenStandard<'a, S> = OpenBooster<'a, PlayingCard, S>;
 
 pub struct OpenBooster<'a, C : for<'de> Deserialize<'de>, S : Screen<'a>> {
@@ -90,15 +90,35 @@ pub enum SelectResult<'a, C : DeserializeOwned, S : Screen<'a>> {
     Done(S),
 }
 
+#[derive(Serialize, Deserialize)]
+pub enum SpectralOption {
+    Normal(SpectralKind),
+    BlackHole,
+    Soul
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum TarotOption {
+    Normal(TarotKind),
+    Spectral(SpectralOption),
+    Soul
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum PlanetOption {
+    Normal(PlanetKind),
+    BlackHole
+}
+
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::{balatro::{consumables::{PlanetKind, SpectralKind, TarotKind}, deck::PlayingCard, jokers::Joker}, net::protocol::{Packet, Request, Response}};
-    use super::{BoosterKind, SelectionsLeft};
+    use super::{BoosterKind, PlanetOption, SelectionsLeft, SpectralOption, TarotOption};
 
-    pub type TarotBoosterInfo<'a, I> = BoosterInfo<'a, TarotKind, I>;
+    pub type TarotBoosterInfo<'a, I> = BoosterInfo<'a, TarotOption, I>;
     pub type BuffoonBoosterInfo<'a, I> = BoosterInfo<'a, Joker, I>;
-    pub type CelestialBoosterInfo<'a, I> = BoosterInfo<'a, PlanetKind, I>;
-    pub type SpectralBoosterInfo<'a, I> = BoosterInfo<'a, SpectralKind, I>;
+    pub type CelestialBoosterInfo<'a, I> = BoosterInfo<'a, PlanetOption, I>;
+    pub type SpectralBoosterInfo<'a, I> = BoosterInfo<'a, SpectralOption, I>;
     pub type StandardBoosterInfo<'a, I> = BoosterInfo<'a, PlayingCard, I>;
 
     #[derive(Deserialize)]
