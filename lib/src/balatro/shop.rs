@@ -6,7 +6,7 @@ use crate::{balatro_enum, net::Connection,
         blinds::SelectBlind,
     }
 };
-use super::{boosters::BoosterKind, consumables::{PlanetCard, SpectralCard, TarotCard}, hud::Hud, jokers::Joker, Screen};
+use super::{boosters::{BoosterKind, OpenBuffoon, OpenCelestial, OpenSpectral, OpenStandard, OpenTarot}, consumables::{PlanetCard, SpectralCard, TarotCard}, jokers::Joker, Screen};
 
 pub struct Shop<'a> {
     info: protocol::ShopInfo,
@@ -41,9 +41,15 @@ impl<'a> Shop<'a> {
         Ok(Self::new(info, self.connection))
     }
     
-    pub async fn buy_booster(self, index: u8) -> Result<Self, Error> {
-        let info = self.connection.request(protocol::ShopBuyBooster { index }).await??;
-        Ok(Self::new(info, self.connection))
+    pub async fn buy_booster(self, index: u8) -> Result<BoughtBooster<'a>, Error> {
+        let info = self.connection.request(protocol::ShopBuyBooster { index, _r_marker: std::marker::PhantomData }).await??;
+        match info {
+            protocol::BoughtBooster::Buffoon(info) => Ok(BoughtBooster::Buffoon(OpenBuffoon::new(info, self.connection))),
+            protocol::BoughtBooster::Celestial(info) => Ok(BoughtBooster::Celestial(OpenCelestial::new(info, self.connection))),
+            protocol::BoughtBooster::Spectral(info) => Ok(BoughtBooster::Spectral(OpenSpectral::new(info, self.connection))),
+            protocol::BoughtBooster::Standard(info) => Ok(BoughtBooster::Standard(OpenStandard::new(info, self.connection))),
+            protocol::BoughtBooster::Tarot(info) => Ok(BoughtBooster::Tarot(OpenTarot::new(info, self.connection))),
+        }
     }
 
     pub async fn reroll(self) -> Result<Self, Error> {
@@ -80,6 +86,14 @@ pub enum MainCard {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Booster { kind: BoosterKind, price: u8 }
+
+pub enum BoughtBooster<'a> {
+    Tarot(OpenTarot<'a, Shop<'a>>),
+    Buffoon(OpenBuffoon<'a, Shop<'a>>),
+    Celestial(OpenCelestial<'a, Shop<'a>>),
+    Spectral(OpenSpectral<'a, Shop<'a>>),
+    Standard(OpenStandard<'a, Shop<'a>>),
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Voucher { kind: VoucherKind, price: u8 }
@@ -122,7 +136,7 @@ balatro_enum!(VoucherKind {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::{
-        balatro::{blinds::protocol::BlindInfo, hud::protocol::HudInfo}, net::protocol::{Packet, Request, Response}
+        balatro::{blinds::protocol::BlindInfo, boosters::protocol::{BuffoonBoosterInfo, CelestialBoosterInfo, SpectralBoosterInfo, StandardBoosterInfo, TarotBoosterInfo}, hud::protocol::HudInfo}, net::protocol::{Packet, Request, Response}
     };
     use super::{Booster, MainCard, Voucher};
 
@@ -188,20 +202,37 @@ pub(crate) mod protocol {
     }
     
     #[derive(Serialize, Deserialize, Clone)]
-    pub struct ShopBuyBooster {
-        pub index: u8
+    pub struct ShopBuyBooster<'a> {
+        pub index: u8,
+        pub _r_marker: std::marker::PhantomData<&'a BoughtBooster<'a>>,
     }
 
-    impl Request for ShopBuyBooster {
-        type Expect = Result<ShopInfo, String>;
+    impl<'a> Request for ShopBuyBooster<'a> {
+        type Expect = Result<BoughtBooster<'a>, String>;
     }
 
-    impl Packet for ShopBuyBooster {
+    impl Packet for ShopBuyBooster<'_> {
         fn kind() -> String {
             "shop/buybooster".to_string()
         }
     }
 
+    #[derive(Deserialize)]
+    pub enum BoughtBooster<'a> {
+        Buffoon(BuffoonBoosterInfo<'a, ShopInfo>),
+        Celestial(CelestialBoosterInfo<'a, ShopInfo>),
+        Spectral(SpectralBoosterInfo<'a, ShopInfo>),
+        Standard(StandardBoosterInfo<'a, ShopInfo>),
+        Tarot(TarotBoosterInfo<'a, ShopInfo>),
+    }
+
+    impl Response for BoughtBooster<'_> {}
+
+    impl Packet for BoughtBooster<'_> {
+        fn kind() -> String {
+            "shop/bought_booster".to_string()
+        }
+    }
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopReroll {}

@@ -4,7 +4,7 @@ use protocol::{BoosterSelect, BoosterSelectResult, BoosterSkip};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::{balatro_enum, net::Connection, balatro::Error};
-use super::Screen;
+use super::{consumables::{PlanetCard, PlanetKind, SpectralCard, SpectralKind, TarotKind}, deck::PlayingCard, jokers::{Joker, JokerKind}, Screen};
 
 balatro_enum!(BoosterKind {
     ArcanaNormal = "p_arcana_normal",
@@ -23,6 +23,12 @@ balatro_enum!(BoosterKind {
     StandardMega = "p_standard_mega",
     StandardJumbo = "p_standard_jumbo",
 });
+
+pub type OpenTarot<'a, S> = OpenBooster<'a, TarotKind, S>;
+pub type OpenBuffoon<'a, S> = OpenBooster<'a, Joker, S>;
+pub type OpenCelestial<'a, S> = OpenBooster<'a, PlanetKind, S>;
+pub type OpenSpectral<'a, S> = OpenBooster<'a, SpectralKind, S>;
+pub type OpenStandard<'a, S> = OpenBooster<'a, PlayingCard, S>;
 
 pub struct OpenBooster<'a, C : for<'de> Deserialize<'de>, S : Screen<'a>> {
     connection: &'a mut Connection,
@@ -86,8 +92,14 @@ pub enum SelectResult<'a, C : DeserializeOwned, S : Screen<'a>> {
 
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
-    use crate::net::protocol::{Packet, Request, Response};
+    use crate::{balatro::{consumables::{PlanetKind, SpectralKind, TarotKind}, deck::PlayingCard, jokers::Joker}, net::protocol::{Packet, Request, Response}};
     use super::{BoosterKind, SelectionsLeft};
+
+    pub type TarotBoosterInfo<'a, I> = BoosterInfo<'a, TarotKind, I>;
+    pub type BuffoonBoosterInfo<'a, I> = BoosterInfo<'a, Joker, I>;
+    pub type CelestialBoosterInfo<'a, I> = BoosterInfo<'a, PlanetKind, I>;
+    pub type SpectralBoosterInfo<'a, I> = BoosterInfo<'a, SpectralKind, I>;
+    pub type StandardBoosterInfo<'a, I> = BoosterInfo<'a, PlayingCard, I>;
 
     #[derive(Deserialize)]
     pub struct BoosterInfo<'a, C, R> {
@@ -98,9 +110,9 @@ pub(crate) mod protocol {
         pub _c_marker: std::marker::PhantomData<&'a C>,
     }
 
-    impl<'a, C: for<'de> Deserialize<'de>, R: for<'de> Deserialize<'de>> Response for BoosterInfo<'a, C, R> {}
+    impl<C: for<'de> Deserialize<'de>, R: for<'de> Deserialize<'de>> Response for BoosterInfo<'_, C, R> {}
 
-    impl<'a, C: for<'de> Deserialize<'de>, R:for<'de> Deserialize<'de>> Packet for BoosterInfo<'a, C, R> {
+    impl<C: for<'de> Deserialize<'de>, R:for<'de> Deserialize<'de>> Packet for BoosterInfo<'_, C, R> {
         fn kind() -> String {
             "booster/info".to_string()
         }
