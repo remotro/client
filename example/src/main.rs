@@ -46,18 +46,23 @@ async fn quickrun(mut balatro: Balatro) {
     match booster {
         BoughtBooster::Arcana(arcana) => {
             println!("bought arcana {:?}", arcana.options());
+            arcana.skip().await.unwrap();
         }
         BoughtBooster::Buffoon(buffoon) => {
             println!("bought buffoon {:?}", buffoon.options());
+            buffoon.skip().await.unwrap();
         }
         BoughtBooster::Celestial(celestial) => {
             println!("bought celestial {:?}", celestial.options());
+            celestial.skip().await.unwrap();
         }
         BoughtBooster::Spectral(spectral) => {
             println!("bought spectral {:?}", spectral.options());
+            spectral.skip().await.unwrap();
         }
         BoughtBooster::Standard(standard) => {
             println!("bought standard {:?}", standard.options());
+            standard.skip().await.unwrap();
         }
     }
     
