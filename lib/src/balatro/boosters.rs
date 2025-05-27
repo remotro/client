@@ -271,7 +271,7 @@ pub(crate) mod protocol {
 
     impl<'a, B: Open<'a>> Packet for OpenInfo<'a, B> {
         fn kind() -> String {
-            format!("open/{}/info", B::name())
+            format!("{}/open/{}/info", <B as Open<'a>>::ReturnTo::name(), B::name())
         }
     }
 
@@ -287,7 +287,7 @@ pub(crate) mod protocol {
 
     impl<'a, B: OpenWithHand<'a>> Packet for OpenWithHandInfo<'a, B> {
         fn kind() -> String {
-            format!("open/{}/info", B::name())
+            format!("{}/open/{}/info", <B as Open<'a>>::ReturnTo::name(), B::name())
         }
     }
 
@@ -304,7 +304,7 @@ pub(crate) mod protocol {
 
     impl<'a, B: Open<'a>, R: Response> Packet for OpenSelect<'a, B, R> {
         fn kind() -> String {
-            format!("open/{}/select", B::name())
+            format!("{}/open/{}/select", <B as Open<'a>>::ReturnTo::name(), B::name())
         }
     }
     
@@ -318,7 +318,7 @@ pub(crate) mod protocol {
 
     impl<'a, B: Open<'a>> Packet for BareBoosterPackSelectResult<'a, B> {
         fn kind() -> String {
-            format!("open/{}/select", B::name())
+            format!("{}/open/{}/select", <B as Open<'a>>::ReturnTo::name(), B::name())
         }
     }
 
@@ -333,7 +333,7 @@ pub(crate) mod protocol {
 
     impl<'a, B: OpenWithHand<'a>> Packet for CardBoosterPackSelectResult<'a, B> {
         fn kind() -> String {
-            format!("open/{}/select", B::name())
+            format!("{}/open/{}/select", <B as Open<'a>>::ReturnTo::name(), B::name())
         }
     }
     
@@ -349,7 +349,7 @@ pub(crate) mod protocol {
 
     impl<'a, B: Open<'a>> Packet for BoosterPackSkip<'a, B> {
         fn kind() -> String {
-            format!("open/{}/skip", B::name())
+            format!("{}/open/{}/skip", <B as Open<'a>>::ReturnTo::name(), B::name())
         }
     }
 
@@ -366,7 +366,7 @@ pub(crate) mod protocol {
 
     impl<'a, B: OpenWithHand<'a>> Packet for CardBoosterPackClick<'a, B> {
         fn kind() -> String {
-            format!("open/{}/click", B::name())
+            format!("{}/open/{}/click", <B as Open<'a>>::ReturnTo::name(), B::name())
         }
     }
     
