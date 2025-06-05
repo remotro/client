@@ -5,21 +5,18 @@ use crate::balatro::{
 };
 
 use super::blinds::Tag;
-
+use super::jokers::JokerKind;
+use super::Screen;
 pub struct RoundOverview<'a> {
     connection: &'a mut Connection,
     info: protocol::RoundOverviewInfo,
 }
 
 impl<'a> RoundOverview<'a> {
-    pub(crate) fn new(info: protocol::RoundOverviewInfo, connection: &'a mut Connection) -> Self {
-        Self { info, connection }
-    }
-
     pub fn earnings(&self) -> Vec<Earning> {
         self.info.earnings.iter().map(|e| {
             let kind = match e.kind.clone() {
-                protocol::EarningKind::Joker(s) => EarningKind::Joker(s.clone()),
+                protocol::EarningKind::Joker(k) => EarningKind::Joker(k),
                 protocol::EarningKind::Tag(t) => EarningKind::Tag(t.clone()),
                 protocol::EarningKind::Blind(_) => EarningKind::Blind,
                 protocol::EarningKind::Interest(_) => EarningKind::Interest,
@@ -40,6 +37,18 @@ impl<'a> RoundOverview<'a> {
     }
 }
 
+impl<'a> Screen<'a> for RoundOverview<'a> {
+    type Info = protocol::RoundOverviewInfo;
+    fn name() -> &'static str {
+        "overview"
+    }
+    fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
+        Self { info, connection }
+    }
+}
+
+crate::impl_hud!(RoundOverview);
+
 #[derive(Clone, Debug)]
 pub struct Earning {
     pub kind: EarningKind,
@@ -48,7 +57,7 @@ pub struct Earning {
 
 #[derive(Clone, Debug)]
 pub enum EarningKind {
-    Joker(String),
+    Joker(JokerKind),
     Tag(Tag),
     Blind,
     Interest,
@@ -67,14 +76,14 @@ impl<'a> GameOverview<'a> {
 }
 
 pub(crate) mod protocol {
-    use serde::{Deserialize, Serialize};
     use crate::{
-        net::protocol::{Packet, Request, Response},
-        balatro::{overview::Tag,shop::protocol::ShopInfo},
+        balatro::{hud::protocol::HudInfo, jokers::JokerKind, overview::Tag, shop::protocol::ShopInfo}, net::protocol::{Packet, Request, Response}
     };
+    use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct RoundOverviewInfo {
+        pub hud: HudInfo,
         pub earnings: Vec<Earning>,
         pub total_earned: u64,
     }
@@ -95,7 +104,7 @@ pub(crate) mod protocol {
 
     #[derive(Serialize, Deserialize, Clone)]
     pub enum EarningKind {
-        Joker(String),
+        Joker(JokerKind),
         Tag(Tag),
         Blind(Vec<()>),
         Interest(Vec<()>),

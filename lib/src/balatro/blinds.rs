@@ -1,7 +1,6 @@
 use crate::{balatro_enum, net::Connection};
-use protocol::BlindInfo;
 use serde::{Deserialize, Serialize};
-use super::play::Play;
+use super::{play::Play, Screen};
 
 pub struct SelectBlind<'a> {
     info: protocol::BlindInfo,
@@ -9,10 +8,6 @@ pub struct SelectBlind<'a> {
 }
 
 impl<'a> SelectBlind<'a> {
-    pub(crate) fn new(info: BlindInfo, connection: &'a mut Connection) -> Self {
-        Self { info, connection }
-    }
-
     pub async fn select(self) -> Result<Play<'a>, super::Error> {
         let info = self.connection.request(protocol::SelectBlind).await??;
         Ok(Play::new(info, self.connection))
@@ -24,17 +19,29 @@ impl<'a> SelectBlind<'a> {
     }
 
     pub fn small(&self) -> &SmallBlindChoice {
-        &self.info.small
+        &self.info.blinds.small
     }
 
     pub fn big(&self) -> &BigBlindChoice {
-        &self.info.big
+        &self.info.blinds.big
     }
 
     pub fn boss(&self) -> &BossBlindChoice {
-        &self.info.boss
+        &self.info.blinds.boss
     }
 }
+
+impl<'a> Screen<'a> for SelectBlind<'a> {    
+    type Info = protocol::BlindInfo;
+    fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
+        Self { info, connection }
+    }
+    fn name() -> &'static str {
+        "blind_select"
+    }
+}
+
+crate::impl_hud!(SelectBlind);
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum CurrentBlind {
@@ -131,16 +138,15 @@ pub enum BlindState {
 }
 
 pub(crate) mod protocol {
-    use crate::{balatro::play::protocol::PlayInfo, net::protocol::{Packet, Request, Response}};
+    use crate::{balatro::{hud::protocol::HudInfo, play::protocol::PlayInfo}, net::protocol::{Packet, Request, Response}};
     use serde::{Deserialize, Serialize};
 
     use super::{BigBlindChoice, BossBlindChoice, SmallBlindChoice};
 
     #[derive(Serialize, Deserialize)]
     pub struct BlindInfo {
-        pub small: SmallBlindChoice,
-        pub big: BigBlindChoice,
-        pub boss: BossBlindChoice,
+        pub hud: HudInfo,
+        pub blinds: BlindChoices
     }
 
     impl Response for BlindInfo {}
@@ -149,6 +155,14 @@ pub(crate) mod protocol {
         fn kind() -> String {
             "blind_select/info".to_string()
         }
+    }
+
+
+    #[derive(Serialize, Deserialize)]
+    pub struct BlindChoices {
+        pub small: SmallBlindChoice,
+        pub big: BigBlindChoice,
+        pub boss: BossBlindChoice,
     }
 
     #[derive(Serialize)]
