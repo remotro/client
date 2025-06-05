@@ -3,8 +3,8 @@ use crate::balatro_enum;
 
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Card {
-    pub edition: Option<Edition>,
+pub struct PlayingCard {
+    pub edition: Option<CardEdition>,
     pub enhancement: Option<Enhancement>,
     pub rank: Rank,
     pub suit: Suit,
@@ -66,7 +66,7 @@ balatro_enum!(Seal {
     Gold = "gold_seal"
 });
 
-balatro_enum!(Edition {
+balatro_enum!(CardEdition {
     None = "e_base",
     Foil = "e_foil",
     Holographic = "e_holo",

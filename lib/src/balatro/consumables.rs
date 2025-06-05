@@ -1,6 +1,21 @@
 use serde::{Deserialize, Serialize};
 use crate::balatro_enum;
-balatro_enum!(Planet {
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum Consumable {
+    Planet(PlanetCard),
+    Tarot(TarotCard),
+    Spectral(SpectralCard)
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PlanetCard {
+    pub kind: PlanetKind,
+    pub price: u64,
+    pub negative: bool,
+}
+
+balatro_enum!(PlanetKind {
     Mercury = "c_mercury",
     Venus = "c_venus",
     Earth = "c_earth",
@@ -15,7 +30,14 @@ balatro_enum!(Planet {
     Eris = "c_eris",
 });
 
-balatro_enum!(Tarot {
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TarotCard {
+    pub kind: TarotKind,
+    pub price: u64,
+    pub negative: bool,
+}
+
+balatro_enum!(TarotKind {
     Fool = "c_fool",
     Magician = "c_magician",
     HighPriestess = "c_high_priestess",
@@ -40,7 +62,14 @@ balatro_enum!(Tarot {
     World = "c_world",
 });
 
-balatro_enum!(Spectral {
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SpectralCard {
+    pub kind: SpectralKind,
+    pub price: u64,
+    pub negative: bool,
+}
+
+balatro_enum!(SpectralKind {
     Familiar = "c_familiar",
     Grim = "c_grim",
     Incantation = "c_incantation",

@@ -2,10 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::net::Connection;
 use super::{
-    deck::Card,
-    overview::{GameOverview, RoundOverview},
-    Error,
-    blinds::CurrentBlind
+    blinds::CurrentBlind, deck::PlayingCard, overview::{GameOverview, RoundOverview}, Screen, Error
 };
 
 pub struct Play<'a> {
@@ -14,10 +11,6 @@ pub struct Play<'a> {
 }
 
 impl<'a> Play<'a> {
-    pub(crate) fn new(info: protocol::PlayInfo, connection: &'a mut Connection) -> Self {
-        Self { info, connection }
-    }
-
     pub fn blind(&self) -> &CurrentBlind {
         &self.info.current_blind
     }
@@ -26,20 +19,8 @@ impl<'a> Play<'a> {
         &self.info.hand
     }
 
-    pub fn score(&self) -> &f64 {
-        &self.info.score
-    }
-
-    pub fn hands(&self) -> &u8 {
-        &self.info.hands
-    }
-
-    pub fn discards(&self) -> &u8 {
-        &self.info.discards
-    }
-
-    pub fn money(&self) -> &u32 {
-        &self.info.money
+    pub fn score(&self) -> f64 {
+        self.info.score
     }
 
     pub async fn click(self, indices: &[u32]) -> Result<Self, Error> {
@@ -67,6 +48,18 @@ impl<'a> Play<'a> {
     }
 }
 
+impl<'a> Screen<'a> for Play<'a> {
+    type Info = protocol::PlayInfo;
+    fn name() -> &'static str {
+        "play"
+    }
+    fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
+        Self { info, connection }
+    }
+}
+
+crate::impl_hud!(Play);
+
 pub enum PlayResult<'a> {
     Again(Play<'a>),
     RoundOver(RoundOverview<'a>),
@@ -80,23 +73,23 @@ pub enum DiscardResult<'a> {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct HandCard {
-    card: Option<Card>,
+    card: Option<PlayingCard>,
     selected: bool,
 }
 
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::net::protocol::{Packet, Request, Response};
-    use super::{HandCard, CurrentBlind};
+    use super::{CurrentBlind, HandCard};
     use crate::balatro::overview::protocol::RoundOverviewInfo;
+    use crate::balatro::hud::protocol::HudInfo;
+
     #[derive(Serialize, Deserialize, Clone)]
     pub struct PlayInfo {
         pub current_blind: CurrentBlind,
         pub hand: Vec<HandCard>,
         pub score: f64,
-        pub hands: u8,
-        pub discards: u8,
-        pub money: u32
+        pub hud: HudInfo,
     }
 
     impl Response for PlayInfo {}
