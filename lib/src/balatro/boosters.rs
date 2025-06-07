@@ -28,19 +28,14 @@ pub trait Open<'a>: Sized + Screen<'a> {
     fn booster(&self) -> BoosterPackKind;
     fn selections_left(&self) -> SelectionsLeft;
     fn options(&self) -> &[Self::Options];
+    async fn select(self, index: u32) -> Result<SelectResult<'a, Self>, Error>;
     async fn skip(self) -> Result<Self::ReturnTo, Error>;
-}
-
-#[allow(async_fn_in_trait)]
-pub trait OpenBare<'a>: Sized + Open<'a> {
-    async fn select(self, index: u32) -> Result<BareSelectResult<'a, Self>, Error>;
 }
 
 #[allow(async_fn_in_trait)]
 pub trait OpenWithHand<'a>: Sized + Open<'a> {
     async fn hand(&self) -> &[BoosterCard];
     async fn click(self, indices: &[u32]) -> Result<Self, Error>;
-    async fn select(self, index: u32) -> Result<HandSelectResult<'a, Self>, Error>;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -65,32 +60,24 @@ macro_rules! impl_open {
             fn options(&self) -> &[Self::Options] {
                 &self.info.options
             }
+
+            async fn select(self, index: u32) -> Result<SelectResult<'a, Self>, Error> {
+                let response = self.connection.request(protocol::OpenSelect::<'a, Self, protocol::SelectResult<'a, Self>> {
+                    index,
+                    _r_marker: std::marker::PhantomData,
+                    _r_marker2: std::marker::PhantomData,
+                }).await??;
+                match response {
+                    protocol::SelectResult::Again(info) => Ok(SelectResult::Again(Self::new(info, self.connection))),
+                    protocol::SelectResult::Done(result) => Ok(SelectResult::Done(S::new(result, self.connection))),
+                }
+            }
         
             async fn skip(self) -> Result<Self::ReturnTo, Error> {
                 let response = self.connection.request(protocol::BoosterPackSkip::<'a, Self> {
                     _r_marker: std::marker::PhantomData,
                 }).await??;
                 Ok(Self::ReturnTo::new(response, self.connection))
-            }
-        }
-    };
-}
-
-macro_rules! impl_open_bare {
-    ($ty:ident, $options:ty) => {
-       impl_open!($ty, $options);
-
-        impl<'a, S : Screen<'a>> OpenBare<'a> for $ty<'a, S> {
-            async fn select(self, index: u32) -> Result<BareSelectResult<'a, Self>, Error> {
-                let response = self.connection.request(protocol::OpenSelect::<'a, Self, protocol::BareBoosterPackSelectResult<'a, Self>> {
-                    index,
-                    _r_marker: std::marker::PhantomData,
-                    _r_marker2: std::marker::PhantomData,
-                }).await??;
-                match response {
-                    protocol::BareBoosterPackSelectResult::Again(info) => Ok(BareSelectResult::Again(Self::new(info, self.connection))),
-                    protocol::BareBoosterPackSelectResult::Done(result) => Ok(BareSelectResult::Done(S::new(result, self.connection))),
-                }
             }
         }
     };
@@ -112,19 +99,6 @@ macro_rules! impl_open_with_hand {
                     _c_marker: std::marker::PhantomData,
                 }).await??;
                 Ok(Self::new(response, self.connection))
-            }
-
-            async fn select(self, index: u32) -> Result<HandSelectResult<'a, Self>, Error> {
-                let response = self.connection.request(protocol::OpenSelect::<'a, Self, protocol::CardBoosterPackSelectResult<'a, Self>> {
-                    index,
-                    _r_marker: std::marker::PhantomData,
-                    _r_marker2: std::marker::PhantomData,
-                }).await??;
-                match response {
-                    protocol::CardBoosterPackSelectResult::Again(info) => Ok(HandSelectResult::Again(Self::new(info, self.connection))),
-                    protocol::CardBoosterPackSelectResult::Done(result) => Ok(HandSelectResult::Done(S::new(result, self.connection))),
-                    protocol::CardBoosterPackSelectResult::GameOver => Ok(HandSelectResult::GameOver(GameOverview::new(self.connection))),
-                }
             }
         }
     }
@@ -153,7 +127,7 @@ pub struct OpenBuffoonPack<'a, S : Screen<'a> + 'a> {
     connection: &'a mut Connection,
 }
 
-impl_open_bare!(OpenBuffoonPack, Joker);
+impl_open!(OpenBuffoonPack, Joker);
 
 impl <'a, S : Screen<'a>> Screen<'a> for OpenBuffoonPack<'a, S> {
     type Info = protocol::OpenInfo<'a, Self>;
@@ -170,7 +144,7 @@ pub struct OpenCelestialPack<'a, S : Screen<'a> + 'a> {
     connection: &'a mut Connection,
 }
 
-impl_open_bare!(OpenCelestialPack, PlanetOption);
+impl_open!(OpenCelestialPack, PlanetOption);
 
 impl <'a, S : Screen<'a>> Screen<'a> for OpenCelestialPack<'a, S> {
     type Info = protocol::OpenInfo<'a, Self>;
@@ -204,7 +178,7 @@ pub struct OpenStandardPack<'a, S : Screen<'a> + 'a> {
     connection: &'a mut Connection,
 }
 
-impl_open_bare!(OpenStandardPack, PlayingCard);
+impl_open!(OpenStandardPack, PlayingCard);
 
 impl <'a, S : Screen<'a>> Screen<'a> for OpenStandardPack<'a, S> {
     type Info = protocol::OpenInfo<'a, Self>;
@@ -223,34 +197,28 @@ pub enum SelectionsLeft {
     Two = 2,
 }
 
-pub enum BareSelectResult<'a, O: OpenBare<'a>> {
+pub enum SelectResult<'a, O: Open<'a>> {
     Again(O),
     Done(O::ReturnTo),
-}
-
-pub enum HandSelectResult<'a, O: OpenWithHand<'a>> {
-    Again(O),
-    Done(O::ReturnTo),
-    GameOver(GameOverview<'a>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum SpectralOption {
-    Normal(SpectralKind),
+    Spectral(SpectralKind),
     BlackHole,
     Soul
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum TarotOption {
-    Normal(TarotKind),
+    Tarot(TarotKind),
     Spectral(SpectralOption),
     Soul
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum PlanetOption {
-    Normal(PlanetKind),
+    Planet(PlanetKind),
     BlackHole
 }
 
@@ -309,29 +277,14 @@ pub(crate) mod protocol {
     }
     
     #[derive(Deserialize)]
-    pub enum BareBoosterPackSelectResult<'a, B: Open<'a>> {
+    pub enum SelectResult<'a, B: Open<'a>> {
         Again(B::Info),
         Done(<B::ReturnTo as Screen<'a>>::Info),
     }
 
-    impl<'a, B: Open<'a>> Response for BareBoosterPackSelectResult<'a, B> {}
+    impl<'a, B: Open<'a>> Response for SelectResult<'a, B> {}
 
-    impl<'a, B: Open<'a>> Packet for BareBoosterPackSelectResult<'a, B> {
-        fn kind() -> String {
-            format!("{}/open/{}/select", <B as Open<'a>>::ReturnTo::name(), B::name())
-        }
-    }
-
-    #[derive(Deserialize)]
-    pub enum CardBoosterPackSelectResult<'a, B: OpenWithHand<'a>> {
-        Again(B::Info),
-        Done(<B::ReturnTo as Screen<'a>>::Info),
-        GameOver,
-    }
-
-    impl<'a, B: OpenWithHand<'a>> Response for CardBoosterPackSelectResult<'a, B> {}
-
-    impl<'a, B: OpenWithHand<'a>> Packet for CardBoosterPackSelectResult<'a, B> {
+    impl<'a, B: Open<'a>> Packet for SelectResult<'a, B> {
         fn kind() -> String {
             format!("{}/open/{}/select", <B as Open<'a>>::ReturnTo::name(), B::name())
         }

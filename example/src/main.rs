@@ -1,7 +1,7 @@
 use log::{error, info};
 use remotro::{
     balatro::{
-        hud::{Hud, UseConsumableResult}, menu::{Deck, Stake}, play::{DiscardResult, PlayResult}, shop::{BoughtBooster, MainCard}, boosters::Open, Balatro, CurrentScreen
+        boosters::{BoosterCard, BoosterPackKind, Open, OpenWithHand}, hud::{Hud, UseConsumableResult}, menu::{Deck, Stake}, play::{DiscardResult, PlayResult}, shop::{BoosterPack, BoughtBooster, MainCard}, Balatro, CurrentScreen
     }, Remotro
 };
 use std::str::FromStr;
@@ -39,33 +39,20 @@ async fn quickrun(mut balatro: Balatro) {
     let screen = as_variant!(balatro.screen().await.unwrap(), CurrentScreen::Menu);
     println!("< starting run >");
     let mut blind_select = screen.new_run(Deck::Red, Stake::White, None).await.unwrap();
-    let mut play_result = blind_select.select().await.unwrap().click(&[0]).await.unwrap().play().await.unwrap();
-    let overview = as_variant!(play_result, PlayResult::RoundOver);
-    let mut shop = overview.cash_out().await.unwrap();
-    let mut booster = shop.buy_booster(0).await.unwrap();
-    match booster {
-        BoughtBooster::Arcana(arcana) => {
-            println!("bought arcana {:?}", arcana.options());
-            arcana.skip().await.unwrap();
+    loop {
+        let mut play_result = blind_select.select().await.unwrap().click(&[0]).await.unwrap().play().await.unwrap();
+        let overview = as_variant!(play_result, PlayResult::RoundOver);
+        let mut shop = overview.cash_out().await.unwrap();
+        for (i, booster) in shop.boosters().iter().enumerate() {
+            if booster.kind == BoosterPackKind::ArcanaNormal {
+                let mut booster = shop.buy_booster(i as u8).await.unwrap();
+                let mut arcana = as_variant!(booster, BoughtBooster::Arcana);
+                let mut arcana_select = arcana.click(&[0, 1]).await.unwrap().select(0).await.unwrap();
+                return;
+            }
         }
-        BoughtBooster::Buffoon(buffoon) => {
-            println!("bought buffoon {:?}", buffoon.options());
-            buffoon.skip().await.unwrap();
-        }
-        BoughtBooster::Celestial(celestial) => {
-            println!("bought celestial {:?}", celestial.options());
-            celestial.skip().await.unwrap();
-        }
-        BoughtBooster::Spectral(spectral) => {
-            println!("bought spectral {:?}", spectral.options());
-            spectral.skip().await.unwrap();
-        }
-        BoughtBooster::Standard(standard) => {
-            println!("bought standard {:?}", standard.options());
-            standard.skip().await.unwrap();
-        }
+        blind_select = shop.leave().await.unwrap();
     }
-    
 }
 
 fn use_hud<'a, T: Hud<'a>>(hud: &T) {

@@ -85,7 +85,7 @@ pub enum MainCard {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct BoosterPack { kind: BoosterPackKind, price: u8 }
+pub struct BoosterPack { pub kind: BoosterPackKind, pub price: u8 }
 
 pub enum BoughtBooster<'a> {
     Arcana(OpenArcanaPack<'a, Shop<'a>>),
