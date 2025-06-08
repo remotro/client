@@ -1,4 +1,4 @@
-use crate::balatro::blinds::SelectBlind;
+use crate::balatro::{Screen, blinds::SelectBlind};
 use crate::net::Connection;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;

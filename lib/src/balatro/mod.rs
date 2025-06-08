@@ -3,22 +3,14 @@ pub mod menu;
 pub mod play;
 pub mod deck;
 pub mod shop;
+pub mod hud;
 pub mod util;
 pub mod overview;
-
 pub mod jokers;
 pub mod consumables;
-use crate::{
-    net::Connection,
-    balatro::{
-        jokers::Joker,
-        consumables::{
-            Tarot,
-            Planet,
-            Spectral
-        }
-    }
-};
+
+use crate::net::Connection;
+use crate::net::protocol::Response;
 
 pub struct Balatro {
     connection: Connection,
@@ -30,19 +22,19 @@ impl Balatro {
     }
 
     /// Obtains the current state from the connected Balatro game.
-    pub async fn screen(&mut self) -> Result<Screen, Error> {
+    pub async fn screen(&mut self) -> Result<CurrentScreen, Error> {
         let info = self.connection.request(protocol::GetScreen).await??;
         let screen = match info {
-            protocol::ScreenInfo::Menu(_) => Screen::Menu(menu::Menu::new(&mut self.connection)),
-            protocol::ScreenInfo::SelectBlind(blinds) => Screen::SelectBlind(blinds::SelectBlind::new(blinds, &mut self.connection)),
-            protocol::ScreenInfo::Play(play) => Screen::Play(play::Play::new(play, &mut self.connection)),
-            protocol::ScreenInfo::Shop(shop) => Screen::Shop(shop::Shop::new(shop, &mut self.connection)),
+            protocol::ScreenInfo::Menu(_) => CurrentScreen::Menu(menu::Menu::new(&mut self.connection)),
+            protocol::ScreenInfo::SelectBlind(blinds) => CurrentScreen::SelectBlind(blinds::SelectBlind::new(blinds, &mut self.connection)),
+            protocol::ScreenInfo::Play(play) => CurrentScreen::Play(play::Play::new(play, &mut self.connection)),
+            protocol::ScreenInfo::Shop(shop) => CurrentScreen::Shop(shop::Shop::new(shop, &mut self.connection)),
         };
         Ok(screen)
     }
 }
 
-pub enum Screen<'a> {
+pub enum CurrentScreen<'a> {
     Menu(menu::Menu<'a>),
     SelectBlind(blinds::SelectBlind<'a>),
     Play(play::Play<'a>),
@@ -75,10 +67,16 @@ impl From<String> for Error {
     }
 }
 
+pub trait Screen<'a> {
+    type Info: Response;
+    fn name() -> &'static str;
+    fn new(info: Self::Info, connection: &'a mut Connection) -> Self;
+}
+
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
 
-    use crate::net::protocol::{Packet, Request, Response};
+    use crate::net::{protocol::{Packet, Request, Response}};
 
     use super::{blinds, play, shop};
 
@@ -111,4 +109,6 @@ pub(crate) mod protocol {
             "screen/current".to_string()
         }
     }
+
+
 }

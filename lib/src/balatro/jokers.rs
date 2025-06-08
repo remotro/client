@@ -1,6 +1,22 @@
 use serde::{Serialize, Deserialize};
 use crate::balatro_enum;
-balatro_enum!(Joker {
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Joker {
+    pub kind: JokerKind,
+    pub price: u64,
+    pub edition: Option<JokerEdition>,
+}
+
+balatro_enum!(JokerEdition {
+    None = "e_base",
+    Foil = "e_foil",
+    Holographic = "e_holo",
+    Polychrome = "e_polychrome",
+    Negative = "e_negative"
+});
+
+balatro_enum!(JokerKind {
     Joker = "j_joker",
     GreedyJoker = "j_greedy_joker",
     LustyJoker = "j_lusty_joker",
