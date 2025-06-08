@@ -3,7 +3,6 @@ pub mod menu;
 pub mod play;
 pub mod deck;
 pub mod shop;
-#[macro_use]
 pub mod hud;
 pub mod util;
 pub mod overview;
