@@ -26,14 +26,9 @@ pub trait Hud<'a>: Sized + Screen<'a> {
 
     async fn move_consumable(self, from: u32, to: u32) -> Result<Self, Error>;
 
-    async fn use_consumable(self, index: u32) -> Result<UseConsumableResult<'a, Self>, Error>;
+    async fn use_consumable(self, index: u32) -> Result<Self, Error>;
 
     async fn sell_consumable(self, index: u32) -> Result<Self, Error>;
-}
-
-pub enum UseConsumableResult<'a, S: Hud<'a>> {
-    Used(S),
-    GameOver(GameOverview<'a>),
 }
 
 #[macro_export]
@@ -93,15 +88,12 @@ macro_rules! impl_hud {
                     Ok(Self::new(new_info, self.connection))
                 }
 
-                async fn use_consumable(self, index: u32) -> Result<$crate::balatro::hud::UseConsumableResult<'a, Self>, $crate::balatro::Error> {
+                async fn use_consumable(self, index: u32) -> Result<Self, $crate::balatro::Error> {
                     let new_info = self
                         .connection
                         .request($crate::balatro::hud::protocol::UseConsumable { index, _marker: std::marker::PhantomData::<&$t> })
                         .await??;
-                    match new_info {
-                        $crate::balatro::hud::protocol::UseConsumableResult::Used(new_info) => Ok($crate::balatro::hud::UseConsumableResult::Used(Self::new(new_info, self.connection))),
-                        $crate::balatro::hud::protocol::UseConsumableResult::GameOver => Ok($crate::balatro::hud::UseConsumableResult::GameOver($crate::balatro::overview::GameOverview::new(self.connection))),
-                    }
+                    Ok(Self::new(new_info, self.connection))
                 }
 
                 async fn sell_consumable(self, index: u32) -> Result<Self, $crate::balatro::Error> {
@@ -200,24 +192,10 @@ pub(crate) mod protocol {
     }
 
     impl<'a, S: Hud<'a>> Request for UseConsumable<'a, S> {
-        type Expect = Result<UseConsumableResult<'a, S>, String>;
+        type Expect = Result<S::Info, String>;
     }
 
     impl<'a, S: Hud<'a>> Packet for UseConsumable<'a, S> {
-        fn kind() -> String {
-            format!("{}/hud/consumables/use", S::name())
-        }
-    }
-
-    #[derive(Serialize, Deserialize, Clone, Debug)]
-    pub enum UseConsumableResult<'a, S: Hud<'a>> {
-        Used(S::Info),
-        GameOver,
-    }
-
-    impl<'a, S: Hud<'a>> Response for UseConsumableResult<'a, S> {}
-
-    impl<'a, S: Hud<'a>> Packet for UseConsumableResult<'a, S> {
         fn kind() -> String {
             format!("{}/hud/consumables/use", S::name())
         }
