@@ -285,22 +285,14 @@ async fn main() {
                         println!("Items: {:?}", shop.main_cards());
                         println!("Vouchers: {:?}", shop.vouchers());
                         println!("Boosters: {:?}", shop.boosters());
+                        println!("Select a main item to buy");
+                        let mut user_input = String::new();
+                        std::io::stdin()
+                            .read_line(&mut user_input)
+                            .expect("Failed to read line from stdin");
+                        let index: u32 = user_input.trim().parse().unwrap();
+                        shop = shop.buy_main(index as u8).await.unwrap();
                         print_hud(&shop);
-                        let mut bought_joker = false;
-                        for (i, card) in shop.main_cards().iter().enumerate() {
-                            if let MainCard::Joker(joker) = card {
-                                println!("Buying joker {}", i);
-                                shop = shop.buy_main(i as u8).await.unwrap();
-                                bought_joker = true;
-                                break;
-                            }
-                        }
-                        if !bought_joker {
-                            println!("No joker found");
-                            break;
-                        }
-                        print_hud(&shop);
-                        shop = shop.sell_joker(0).await.unwrap();
                     }
                         
                 },
