@@ -1,7 +1,7 @@
 use log::{error, info};
 use remotro::{
     balatro::{
-        hud::Hud, menu::{Deck, Stake}, play::{DiscardResult, PlayResult}, shop::MainCard, Balatro, CurrentScreen
+        boosters::{BoosterCard, BoosterPackKind, Open, OpenWithHand}, hud::Hud, menu::{Deck, Stake}, play::{DiscardResult, PlayResult}, shop::{BoosterPack, BoughtBooster, MainCard}, Balatro, CurrentScreen
     }, Remotro
 };
 use std::str::FromStr;
@@ -40,86 +40,19 @@ async fn quickrun(mut balatro: Balatro) {
     println!("< starting run >");
     let mut blind_select = screen.new_run(Deck::Red, Stake::White, None).await.unwrap();
     loop {
-        println!("--- BLIND SELECT ---");
-        println!("Small: {:?}", blind_select.small());
-        println!("Big: {:?}", blind_select.big());
-        println!("Boss: {:?}", blind_select.boss());
-        print_hud(&blind_select);
-        println!("< selecting blind >");
-        let play=  blind_select.select().await.unwrap();
-        println!("--- PLAY ---");
-        println!("Hand: {:?}", play.hand());
-        println!("Blind: {:?}", play.blind());
-        println!("Score: {}", play.score());
-        print_hud(&play);
-        println!("< playing >");
-        let overview = as_variant!(play.click(&[0]).await.unwrap().play().await.unwrap(), PlayResult::RoundOver);
-        println!("--- OVERVIEW ---");
-        println!("Total money: {}", overview.total_earned());
-        println!("Earnings: {:?}", overview.earnings());
-        print_hud(&overview);
-        println!("< cashing out >");
+        let mut play_result = blind_select.select().await.unwrap().click(&[0]).await.unwrap().play().await.unwrap();
+        let overview = as_variant!(play_result, PlayResult::RoundOver);
         let mut shop = overview.cash_out().await.unwrap();
-        println!("--- SHOP ---");
-        println!("Items: {:?}", shop.main_cards());
-        println!("Vouchers: {:?}", shop.vouchers());
-        println!("Boosters: {:?}", shop.boosters());
-        print_hud(&shop);
-        println!("< shopping >");
-        let joker_count = shop.jokers().len();
-        let consumable_count = shop.consumables().len();
-        print_hud(&shop);
-        for (i, card) in shop.main_cards().to_vec().iter().enumerate() {
-            if let MainCard::Joker(joker) = card {
-                if joker_count >= 2 {
-                    continue;
-                }
-                println!("< buying joker {} {:?} >", i, joker);
-                shop = shop.buy_main(i as u8).await.unwrap();
-                println!("--- SHOP WITH JOKER ---");
-                println!("Items: {:?}", shop.main_cards());
-                println!("Vouchers: {:?}", shop.vouchers());
-                println!("Boosters: {:?}", shop.boosters());
-                print_hud(&shop);
-                break;
-            } else {
-                if consumable_count >= 2 {
-                    continue;
-                }
-                println!("< buying consumable {} {:?} >", i, card);
-                shop = shop.buy_main(i as u8).await.unwrap();
-                println!("--- SHOP WITH CONSUMABLE ---");
-                println!("Items: {:?}", shop.main_cards());
-                println!("Vouchers: {:?}", shop.vouchers());
-                println!("Boosters: {:?}", shop.boosters());
-                print_hud(&shop);
-                break;
+        for (i, booster) in shop.boosters().iter().enumerate() {
+            if booster.kind == BoosterPackKind::ArcanaNormal {
+                let mut booster = shop.buy_booster(i as u8).await.unwrap();
+                let mut arcana = as_variant!(booster, BoughtBooster::Arcana);
+                let mut arcana_select = arcana.click(&[0, 1]).await.unwrap().select(0).await.unwrap();
+                return;
             }
         }
         blind_select = shop.leave().await.unwrap();
-        let joker_count = blind_select.jokers().len();
-        let consumable_count = blind_select.consumables().len();
-        print_hud(&blind_select);
-        if joker_count == 2 && consumable_count == 2 {
-            println!("< enough jokers and consumables >");
-            break;
-        }
     }
-    println!("< moving joker >");
-    blind_select = blind_select.move_joker(0, 1).await.unwrap();
-    print_hud(&blind_select);
-    println!("<moving consumable >");
-    blind_select = blind_select.move_consumable(0, 1).await.unwrap();
-    print_hud(&blind_select);
-    println!("< selling joker >");
-    blind_select = blind_select.sell_joker(0).await.unwrap();
-    print_hud(&blind_select);
-    println!("< selling consumable >");
-    blind_select = blind_select.sell_consumable(0).await.unwrap();
-    print_hud(&blind_select);
-    println!("< using consumable >");
-    blind_select = blind_select.use_consumable(0).await.unwrap();
-    print_hud(&blind_select);
 }
 
 fn print_hud<'a, T: Hud<'a>>(hud: &T) {

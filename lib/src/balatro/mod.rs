@@ -8,6 +8,7 @@ pub mod util;
 pub mod overview;
 pub mod jokers;
 pub mod consumables;
+pub mod boosters;
 
 use crate::net::Connection;
 use crate::net::protocol::Response;
