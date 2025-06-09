@@ -126,6 +126,11 @@ impl FromStr for Stake {
 
 #[derive(Serialize)]
 pub struct Seed(String);
+impl Seed {
+    pub fn new(s: &str) -> Self {
+        Seed(s.to_string())
+    }
+}
 
 pub(crate) mod protocol {
     use super::{Deck, Seed, Stake};
