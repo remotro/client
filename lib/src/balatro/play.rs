@@ -22,6 +22,10 @@ impl<'a> Play<'a> {
     pub fn score(&self) -> f64 {
         self.info.score
     }
+    
+    pub fn recognized_hand(&self) -> &PokerHand {
+        &self.info.recognized_hand
+    }
 
     pub async fn click(self, indices: &[u32]) -> Result<Self, Error> {
         let info = self.connection.request(protocol::PlayClick { indices: indices.to_vec() }).await??;
@@ -116,7 +120,7 @@ pub enum PokerHandKind {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::net::protocol::{Packet, Request, Response};
-    use super::{CurrentBlind, HandCard};
+    use super::{CurrentBlind, HandCard, PokerHand};
     use crate::balatro::overview::protocol::RoundOverviewInfo;
     use crate::balatro::hud::protocol::HudInfo;
 
@@ -126,6 +130,7 @@ pub(crate) mod protocol {
         pub hand: Vec<HandCard>,
         pub score: f64,
         pub hud: HudInfo,
+        pub recognized_hand: PokerHand,
     }
 
     impl Response for PlayInfo {}

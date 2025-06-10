@@ -52,6 +52,7 @@ async fn quickrun(mut balatro: Balatro) {
             }
         }
         blind_select = shop.leave().await.unwrap();
+        print_hud(&blind_select);
     }
 }
 
@@ -64,6 +65,7 @@ fn print_hud<'a, T: Hud<'a>>(hud: &T) {
     println!("  Consumables: {:?}", hud.consumables());
     println!("  Round: {:?}", hud.round());
     println!("  Ante: {:?}", hud.ante());
+    println!("  Run Info: {:?}", hud.run_info());
 }
 
 #[tokio::main]
