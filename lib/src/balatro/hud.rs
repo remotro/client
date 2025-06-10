@@ -2,38 +2,28 @@ use serde::{Deserialize, Serialize};
 use super::Error;
 use super::consumables::Consumable;
 use super::jokers::Joker;
-use crate::balatro::blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice};
-use crate::balatro::play::PokerHand;
-use crate::balatro::menu::Stake;
-use crate::balatro::shop::VoucherKind;
-use crate::balatro::Screen;
+use crate::balatro::{
+    blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice, Tag},
+    play::PokerHand,
+    menu::Stake,
+    shop::VoucherKind,
+    Screen
+};
 
 #[allow(async_fn_in_trait)]
 pub trait Hud<'a>: Sized + Screen<'a> {
     fn hands(&self) -> u32;
-
     fn discards(&self) -> u32;
-
     fn round(&self) -> u32;
-
     fn ante(&self) -> u32;
-
     fn money(&self) -> u32;
-
     fn jokers(&self) -> &[Joker];
-
     fn run_info(&self) -> &RunInfo;
-
     async fn move_joker(self, from: u32, to: u32) -> Result<Self, Error>;
-
     async fn sell_joker(self, index: u32) -> Result<Self, Error>;
-
     fn consumables(&self) -> &[Consumable];
-
     async fn move_consumable(self, from: u32, to: u32) -> Result<Self, Error>;
-
     async fn use_consumable(self, index: u32) -> Result<Self, Error>;
-
     async fn sell_consumable(self, index: u32) -> Result<Self, Error>;
 }
 
@@ -122,6 +112,7 @@ macro_rules! impl_hud {
 pub struct RunInfo {
     poker_hands: CurrentPokerHands,
     vouchers_redeemed: Vec<VoucherKind>,
+    tags: Vec<Tag>,
     current_blinds: CurrentBlinds,
     stake: Stake
 }
