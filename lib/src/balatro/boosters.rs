@@ -52,11 +52,11 @@ macro_rules! impl_open {
             fn booster(&self) -> BoosterPackKind {
                 self.info.booster
             }
-        
+            
             fn selections_left(&self) -> SelectionsLeft {
                 self.info.selections_left
             }
-        
+            
             fn options(&self) -> &[Self::Options] {
                 &self.info.options
             }
@@ -72,7 +72,7 @@ macro_rules! impl_open {
                     protocol::SelectResult::Done(result) => Ok(SelectResult::Done(S::new(result, self.connection))),
                 }
             }
-        
+            
             async fn skip(self) -> Result<Self::ReturnTo, Error> {
                 let response = self.connection.request(protocol::BoosterPackSkip::<'a, Self> {
                     _r_marker: std::marker::PhantomData,
@@ -87,20 +87,20 @@ macro_rules! impl_open_with_hand {
     ($ty:ident, $options:ty) => {
        impl_open!($ty, $options);
 
-        impl<'a, S : Screen<'a> + 'a> OpenWithHand<'a> for $ty<'a, S> {
-            async fn hand(&self) -> &[BoosterCard] {
-                &self.info.hand
-            }
-            
-            async fn click(self, indices: &[u32]) -> Result<Self, Error> {
-                let response = self.connection.request(protocol::CardBoosterPackClick::<'a, Self> {
-                    indices: indices.to_vec(),
-                    _r_marker: std::marker::PhantomData,
-                    _c_marker: std::marker::PhantomData,
-                }).await??;
-                Ok(Self::new(response, self.connection))
-            }
-        }
+       impl<'a, S : Screen<'a> + 'a> OpenWithHand<'a> for $ty<'a, S> {
+           async fn hand(&self) -> &[BoosterCard] {
+               &self.info.hand
+           }
+           
+           async fn click(self, indices: &[u32]) -> Result<Self, Error> {
+               let response = self.connection.request(protocol::CardBoosterPackClick::<'a, Self> {
+                   indices: indices.to_vec(),
+                   _r_marker: std::marker::PhantomData,
+                   _c_marker: std::marker::PhantomData,
+               }).await??;
+               Ok(Self::new(response, self.connection))
+           }
+       }
     }
 }
 
@@ -290,7 +290,6 @@ pub(crate) mod protocol {
         }
     }
     
-
     #[derive(Serialize)]
     pub struct BoosterPackSkip<'a, B: Open<'a>> {
         pub _r_marker: std::marker::PhantomData<&'a B>,
@@ -322,6 +321,4 @@ pub(crate) mod protocol {
             format!("{}/open/{}/click", <B as Open<'a>>::ReturnTo::name(), B::name())
         }
     }
-    
-    
 }
