@@ -23,8 +23,8 @@ impl<'a> Play<'a> {
         self.info.score
     }
     
-    pub fn recognized_poker_hand(&self) -> &PokerHand {
-        &self.info.recognized_poker_hand
+    pub fn poker_hand(&self) -> Option<&PokerHand> {
+        self.info.poker_hand.as_ref()
     }
 
     pub async fn click(self, indices: &[u32]) -> Result<Self, Error> {
@@ -130,7 +130,7 @@ pub(crate) mod protocol {
         pub hand: Vec<HandCard>,
         pub score: f64,
         pub hud: HudInfo,
-        pub recognized_poker_hand: PokerHand,
+        pub poker_hand: Option<PokerHand>,
     }
 
     impl Response for PlayInfo {}
