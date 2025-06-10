@@ -113,8 +113,8 @@ pub enum PokerHandKind {
     FiveOfAKind,
     #[serde(rename = "Flush House")]
     FlushHouse,
-    #[serde(rename = "Flush Fives")]
-    FlushFives,
+    #[serde(rename = "Flush Five")]
+    FlushFive,
 }
 
 pub(crate) mod protocol {
