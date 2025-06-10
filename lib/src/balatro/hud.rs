@@ -121,8 +121,8 @@ macro_rules! impl_hud {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct RunInfo {
     pub poker_hands: CurrentPokerHands,
-    pub vouchers_redeemed: Vec<VoucherKind>,
     pub blinds: CurrentBlinds,
+    pub vouchers_redeemed: Vec<VoucherKind>,
     pub stake: Stake
 }
 
