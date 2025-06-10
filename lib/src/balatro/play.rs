@@ -81,21 +81,35 @@ pub struct HandCard {
 pub struct PokerHand {
     kind: PokerHandKind,
     level: u64,
+    chips: u64,
+    mult: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum PokerHandKind {
+    #[serde(rename = "High Card")]
     HighCard,
+    #[serde(rename = "Pair")]
     Pair,
+    #[serde(rename = "Two Pair")]
     TwoPair,
+    #[serde(rename = "Three of a Kind")]
     ThreeOfAKind,
+    #[serde(rename = "Straight")]
     Straight,
+    #[serde(rename = "Flush")]
     Flush,
+    #[serde(rename = "Full House")]
     FullHouse,
+    #[serde(rename = "Four of a Kind")]
     FourOfAKind,
+    #[serde(rename = "Straight Flush")]
     StraightFlush,
+    #[serde(rename = "Five of a Kind")]
     FiveOfAKind,
+    #[serde(rename = "Flush House")]
     FlushHouse,
+    #[serde(rename = "Flush Fives")]
     FlushFives,
 }
 

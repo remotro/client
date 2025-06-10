@@ -120,9 +120,9 @@ macro_rules! impl_hud {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct RunInfo {
-    hands: CurrentPokerHands,
-    vouchers: Vec<VoucherKind>,
-    blinds: CurrentBlinds,
+    poker_hands: CurrentPokerHands,
+    vouchers_redeemed: Vec<VoucherKind>,
+    current_blinds: CurrentBlinds,
     stake: Stake
 }
 
@@ -137,9 +137,9 @@ pub struct CurrentPokerHands {
     pub full_house: CurrentPokerHand,
     pub four_of_a_kind: CurrentPokerHand,
     pub straight_flush: CurrentPokerHand,
-    pub five_of_a_kind: CurrentPokerHand,
-    pub flush_house: CurrentPokerHand,
-    pub flush_fives: CurrentPokerHand
+    pub five_of_a_kind: Option<CurrentPokerHand>,
+    pub flush_house: Option<CurrentPokerHand>,
+    pub flush_fives: Option<CurrentPokerHand>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

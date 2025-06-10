@@ -131,6 +131,7 @@ balatro_enum!(Boss {
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 #[serde(rename_all = "PascalCase")]
 pub enum BlindState {
+    Current,
     Select,
     Skipped,
     Upcoming,
