@@ -1,7 +1,11 @@
+use serde::{Deserialize, Serialize};
 use super::Error;
 use super::consumables::Consumable;
 use super::jokers::Joker;
-use super::overview::GameOverview;
+use crate::balatro::blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice};
+use crate::balatro::play::PokerHand;
+use crate::balatro::menu::Stake;
+use crate::balatro::shop::VoucherKind;
 use crate::balatro::Screen;
 
 #[allow(async_fn_in_trait)]
@@ -17,6 +21,8 @@ pub trait Hud<'a>: Sized + Screen<'a> {
     fn money(&self) -> u32;
 
     fn jokers(&self) -> &[Joker];
+
+    fn run_info(&self) -> &RunInfo;
 
     async fn move_joker(self, from: u32, to: u32) -> Result<Self, Error>;
 
@@ -58,6 +64,10 @@ macro_rules! impl_hud {
 
                 fn jokers(&self) -> &[$crate::balatro::jokers::Joker] {
                     &self.info.hud.jokers
+                }
+
+                fn run_info(&self) -> &$crate::balatro::hud::RunInfo {
+                    &self.info.hud.run_info
                 }
 
                 async fn move_joker(self, from: u32, to: u32) -> Result<Self, $crate::balatro::Error> {
@@ -108,8 +118,46 @@ macro_rules! impl_hud {
     };
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct RunInfo {
+    hands: CurrentPokerHands,
+    vouchers: Vec<VoucherKind>,
+    blinds: CurrentBlinds,
+    stake: Stake
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct CurrentPokerHands {
+    pub high_card: CurrentPokerHand,
+    pub pair: CurrentPokerHand,
+    pub two_pair: CurrentPokerHand,
+    pub three_of_a_kind: CurrentPokerHand,
+    pub straight: CurrentPokerHand,
+    pub flush: CurrentPokerHand,
+    pub full_house: CurrentPokerHand,
+    pub four_of_a_kind: CurrentPokerHand,
+    pub straight_flush: CurrentPokerHand,
+    pub five_of_a_kind: CurrentPokerHand,
+    pub flush_house: CurrentPokerHand,
+    pub flush_fives: CurrentPokerHand
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct CurrentPokerHand {
+    hand: PokerHand,
+    played: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct CurrentBlinds {
+    pub small: SmallBlindChoice,
+    pub big: BigBlindChoice,
+    pub boss: BossBlindChoice,
+}
+
 pub(crate) mod protocol {
     use crate::balatro::consumables::Consumable;
+    use crate::balatro::hud::RunInfo;
     use crate::balatro::jokers::Joker;
     use crate::net::protocol::{Packet, Request, Response};
     use serde::{Deserialize, Serialize};
@@ -125,6 +173,7 @@ pub(crate) mod protocol {
         pub money: u32,
         pub jokers: Vec<Joker>,
         pub consumables: Vec<Consumable>,
+        pub run_info: RunInfo,
     }
 
     impl Response for HudInfo {}

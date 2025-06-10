@@ -77,6 +77,28 @@ pub struct HandCard {
     selected: bool,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PokerHand {
+    kind: PokerHandKind,
+    level: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum PokerHandKind {
+    HighCard,
+    Pair,
+    TwoPair,
+    ThreeOfAKind,
+    Straight,
+    Flush,
+    FullHouse,
+    FourOfAKind,
+    StraightFlush,
+    FiveOfAKind,
+    FlushHouse,
+    FlushFives,
+}
+
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::net::protocol::{Packet, Request, Response};
