@@ -1,4 +1,8 @@
-use crate::{balatro_enum, net::Connection};
+use crate::{
+    balatro::booster::{BoosterPackKind, OpenBuffoonPack, OpenCelestialPack, OpenSpectralPack, OpenStandardPack, OpenArcanaPack},
+    balatro_enum,
+    net::Connection
+};
 use serde::{Deserialize, Serialize};
 use super::{play::Play, Screen};
 
@@ -62,6 +66,15 @@ pub struct BigBlindChoice {
     pub state: BlindState,
     pub chips: f64,
     pub tag: Tag,
+}
+
+pub enum SkipResult {
+    Arcana(OpenArcanaPack<'a, Shop<'a>>),
+    Buffoon(OpenBuffoonPack<'a, Shop<'a>>),
+    Celestial(OpenCelestialPack<'a, Shop<'a>>),
+    Spectral(OpenSpectralPack<'a, Shop<'a>>),
+    Standard(OpenStandardPack<'a, Shop<'a>>),
+    SelectBlind,
 }
 
 balatro_enum!(Tag {
