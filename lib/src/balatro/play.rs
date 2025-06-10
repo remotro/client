@@ -1,8 +1,15 @@
 use serde::{Deserialize, Serialize};
 
-use crate::net::Connection;
+use crate::{
+    balatro_enum,
+    net::Connection
+};
 use super::{
-    blinds::CurrentBlind, deck::PlayingCard, overview::{GameOverview, RoundOverview}, Screen, Error
+    blinds::CurrentBlind,
+    deck::PlayingCard,
+    overview::{GameOverview, RoundOverview},
+    Screen,
+    Error
 };
 
 pub struct Play<'a> {
@@ -85,33 +92,20 @@ pub struct PokerHand {
     mult: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum PokerHandKind {
-    #[serde(rename = "High Card")]
-    HighCard,
-    #[serde(rename = "Pair")]
-    Pair,
-    #[serde(rename = "Two Pair")]
-    TwoPair,
-    #[serde(rename = "Three of a Kind")]
-    ThreeOfAKind,
-    #[serde(rename = "Straight")]
-    Straight,
-    #[serde(rename = "Flush")]
-    Flush,
-    #[serde(rename = "Full House")]
-    FullHouse,
-    #[serde(rename = "Four of a Kind")]
-    FourOfAKind,
-    #[serde(rename = "Straight Flush")]
-    StraightFlush,
-    #[serde(rename = "Five of a Kind")]
-    FiveOfAKind,
-    #[serde(rename = "Flush House")]
-    FlushHouse,
-    #[serde(rename = "Flush Fives")]
-    FlushFives,
-}
+balatro_enum!(PokerHandKind {
+    HighCard = "High Card",
+    Pair = "Pair",
+    TwoPair = "Two Pair",
+    ThreeOfAKind = "Three of a Kind",
+    Straight = "Straight",
+    Flush = "Flush",
+    FullHouse = "Full House",
+    FourOfAKind = "Four of a Kind",
+    StraightFlush = "Straight Flush",
+    FiveOfAKind = "Five of a Kind",
+    FlushHouse = "Flush House",
+    FlushFive = "Flush Five",
+});
 
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
