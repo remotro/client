@@ -8,6 +8,8 @@ pub struct Joker {
     pub kind: JokerKind,
     pub price: u64,
     pub edition: Option<JokerEdition>,
+    pub rental: bool,
+    pub lifespan: Lifespan
 }
 
 balatro_enum!(JokerEdition {
@@ -170,3 +172,10 @@ balatro_enum!(JokerKind {
     Chicot = "j_chicot",
     Perkeo = "j_perkeo",
 });
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum Lifespan {
+    Normal,
+    Eternal,
+    Perishable { rounds_left: u64 }
+}
