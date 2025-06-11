@@ -11,7 +11,7 @@ pub struct PlayingCard {
     pub seal: Option<Seal>
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum Suit {
     Spades,
@@ -20,7 +20,7 @@ pub enum Suit {
     Diamonds
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum Rank {
     #[serde(rename = "Ace")]

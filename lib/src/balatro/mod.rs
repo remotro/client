@@ -4,6 +4,7 @@ pub mod play;
 pub mod deck;
 pub mod shop;
 pub mod hud;
+#[macro_use]
 pub mod util;
 pub mod overview;
 pub mod jokers;
