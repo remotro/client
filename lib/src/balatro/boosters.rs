@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::{balatro_enum, net::Connection, balatro::Error};
-use super::{consumables::{PlanetKind, SpectralKind, TarotKind}, deck::PlayingCard, jokers::Joker, overview::GameOverview, Screen};
+use super::{consumables::{PlanetKind, SpectralKind, TarotKind}, deck::PlayingCard, jokers::Joker, Screen};
 
 balatro_enum!(BoosterPackKind {
     ArcanaNormal = "p_arcana_normal",
