@@ -1,4 +1,6 @@
-use crate::balatro::{Screen, blinds::SelectBlind};
+use crate::balatro::play::Play;
+use crate::balatro::shop::Shop;
+use crate::balatro::{blinds::SelectBlind, CurrentScreen, Screen};
 use crate::net::Connection;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -26,6 +28,26 @@ impl<'a> Menu<'a> {
         };
         let blinds = self.connection.request(new_run).await??;
         Ok(SelectBlind::new(blinds, self.connection))
+    }
+
+    pub async fn resume_run(
+        self,
+        deck: Deck,
+        stake: Stake,
+        seed: Option<Seed>,
+    ) -> Result<CurrentScreen<'a>, super::Error> {
+        let resume_run = protocol::ResumeRun {
+            back: deck,
+            stake,
+            seed,
+        };
+        let screen: crate::balatro::protocol::ScreenInfo = self.connection.request(resume_run).await??;
+        match screen {
+            crate::balatro::protocol::ScreenInfo::SelectBlind(blinds) => Ok(CurrentScreen::SelectBlind(SelectBlind::new(blinds, self.connection))),
+            crate::balatro::protocol::ScreenInfo::Play(play) => Ok(CurrentScreen::Play(Play::new(play, self.connection))),
+            crate::balatro::protocol::ScreenInfo::Shop(shop) => Ok(CurrentScreen::Shop(Shop::new(shop, self.connection))),
+            crate::balatro::protocol::ScreenInfo::Menu(_) => Ok(CurrentScreen::Menu(Menu::new(self.connection))),
+        }
     }
 }
 
@@ -152,6 +174,23 @@ pub(crate) mod protocol {
     impl Packet for StartRun {
         fn kind() -> String {
             "main_menu/start_run".to_string()
+        }
+    }
+
+    #[derive(Serialize)]
+    pub struct ResumeRun {
+        pub back: Deck,
+        pub stake: Stake,
+        pub seed: Option<Seed>,
+    }
+    
+    impl Request for ResumeRun {
+        type Expect = Result<crate::balatro::protocol::ScreenInfo, String>;
+    }
+
+    impl Packet for ResumeRun {
+        fn kind() -> String {
+            "main_menu/resume_run".to_string()
         }
     }
 }
