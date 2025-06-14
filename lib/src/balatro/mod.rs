@@ -14,23 +14,31 @@ pub mod boosters;
 use crate::net::Connection;
 use crate::net::protocol::Response;
 
-pub struct Balatro {
+pub struct Balatro<'a> {
+    _r_marker: std::marker::PhantomData<&'a ()>,
     connection: Connection,
 }
 
-impl Balatro {
+impl<'a> Balatro<'a> {
     pub fn new(connection: Connection) -> Self {
-        Self { connection }
+        Self { connection, _r_marker: std::marker::PhantomData }
     }
 
     /// Obtains the current state from the connected Balatro game.
     pub async fn screen(&mut self) -> Result<CurrentScreen, Error> {
-        let info = self.connection.request(protocol::GetScreen).await??;
+        let info = self.connection.request(protocol::GetScreen::<'a> { _r_marker: std::marker::PhantomData }).await??;
         let screen = match info {
             protocol::ScreenInfo::Menu(info) => CurrentScreen::Menu(menu::Menu::new(&mut self.connection, info)),
             protocol::ScreenInfo::SelectBlind(blinds) => CurrentScreen::SelectBlind(blinds::SelectBlind::new(blinds, &mut self.connection)),
             protocol::ScreenInfo::Play(play) => CurrentScreen::Play(play::Play::new(play, &mut self.connection)),
             protocol::ScreenInfo::Shop(shop) => CurrentScreen::Shop(shop::Shop::new(shop, &mut self.connection)),
+            protocol::ScreenInfo::OpenShopPack(pack) => match pack {
+                protocol::OpenShopPackInfo::Arcana(info) => CurrentScreen::OpenShopPack(OpenPack::Arcana(boosters::OpenArcanaPack::new(info, &mut self.connection))),
+                protocol::OpenShopPackInfo::Buffoon(info) => CurrentScreen::OpenShopPack(OpenPack::Buffoon(boosters::OpenBuffoonPack::new(info, &mut self.connection))),
+                protocol::OpenShopPackInfo::Celestial(info) => CurrentScreen::OpenShopPack(OpenPack::Celestial(boosters::OpenSpectralPack::new(info, &mut self.connection))),
+                protocol::OpenShopPackInfo::Spectral(info) => CurrentScreen::OpenShopPack(OpenPack::Spectral(boosters::OpenSpectralPack::new(info, &mut self.connection))),
+                protocol::OpenShopPackInfo::Standard(info) => CurrentScreen::OpenShopPack(OpenPack::Standard(boosters::OpenStandardPack::new(info, &mut self.connection))),
+            }
         };
         Ok(screen)
     }
@@ -87,35 +95,46 @@ pub trait Screen<'a> {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
 
-    use crate::{balatro::menu, net::protocol::{Packet, Request, Response}};
+    use crate::{balatro::{boosters, menu, Screen}, net::protocol::{Packet, Request, Response}};
 
     use super::{blinds, play, shop};
 
     #[derive(Serialize, Deserialize)]
-    pub struct GetScreen;
-
-    impl Request for GetScreen {
-        type Expect = Result<ScreenInfo, String>;
+    pub struct GetScreen<'a> {
+        pub _r_marker: std::marker::PhantomData<&'a ()>,
     }
 
-    impl Packet for GetScreen {
+    impl<'a> Request for GetScreen<'a> {
+        type Expect = Result<ScreenInfo<'a>, String>;
+    }
+
+    impl<'a> Packet for GetScreen<'a> {
         fn kind() -> String {
             "screen/get".to_string()
         }
     }
 
-    #[derive(Serialize, Deserialize)]
-    pub enum ScreenInfo {
-        // Stupid workaround to make serde happy with { Menu = [] }
+    #[derive(Deserialize)]
+    pub enum ScreenInfo<'a> {
         Menu(menu::protocol::MenuInfo),
         SelectBlind(blinds::protocol::BlindInfo),
         Play(play::protocol::PlayInfo),
         Shop(shop::protocol::ShopInfo),
+        OpenShopPack(OpenShopPackInfo<'a>),
     }
 
-    impl Response for ScreenInfo {}
+    #[derive(Deserialize)]
+    pub enum OpenShopPackInfo<'a> {
+        Arcana(<boosters::OpenArcanaPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
+        Buffoon(<boosters::OpenBuffoonPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
+        Celestial(<boosters::OpenSpectralPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
+        Spectral(<boosters::OpenSpectralPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
+        Standard(<boosters::OpenStandardPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
+    }
 
-    impl Packet for ScreenInfo {
+    impl<'a> Response for ScreenInfo<'a> {}
+
+    impl<'a> Packet for ScreenInfo<'a> {
         fn kind() -> String {
             "screen/current".to_string()
         }

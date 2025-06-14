@@ -1,5 +1,7 @@
+use crate::balatro::boosters;
 use crate::balatro::play::Play;
 use crate::balatro::shop::Shop;
+use crate::balatro::OpenPack;
 use crate::balatro::{blinds::SelectBlind, CurrentScreen, Screen};
 use crate::net::Connection;
 use serde::{Deserialize, Serialize};
@@ -41,17 +43,25 @@ impl<'a> Menu<'a> {
         stake: Stake,
         seed: Option<Seed>,
     ) -> Result<CurrentScreen<'a>, super::Error> {
-        let resume_run = protocol::ResumeRun {
+        let resume_run = protocol::ResumeRun::<'a> {
             back: deck,
             stake,
             seed,
+            _r_marker: std::marker::PhantomData,
         };
-        let screen: crate::balatro::protocol::ScreenInfo = self.connection.request(resume_run).await??;
+        let screen: crate::balatro::protocol::ScreenInfo<'a> = self.connection.request(resume_run).await??;
         match screen {
             crate::balatro::protocol::ScreenInfo::SelectBlind(blinds) => Ok(CurrentScreen::SelectBlind(SelectBlind::new(blinds, self.connection))),
             crate::balatro::protocol::ScreenInfo::Play(play) => Ok(CurrentScreen::Play(Play::new(play, self.connection))),
             crate::balatro::protocol::ScreenInfo::Shop(shop) => Ok(CurrentScreen::Shop(Shop::new(shop, self.connection))),
             crate::balatro::protocol::ScreenInfo::Menu(info) => Ok(CurrentScreen::Menu(Menu::new(self.connection, info))),
+            crate::balatro::protocol::ScreenInfo::OpenShopPack(pack) => match pack {
+                crate::balatro::protocol::OpenShopPackInfo::Arcana(info) => Ok(CurrentScreen::OpenShopPack(OpenPack::Arcana(boosters::OpenArcanaPack::new(info, self.connection)))),
+                crate::balatro::protocol::OpenShopPackInfo::Buffoon(info) => Ok(CurrentScreen::OpenShopPack(OpenPack::Buffoon(boosters::OpenBuffoonPack::new(info, self.connection)))),
+                crate::balatro::protocol::OpenShopPackInfo::Celestial(info) => Ok(CurrentScreen::OpenShopPack(OpenPack::Celestial(boosters::OpenSpectralPack::new(info, self.connection)))),
+                crate::balatro::protocol::OpenShopPackInfo::Spectral(info) => Ok(CurrentScreen::OpenShopPack(OpenPack::Spectral(boosters::OpenSpectralPack::new(info, self.connection)))),
+                crate::balatro::protocol::OpenShopPackInfo::Standard(info) => Ok(CurrentScreen::OpenShopPack(OpenPack::Standard(boosters::OpenStandardPack::new(info, self.connection)))),
+            }
         }
     }
 }
@@ -199,17 +209,18 @@ pub(crate) mod protocol {
     }
 
     #[derive(Serialize)]
-    pub struct ResumeRun {
+    pub struct ResumeRun<'a> {
         pub back: Deck,
         pub stake: Stake,
         pub seed: Option<Seed>,
+        pub _r_marker: std::marker::PhantomData<&'a ()>,
     }
     
-    impl Request for ResumeRun {
-        type Expect = Result<crate::balatro::protocol::ScreenInfo, String>;
+    impl<'a> Request for ResumeRun<'a> {
+        type Expect = Result<crate::balatro::protocol::ScreenInfo<'a>, String>;
     }
 
-    impl Packet for ResumeRun {
+    impl<'a> Packet for ResumeRun<'a> {
         fn kind() -> String {
             "main_menu/resume_run".to_string()
         }
