@@ -168,7 +168,6 @@ pub struct Seed(String);
 pub struct SavedRun {
     pub deck: Deck,
     pub stake: Stake,
-    pub seed: Option<Seed>,
     pub best_hand: u64,
     pub round: u64,
     pub ante: u64,
