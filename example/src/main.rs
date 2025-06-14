@@ -35,7 +35,7 @@ macro_rules! as_variant {
     }
 }
 
-async fn quickrun(mut balatro: Balatro) {
+async fn quickrun<'a>(mut balatro: Balatro<'a>) {
     let screen = as_variant!(balatro.screen().await.unwrap(), CurrentScreen::Menu);
     println!("< starting run >");
     let mut blind_select = screen.new_run(Deck::Red, Stake::White, None).await.unwrap();
