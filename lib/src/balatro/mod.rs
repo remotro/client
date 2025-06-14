@@ -41,6 +41,15 @@ pub enum CurrentScreen<'a> {
     SelectBlind(blinds::SelectBlind<'a>),
     Play(play::Play<'a>),
     Shop(shop::Shop<'a>),
+    OpenShopPack(OpenPack<'a, shop::Shop<'a>>)
+}
+
+pub enum OpenPack<'a, R: Screen<'a>> {
+    Arcana(boosters::OpenArcanaPack<'a, R>),
+    Buffoon(boosters::OpenBuffoonPack<'a, R>),
+    Celestial(boosters::OpenSpectralPack<'a, R>),
+    Spectral(boosters::OpenSpectralPack<'a, R>),
+    Standard(boosters::OpenStandardPack<'a, R>)
 }
 
 #[derive(Debug)]
