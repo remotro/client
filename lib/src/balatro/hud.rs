@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use super::Error;
 use super::consumables::Consumable;
 use super::jokers::Joker;
-use crate::balatro::blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice};
+use crate::balatro::blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice, Tag};
 use crate::balatro::play::PokerHand;
 use crate::balatro::menu::Stake;
 use crate::balatro::shop::VoucherKind;
@@ -21,6 +21,8 @@ pub trait Hud<'a>: Sized + Screen<'a> {
     fn money(&self) -> u32;
 
     fn jokers(&self) -> &[Joker];
+
+    fn tags(&self) -> &[Tag];
 
     fn run_info(&self) -> &RunInfo;
 
@@ -64,6 +66,10 @@ macro_rules! impl_hud {
 
                 fn jokers(&self) -> &[$crate::balatro::jokers::Joker] {
                     &self.info.hud.jokers
+                }
+
+                fn tags(&self) -> &[$crate::balatro::blinds::Tag] {
+                    &self.info.hud.tags
                 }
 
                 fn run_info(&self) -> &$crate::balatro::hud::RunInfo {
@@ -156,6 +162,7 @@ pub struct CurrentBlinds {
 }
 
 pub(crate) mod protocol {
+    use crate::balatro::blinds::Tag;
     use crate::balatro::consumables::Consumable;
     use crate::balatro::hud::RunInfo;
     use crate::balatro::jokers::Joker;
@@ -172,6 +179,7 @@ pub(crate) mod protocol {
         pub ante: u32,
         pub money: u32,
         pub jokers: Vec<Joker>,
+        pub tags: Vec<Tag>,
         pub consumables: Vec<Consumable>,
         pub run_info: RunInfo,
     }
