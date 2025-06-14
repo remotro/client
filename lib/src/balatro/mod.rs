@@ -27,7 +27,7 @@ impl Balatro {
     pub async fn screen(&mut self) -> Result<CurrentScreen, Error> {
         let info = self.connection.request(protocol::GetScreen).await??;
         let screen = match info {
-            protocol::ScreenInfo::Menu(_) => CurrentScreen::Menu(menu::Menu::new(&mut self.connection)),
+            protocol::ScreenInfo::Menu(info) => CurrentScreen::Menu(menu::Menu::new(&mut self.connection, info)),
             protocol::ScreenInfo::SelectBlind(blinds) => CurrentScreen::SelectBlind(blinds::SelectBlind::new(blinds, &mut self.connection)),
             protocol::ScreenInfo::Play(play) => CurrentScreen::Play(play::Play::new(play, &mut self.connection)),
             protocol::ScreenInfo::Shop(shop) => CurrentScreen::Shop(shop::Shop::new(shop, &mut self.connection)),
@@ -87,7 +87,7 @@ pub trait Screen<'a> {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
 
-    use crate::net::{protocol::{Packet, Request, Response}};
+    use crate::{balatro::menu, net::protocol::{Packet, Request, Response}};
 
     use super::{blinds, play, shop};
 
@@ -107,7 +107,7 @@ pub(crate) mod protocol {
     #[derive(Serialize, Deserialize)]
     pub enum ScreenInfo {
         // Stupid workaround to make serde happy with { Menu = [] }
-        Menu(Vec<()>),
+        Menu(menu::protocol::MenuInfo),
         SelectBlind(blinds::protocol::BlindInfo),
         Play(play::protocol::PlayInfo),
         Shop(shop::protocol::ShopInfo),

@@ -8,11 +8,16 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 
 pub struct Menu<'a> {
     connection: &'a mut Connection,
+    info: protocol::MenuInfo,
 }
 
 impl<'a> Menu<'a> {
-    pub(crate) fn new(connection: &'a mut Connection) -> Self {
-        Self { connection }
+    pub(crate) fn new(connection: &'a mut Connection, info: protocol::MenuInfo) -> Self {
+        Self { connection, info }
+    }
+
+    pub fn saved_run(&self) -> Option<&SavedRun> {
+        self.info.saved_run.as_ref()
     }
 
     pub async fn new_run(
@@ -46,7 +51,7 @@ impl<'a> Menu<'a> {
             crate::balatro::protocol::ScreenInfo::SelectBlind(blinds) => Ok(CurrentScreen::SelectBlind(SelectBlind::new(blinds, self.connection))),
             crate::balatro::protocol::ScreenInfo::Play(play) => Ok(CurrentScreen::Play(Play::new(play, self.connection))),
             crate::balatro::protocol::ScreenInfo::Shop(shop) => Ok(CurrentScreen::Shop(Shop::new(shop, self.connection))),
-            crate::balatro::protocol::ScreenInfo::Menu(_) => Ok(CurrentScreen::Menu(Menu::new(self.connection))),
+            crate::balatro::protocol::ScreenInfo::Menu(info) => Ok(CurrentScreen::Menu(Menu::new(self.connection, info))),
         }
     }
 }
@@ -146,16 +151,32 @@ impl FromStr for Stake {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Seed(String);
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SavedRun {
+    pub deck: Deck,
+    pub stake: Stake,
+    pub seed: Option<Seed>,
+    pub best_hand: u64,
+    pub round: u64,
+    pub ante: u64,
+    pub money: u64
+}
+
 pub(crate) mod protocol {
-    use super::{Deck, Seed, Stake};
+    use super::{Deck, Seed, Stake, SavedRun};
     use crate::{
         balatro::blinds::protocol::BlindInfo,
         net::protocol::{Packet, Request},
     };
-    use serde::Serialize;
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Serialize, Deserialize, Clone, Debug)]
+    pub struct MenuInfo {
+        pub saved_run: Option<SavedRun>,
+    }
 
     // Hide serialization impls here since they're specific to Balatro's
     // internals.
