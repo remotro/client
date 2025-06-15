@@ -160,7 +160,7 @@ impl<'a> Screen<'a> for SkipResult<'a> {
         }
     }
     fn name() -> &'static str {
-        "blind_select/skip/result"
+        "skip"
     }
 }
 
