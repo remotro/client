@@ -37,7 +37,7 @@ impl<'a> Play<'a> {
         let result = match info {
             protocol::PlayResult::Again(info) => PlayResult::Again(Self::new(info, self.connection)),
             protocol::PlayResult::RoundOver(info) => PlayResult::RoundOver(RoundOverview::new(info, self.connection)),
-            protocol::PlayResult::GameOver(_) => PlayResult::GameOver(GameOverview::new(self.connection)),
+            protocol::PlayResult::GameOver(info) => PlayResult::GameOver(GameOverview::new(self.connection, info)),
         };
         Ok(result)
     }
@@ -46,7 +46,7 @@ impl<'a> Play<'a> {
         let info = self.connection.request(protocol::PlayDiscard).await??;
         let result = match info {
             protocol::DiscardResult::Again(info) => DiscardResult::Again(Self::new(info, self.connection)),
-            protocol::DiscardResult::GameOver(_) => DiscardResult::GameOver(GameOverview::new(self.connection)),
+            protocol::DiscardResult::GameOver(info) => DiscardResult::GameOver(GameOverview::new(self.connection, info)),
         };
         Ok(result)
     }
@@ -121,7 +121,7 @@ pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::net::protocol::{Packet, Request, Response};
     use super::{CurrentBlind, HandCard, PokerHand};
-    use crate::balatro::overview::protocol::RoundOverviewInfo;
+    use crate::balatro::overview::protocol::{GameOverviewInfo, RoundOverviewInfo};
     use crate::balatro::hud::protocol::HudInfo;
 
     #[derive(Serialize, Deserialize, Clone)]
@@ -186,7 +186,7 @@ pub(crate) mod protocol {
     pub enum PlayResult {
         Again(PlayInfo),
         RoundOver(RoundOverviewInfo),
-        GameOver(Vec<()>),
+        GameOver(GameOverviewInfo),
     }
 
     impl Response for PlayResult {}
@@ -200,7 +200,7 @@ pub(crate) mod protocol {
     #[derive(Serialize, Deserialize, Clone)]
     pub enum DiscardResult {
         Again(PlayInfo),
-        GameOver(Vec<()>),
+        GameOver(GameOverviewInfo),
     }
 
     impl Response for DiscardResult {}
