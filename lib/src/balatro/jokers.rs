@@ -1,7 +1,11 @@
 use serde::{Serialize, Deserialize};
-use crate::balatro_enum;
-use crate::balatro::deck::{Rank, Suit};
-use crate::balatro::play::PokerHandKind;
+use crate::{
+    balatro::{
+        deck::{Rank, Suit},
+        play::PokerHandKind
+    },
+    balatro_enum
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Joker {

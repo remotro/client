@@ -1,12 +1,16 @@
-use crate::net::Connection;
-use crate::balatro::{
-    Error,
-    shop::Shop,
+use crate::{
+    balatro::{
+        Error,
+        shop::Shop,
+    },
+    net::Connection
 };
+use super::{
+    blinds::Tag,
+    jokers::JokerKind,
+    Screen
+}
 
-use super::blinds::Tag;
-use super::jokers::JokerKind;
-use super::Screen;
 pub struct RoundOverview<'a> {
     connection: &'a mut Connection,
     info: protocol::RoundOverviewInfo,
@@ -77,7 +81,13 @@ impl<'a> GameOverview<'a> {
 
 pub(crate) mod protocol {
     use crate::{
-        balatro::{hud::protocol::HudInfo, jokers::JokerKind, overview::Tag, shop::protocol::ShopInfo}, net::protocol::{Packet, Request, Response}
+        balatro::{
+            hud::protocol::HudInfo,
+            jokers::JokerKind,
+            overview::Tag,
+            shop::protocol::ShopInfo
+        }, 
+        net::protocol::{Packet, Request, Response}
     };
     use serde::{Deserialize, Serialize};
 

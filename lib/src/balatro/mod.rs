@@ -4,7 +4,6 @@ pub mod play;
 pub mod deck;
 pub mod shop;
 pub mod hud;
-#[macro_use]
 pub mod util;
 pub mod overview;
 pub mod jokers;
@@ -94,9 +93,10 @@ pub trait Screen<'a> {
 
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
-
-    use crate::{balatro::{boosters, menu, Screen}, net::protocol::{Packet, Request, Response}};
-
+    use crate::{
+        balatro::{boosters, menu, Screen},
+        net::protocol::{Packet, Request, Response}
+    };
     use super::{blinds, play, shop};
 
     #[derive(Serialize, Deserialize)]
