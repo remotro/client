@@ -42,12 +42,14 @@ macro_rules! as_variant {
     }
 }
 
-async fn quickrun(mut balatro: Balatro) {
+async fn quickrun<'a>(mut balatro: Balatro<'a>) {
     let screen = as_variant!(balatro.screen().await.unwrap(), CurrentScreen::Menu);
     println!("< starting run >");
     let mut blind_select = screen.new_run(Deck::Red, Stake::White, None).await.unwrap();
     let mut play_result = blind_select.select().await.unwrap().click(&[0, 1, 2]).await.unwrap();
     println!("Poker hand: {:?}", play_result.poker_hand());
+    let mut shop = as_variant!(play_result.play().await.unwrap(), PlayResult::RoundOver).cash_out().await.unwrap();
+    println!("Shop: {:?}", shop.main_cards());
 }
 
 fn print_hud<'a, T: Hud<'a>>(hud: &T) {
@@ -223,7 +225,7 @@ async fn main() {
                         shop = shop.buy_main(index as u8).await.unwrap();
                         print_hud(&shop);
                     }
-                        
+                    _ => {}
                 },
                 Err(e) => {
                     error!("Connection Failed: {e}");
