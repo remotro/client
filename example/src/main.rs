@@ -46,20 +46,8 @@ async fn quickrun(mut balatro: Balatro) {
     let screen = as_variant!(balatro.screen().await.unwrap(), CurrentScreen::Menu);
     println!("< starting run >");
     let mut blind_select = screen.new_run(Deck::Red, Stake::White, None).await.unwrap();
-    loop {
-        let mut play_result = blind_select.select().await.unwrap().click(&[0]).await.unwrap().play().await.unwrap();
-        let overview = as_variant!(play_result, PlayResult::RoundOver);
-        let mut shop = overview.cash_out().await.unwrap();
-        for (i, booster) in shop.boosters().iter().enumerate() {
-            if booster.kind == BoosterPackKind::ArcanaNormal {
-                let mut booster = shop.buy_booster(i as u8).await.unwrap();
-                let mut arcana = as_variant!(booster, BoughtBooster::Arcana);
-                let mut arcana_select = arcana.click(&[0, 1]).await.unwrap().select(0).await.unwrap();
-                return;
-            }
-        }
-        blind_select = shop.leave().await.unwrap();
-    }
+    let mut play_result = blind_select.select().await.unwrap().click(&[0, 1, 2]).await.unwrap();
+    println!("Poker hand: {:?}", play_result.poker_hand());
 }
 
 fn print_hud<'a, T: Hud<'a>>(hud: &T) {
@@ -71,6 +59,7 @@ fn print_hud<'a, T: Hud<'a>>(hud: &T) {
     println!("  Consumables: {:?}", hud.consumables());
     println!("  Round: {:?}", hud.round());
     println!("  Ante: {:?}", hud.ante());
+    println!("  Run Info: {:?}", hud.run_info());
 }
 
 #[tokio::main]

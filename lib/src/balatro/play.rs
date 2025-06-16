@@ -26,6 +26,10 @@ impl<'a> Play<'a> {
     pub fn score(&self) -> f64 {
         self.info.score
     }
+    
+    pub fn poker_hand(&self) -> Option<&PokerHand> {
+        self.info.poker_hand.as_ref()
+    }
 
     pub async fn click(self, indices: &[u32]) -> Result<Self, Error> {
         let info = self.connection.request(protocol::PlayClick { indices: indices.to_vec() }).await??;
@@ -81,10 +85,46 @@ pub struct HandCard {
     selected: bool,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PokerHand {
+    kind: PokerHandKind,
+    level: u64,
+    chips: u64,
+    mult: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum PokerHandKind {
+    #[serde(rename = "High Card")]
+    HighCard,
+    #[serde(rename = "Pair")]
+    Pair,
+    #[serde(rename = "Two Pair")]
+    TwoPair,
+    #[serde(rename = "Three of a Kind")]
+    ThreeOfAKind,
+    #[serde(rename = "Straight")]
+    Straight,
+    #[serde(rename = "Flush")]
+    Flush,
+    #[serde(rename = "Full House")]
+    FullHouse,
+    #[serde(rename = "Four of a Kind")]
+    FourOfAKind,
+    #[serde(rename = "Straight Flush")]
+    StraightFlush,
+    #[serde(rename = "Five of a Kind")]
+    FiveOfAKind,
+    #[serde(rename = "Flush House")]
+    FlushHouse,
+    #[serde(rename = "Flush Five")]
+    FlushFive,
+}
+
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::net::protocol::{Packet, Request, Response};
-    use super::{CurrentBlind, HandCard};
+    use super::{CurrentBlind, HandCard, PokerHand};
     use crate::balatro::overview::protocol::RoundOverviewInfo;
     use crate::balatro::hud::protocol::HudInfo;
 
@@ -95,6 +135,7 @@ pub(crate) mod protocol {
         pub score: f64,
         pub hand_size: u32,
         pub hud: HudInfo,
+        pub poker_hand: Option<PokerHand>,
     }
 
     impl Response for PlayInfo {}
