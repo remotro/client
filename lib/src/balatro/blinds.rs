@@ -139,9 +139,14 @@ pub enum BlindState {
 }
 
 pub(crate) mod protocol {
-    use crate::{balatro::{hud::protocol::HudInfo, play::protocol::PlayInfo}, net::protocol::{Packet, Request, Response}};
+    use crate::{
+        balatro::{
+            hud::protocol::HudInfo,
+            play::protocol::PlayInfo
+        },
+        net::protocol::{Packet, Request, Response}
+    };
     use serde::{Deserialize, Serialize};
-
     use super::{BigBlindChoice, BossBlindChoice, SmallBlindChoice};
 
     #[derive(Serialize, Deserialize)]

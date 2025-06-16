@@ -1,12 +1,16 @@
 use serde::{Deserialize, Serialize};
-use super::Error;
-use super::consumables::Consumable;
-use super::jokers::Joker;
-use crate::balatro::blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice};
-use crate::balatro::play::PokerHand;
-use crate::balatro::menu::Stake;
-use crate::balatro::shop::VoucherKind;
-use crate::balatro::Screen;
+use super::{
+    Error,
+    consumables::Consumable,
+    jokers::Joker
+};
+use crate::balatro::{
+    blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice},
+    play::PokerHand,
+    menu::Stake,
+    shop::VoucherKind,
+    Screen
+};
 
 #[allow(async_fn_in_trait)]
 pub trait Hud<'a>: Sized + Screen<'a> {
@@ -154,12 +158,15 @@ pub struct CurrentBlinds {
 }
 
 pub(crate) mod protocol {
-    use crate::balatro::consumables::Consumable;
-    use crate::balatro::hud::RunInfo;
-    use crate::balatro::jokers::Joker;
-    use crate::net::protocol::{Packet, Request, Response};
+    use crate::{
+        balatro::{
+            consumables::Consumable,
+            hud::RunInfo,
+            jokers::Joker
+        },
+        net::protocol::{Packet, Request, Response}
+    };
     use serde::{Deserialize, Serialize};
-
     use super::Hud;
 
     #[derive(Serialize, Deserialize, Clone, Debug)]

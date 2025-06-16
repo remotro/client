@@ -2,7 +2,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::net::Connection;
 use super::{
-    blinds::CurrentBlind, deck::PlayingCard, overview::{GameOverview, RoundOverview}, Screen, Error
+    blinds::CurrentBlind,
+    deck::PlayingCard,
+    overview::{GameOverview, RoundOverview}, 
+    Screen, 
+    Error
 };
 
 pub struct Play<'a> {

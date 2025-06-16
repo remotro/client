@@ -1,12 +1,28 @@
 use serde::{Deserialize, Serialize};
-use crate::{balatro_enum, net::Connection,
+use crate::{
     balatro::{
         Error,
         deck::{PlayingCard},
         blinds::SelectBlind,
-    }
+    },
+    balatro_enum, 
+    net::Connection
 };
-use super::{boosters::{BoosterPackKind, OpenBuffoonPack, OpenCelestialPack, OpenSpectralPack, OpenStandardPack, OpenArcanaPack}, consumables::{PlanetCard, SpectralCard, TarotCard}, jokers::Joker, Screen};
+use super::{
+    boosters::{
+        BoosterPackKind, 
+        OpenBuffoonPack,
+        OpenCelestialPack, 
+        OpenSpectralPack, 
+        OpenStandardPack,
+        OpenArcanaPack
+    }, consumables::{
+        PlanetCard,
+        SpectralCard, 
+        TarotCard
+    }, 
+    jokers::Joker, 
+    Screen};
 
 pub struct Shop<'a> {
     info: protocol::ShopInfo,
@@ -136,7 +152,19 @@ balatro_enum!(VoucherKind {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::{
-        balatro::{blinds::protocol::BlindInfo, boosters::{OpenBuffoonPack, OpenCelestialPack, OpenSpectralPack, OpenStandardPack, OpenArcanaPack}, hud::protocol::HudInfo, Screen}, net::protocol::{Packet, Request, Response}
+        balatro::{
+            blinds::protocol::BlindInfo,
+            boosters::{
+                OpenBuffoonPack,
+                OpenCelestialPack,
+                OpenSpectralPack,
+                OpenStandardPack, 
+                OpenArcanaPack
+            },
+            hud::protocol::HudInfo,
+            Screen
+        },
+        net::protocol::{Packet, Request, Response}
     };
     use super::{BoosterPack, MainCard, Shop, Voucher};
 

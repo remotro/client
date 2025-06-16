@@ -1,13 +1,16 @@
-<<<<<<< resume -- Incoming Change
-use crate::balatro::boosters;
-use crate::balatro::play::Play;
-use crate::balatro::shop::Shop;
-use crate::balatro::OpenPack;
-use crate::balatro::{blinds::SelectBlind, CurrentScreen, Screen};
-=======
-use crate::{balatro_enum,balatro::{Screen, blinds::SelectBlind}};
->>>>>>> main -- Current Change
-use crate::net::Connection;
+use crate::{
+    balatro::{
+        boosters,
+        play::Play,
+        shop::Shop,
+        OpenPack,
+        blinds::SelectBlind,
+        CurrentScreen,
+        Screen
+    },
+    net::Connection,
+    balatro_enum
+};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use serde_repr::{Deserialize_repr, Serialize_repr};
