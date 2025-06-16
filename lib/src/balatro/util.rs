@@ -1,11 +1,19 @@
 #[macro_export]
 macro_rules! balatro_enum {
-    ($name:ident { $($item:ident = $identifier:literal),* $(,)? }) => {
-        #[derive(Serialize, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
+    // Handle mixed variants
+    ($name:ident {
+        $(
+            $variant:ident $(
+                { $($field:ident: $field_type:ty),* $(,)? }
+            )? = $identifier:literal
+        ),*
+        $(,)?
+    }) => {
+        #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq)]
         pub enum $name {
             $(
                 #[serde(rename = $identifier)]
-                $item,
+                $variant $({ $($field: $field_type),* })?,
             )*
         }
     };

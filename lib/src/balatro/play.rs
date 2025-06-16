@@ -93,7 +93,7 @@ pub struct PokerHand {
     mult: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PokerHandKind {
     #[serde(rename = "High Card")]
     HighCard,
