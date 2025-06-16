@@ -1,4 +1,4 @@
-use crate::balatro::{Screen, blinds::SelectBlind};
+use crate::{balatro_enum,balatro::{Screen, blinds::SelectBlind}};
 use crate::net::Connection;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -29,38 +29,24 @@ impl<'a> Menu<'a> {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
-pub enum Deck {
-    #[serde(rename = "b_red")]
-    Red,
-    #[serde(rename = "b_blue")]
-    Blue,
-    #[serde(rename = "b_yellow")]
-    Yellow,
-    #[serde(rename = "b_green")]
-    Green,
-    #[serde(rename = "b_black")]
-    Black,
-    #[serde(rename = "b_magic")]
-    Magic,
-    #[serde(rename = "b_nebula")]
-    Nebula,
-    #[serde(rename = "b_ghost")]
-    Ghost,
-    #[serde(rename = "b_abandoned")]
-    Abandoned,
-    #[serde(rename = "b_checkered")]
-    Checkered,
-    #[serde(rename = "b_zodiac")]
-    Zodiac,
-    #[serde(rename = "b_painted")]
-    Painted,
-    #[serde(rename = "b_anaglyph")]
-    Anaglyph,
-    #[serde(rename = "b_plasma")]
-    Plasma,
-    #[serde(rename = "b_erratic")]
-    Erratic,
+balatro_enum! {
+    Deck {
+        Red = "b_red",
+        Blue = "b_blue",
+        Yellow = "b_yellow",
+        Green = "b_green",
+        Black = "b_black",
+        Magic = "b_magic",
+        Nebula = "b_nebula",
+        Ghost = "b_ghost",
+        Abandoned = "b_abandoned",
+        Checkered = "b_checkered",
+        Zodiac = "b_zodiac",
+        Painted = "b_painted",
+        Anaglyph = "b_anaglyph",
+        Plasma = "b_plasma",
+        Erratic = "b_erratic",
+    }
 }
 
 #[derive(Serialize_repr, Deserialize_repr, Clone, Copy, Debug)]
@@ -126,6 +112,11 @@ impl FromStr for Stake {
 
 #[derive(Serialize)]
 pub struct Seed(String);
+impl Seed {
+    pub fn new(s: &str) -> Self {
+        Seed(s.to_string())
+    }
+}
 
 pub(crate) mod protocol {
     use super::{Deck, Seed, Stake};

@@ -19,6 +19,10 @@ impl<'a> Play<'a> {
         &self.info.hand
     }
 
+    pub fn hand_size(&self) -> u32 {
+        self.info.hand_size
+    }
+
     pub fn score(&self) -> f64 {
         self.info.score
     }
@@ -129,6 +133,7 @@ pub(crate) mod protocol {
         pub current_blind: CurrentBlind,
         pub hand: Vec<HandCard>,
         pub score: f64,
+        pub hand_size: u32,
         pub hud: HudInfo,
         pub poker_hand: Option<PokerHand>,
     }
