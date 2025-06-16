@@ -1,8 +1,15 @@
 use log::{error, info};
 use remotro::{
     balatro::{
-        boosters::{BoosterCard, BoosterPackKind, Open, OpenWithHand}, hud::Hud, menu::{Deck, Stake}, play::{DiscardResult, PlayResult}, shop::{BoosterPack, BoughtBooster, MainCard}, Balatro, CurrentScreen
-    }, Remotro
+        boosters::{BoosterCard, BoosterPackKind, Open, OpenWithHand},
+        hud::Hud,
+        menu::{Deck, Stake, Seed},
+        play::{DiscardResult, PlayResult},
+        shop::{BoosterPack, BoughtBooster, MainCard},
+        Balatro,
+        CurrentScreen
+    },
+    Remotro
 };
 use std::str::FromStr;
 

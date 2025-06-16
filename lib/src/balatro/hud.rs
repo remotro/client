@@ -11,29 +11,19 @@ use crate::balatro::Screen;
 #[allow(async_fn_in_trait)]
 pub trait Hud<'a>: Sized + Screen<'a> {
     fn hands(&self) -> u32;
-
     fn discards(&self) -> u32;
-
     fn round(&self) -> u32;
-
     fn ante(&self) -> u32;
-
     fn money(&self) -> u32;
-
+    fn joker_slots(&self) -> u32;
     fn jokers(&self) -> &[Joker];
-
     fn run_info(&self) -> &RunInfo;
-
     async fn move_joker(self, from: u32, to: u32) -> Result<Self, Error>;
-
     async fn sell_joker(self, index: u32) -> Result<Self, Error>;
-
+    fn consumable_slots(&self) -> u32;
     fn consumables(&self) -> &[Consumable];
-
     async fn move_consumable(self, from: u32, to: u32) -> Result<Self, Error>;
-
     async fn use_consumable(self, index: u32) -> Result<Self, Error>;
-
     async fn sell_consumable(self, index: u32) -> Result<Self, Error>;
 }
 
@@ -62,6 +52,10 @@ macro_rules! impl_hud {
                     self.info.hud.money
                 }
 
+                fn joker_slots(&self) -> u32 {
+                    self.info.hud.joker_slots
+                }
+
                 fn jokers(&self) -> &[$crate::balatro::jokers::Joker] {
                     &self.info.hud.jokers
                 }
@@ -84,6 +78,10 @@ macro_rules! impl_hud {
                         .request($crate::balatro::hud::protocol::SellJoker { index, _marker: std::marker::PhantomData::<&$t> })
                         .await??;
                     Ok(Self::new(new_info, self.connection))
+                }
+
+                fn consumable_slots(&self) -> u32 {
+                    self.info.hud.consumable_slots
                 }
 
                 fn consumables(&self) -> &[$crate::balatro::consumables::Consumable] {
@@ -171,7 +169,9 @@ pub(crate) mod protocol {
         pub round: u32,
         pub ante: u32,
         pub money: u32,
+        pub joker_slots: u32,
         pub jokers: Vec<Joker>,
+        pub consumable_slots: u32,
         pub consumables: Vec<Consumable>,
         pub run_info: RunInfo,
     }
