@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::balatro::blinds::CurrentBlind;
-use crate::balatro::menu::Seed;
+use crate::balatro::menu::{self, Menu, Seed};
 use crate::balatro::play::PokerHandKind;
 use crate::net::Connection;
 use crate::balatro::{
@@ -114,6 +114,10 @@ impl<'a> GameOverview<'a> {
 
     pub fn seed(&self) -> &Seed {
         &self.info.seed
+    }
+
+    pub fn menu(self) -> Menu<'a> {
+        Menu::new(self.connection, menu::protocol::MenuInfo { saved_run: None })
     }
 }
 

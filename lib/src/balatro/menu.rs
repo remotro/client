@@ -164,6 +164,16 @@ impl FromStr for Stake {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Seed(String);
 
+impl Seed {
+    pub fn new(seed: String) -> Option<Self> {
+        if seed.len() == 7 {
+            Some(Self(seed))
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SavedRun {
     pub deck: Deck,

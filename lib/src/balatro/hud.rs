@@ -150,8 +150,8 @@ pub struct CurrentPokerHands {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CurrentPokerHand {
-    hand: PokerHand,
-    played: u64,
+    pub hand: PokerHand,
+    pub played: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

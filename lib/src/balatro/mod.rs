@@ -14,18 +14,17 @@ pub mod boosters;
 use crate::net::Connection;
 use crate::net::protocol::Response;
 
-pub struct Balatro<'a> {
-    _r_marker: std::marker::PhantomData<&'a ()>,
+pub struct Balatro {
     connection: Connection,
 }
 
-impl<'a> Balatro<'a> {
+impl<'a> Balatro {
     pub fn new(connection: Connection) -> Self {
-        Self { connection, _r_marker: std::marker::PhantomData }
+        Self { connection }
     }
 
     /// Obtains the current state from the connected Balatro game.
-    pub async fn screen(&mut self) -> Result<CurrentScreen, Error> {
+    pub async fn screen(&'a mut self) -> Result<CurrentScreen<'a>, Error> {
         let info = self.connection.request(protocol::GetScreen::<'a> { _r_marker: std::marker::PhantomData }).await??;
         let screen = match info {
             protocol::ScreenInfo::Menu(info) => CurrentScreen::Menu(menu::Menu::new(&mut self.connection, info)),
@@ -95,7 +94,7 @@ pub trait Screen<'a> {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
 
-    use crate::{balatro::{boosters, menu, Screen}, net::protocol::{Packet, Request, Response}};
+    use crate::{balatro::{boosters, menu::{self, SavedRun}, Screen}, net::protocol::{Packet, Request, Response}};
 
     use super::{blinds, play, shop};
 

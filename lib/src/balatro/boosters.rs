@@ -40,8 +40,8 @@ pub trait OpenWithHand<'a>: Sized + Open<'a> {
 
 #[derive(Serialize, Deserialize)]
 pub struct BoosterCard {
-    card: PlayingCard,
-    selected: bool,
+    pub card: PlayingCard,
+    pub selected: bool,
 }
 
 macro_rules! impl_open {

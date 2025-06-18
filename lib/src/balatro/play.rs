@@ -83,10 +83,10 @@ pub struct HandCard {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PokerHand {
-    kind: PokerHandKind,
-    level: u64,
-    chips: u64,
-    mult: u64,
+    pub kind: PokerHandKind,
+    pub level: u64,
+    pub chips: u64,
+    pub mult: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
