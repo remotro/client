@@ -55,12 +55,12 @@ impl<'a> Menu<'a> {
             crate::balatro::protocol::ScreenInfo::Play(play) => Ok(CurrentScreen::Play(Play::new(play, self.connection))),
             crate::balatro::protocol::ScreenInfo::Shop(shop) => Ok(CurrentScreen::Shop(Shop::new(shop, self.connection))),
             crate::balatro::protocol::ScreenInfo::Menu(info) => Ok(CurrentScreen::Menu(Menu::new(self.connection, info))),
-            crate::balatro::protocol::ScreenInfo::OpenShopPack(pack) => match pack {
-                crate::balatro::protocol::OpenShopPackInfo::Arcana(info) => Ok(CurrentScreen::OpenShopPack(OpenPack::Arcana(boosters::OpenArcanaPack::new(info, self.connection)))),
-                crate::balatro::protocol::OpenShopPackInfo::Buffoon(info) => Ok(CurrentScreen::OpenShopPack(OpenPack::Buffoon(boosters::OpenBuffoonPack::new(info, self.connection)))),
-                crate::balatro::protocol::OpenShopPackInfo::Celestial(info) => Ok(CurrentScreen::OpenShopPack(OpenPack::Celestial(boosters::OpenSpectralPack::new(info, self.connection)))),
-                crate::balatro::protocol::OpenShopPackInfo::Spectral(info) => Ok(CurrentScreen::OpenShopPack(OpenPack::Spectral(boosters::OpenSpectralPack::new(info, self.connection)))),
-                crate::balatro::protocol::OpenShopPackInfo::Standard(info) => Ok(CurrentScreen::OpenShopPack(OpenPack::Standard(boosters::OpenStandardPack::new(info, self.connection)))),
+            crate::balatro::protocol::ScreenInfo::ShopOpen(pack) => match pack {
+                crate::balatro::protocol::OpenShopPackInfo::Arcana(info) => Ok(CurrentScreen::ShopOpen(OpenPack::Arcana(boosters::OpenArcanaPack::new(info, self.connection)))),
+                crate::balatro::protocol::OpenShopPackInfo::Buffoon(info) => Ok(CurrentScreen::ShopOpen(OpenPack::Buffoon(boosters::OpenBuffoonPack::new(info, self.connection)))),
+                crate::balatro::protocol::OpenShopPackInfo::Celestial(info) => Ok(CurrentScreen::ShopOpen(OpenPack::Celestial(boosters::OpenCelestialPack::new(info, self.connection)))),
+                crate::balatro::protocol::OpenShopPackInfo::Spectral(info) => Ok(CurrentScreen::ShopOpen(OpenPack::Spectral(boosters::OpenSpectralPack::new(info, self.connection)))),
+                crate::balatro::protocol::OpenShopPackInfo::Standard(info) => Ok(CurrentScreen::ShopOpen(OpenPack::Standard(boosters::OpenStandardPack::new(info, self.connection)))),
             }
         }
     }

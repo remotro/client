@@ -115,6 +115,8 @@ impl TcpStreamExt {
             ))));
         }
 
+        log::info!("Recieved: {}", body);
+
         let response: R = serde_json::from_str(body)?;
         Ok(response)
     }

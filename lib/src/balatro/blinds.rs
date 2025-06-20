@@ -142,7 +142,7 @@ pub enum SkipResult<'a> {
     Select(SelectBlind<'a>),
     Arcana(boosters::OpenArcanaPack<'a, SkipResult<'a>>),
     Buffoon(boosters::OpenBuffoonPack<'a, SkipResult<'a>>),
-    Celestial(boosters::OpenSpectralPack<'a, SkipResult<'a>>),
+    Celestial(boosters::OpenCelestialPack<'a, SkipResult<'a>>),
     Spectral(boosters::OpenSpectralPack<'a, SkipResult<'a>>),
     Standard(boosters::OpenStandardPack<'a, SkipResult<'a>>),
 }
@@ -154,7 +154,7 @@ impl<'a> Screen<'a> for SkipResult<'a> {
             protocol::SkipBlindResult::Select(info) => Self::Select(SelectBlind::new(info, connection)),
             protocol::SkipBlindResult::Arcana(info) => Self::Arcana(boosters::OpenArcanaPack::new(info, connection)),
             protocol::SkipBlindResult::Buffoon(info) => Self::Buffoon(boosters::OpenBuffoonPack::new(info, connection)),
-            protocol::SkipBlindResult::Celestial(info) => Self::Celestial(boosters::OpenSpectralPack::new(info, connection)),
+            protocol::SkipBlindResult::Celestial(info) => Self::Celestial(boosters::OpenCelestialPack::new(info, connection)),
             protocol::SkipBlindResult::Spectral(info) => Self::Spectral(boosters::OpenSpectralPack::new(info, connection)),
             protocol::SkipBlindResult::Standard(info) => Self::Standard(boosters::OpenStandardPack::new(info, connection)),
         }
@@ -210,7 +210,7 @@ pub(crate) mod protocol {
         Select(BlindInfo),
         Arcana(<boosters::OpenArcanaPack<'a, SkipResult<'a>> as Screen<'a>>::Info),
         Buffoon(<boosters::OpenBuffoonPack<'a, SkipResult<'a>> as Screen<'a>>::Info),
-        Celestial(<boosters::OpenSpectralPack<'a, SkipResult<'a>> as Screen<'a>>::Info),
+        Celestial(<boosters::OpenCelestialPack<'a, SkipResult<'a>> as Screen<'a>>::Info),
         Spectral(<boosters::OpenSpectralPack<'a, SkipResult<'a>> as Screen<'a>>::Info),
         Standard(<boosters::OpenStandardPack<'a, SkipResult<'a>> as Screen<'a>>::Info),
     }

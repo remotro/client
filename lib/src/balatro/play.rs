@@ -77,8 +77,8 @@ pub enum DiscardResult<'a> {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct HandCard {
-    card: Option<PlayingCard>,
-    selected: bool,
+    pub card: Option<PlayingCard>,
+    pub selected: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

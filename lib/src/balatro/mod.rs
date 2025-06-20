@@ -31,12 +31,12 @@ impl<'a> Balatro {
             protocol::ScreenInfo::SelectBlind(blinds) => CurrentScreen::SelectBlind(blinds::SelectBlind::new(blinds, &mut self.connection)),
             protocol::ScreenInfo::Play(play) => CurrentScreen::Play(play::Play::new(play, &mut self.connection)),
             protocol::ScreenInfo::Shop(shop) => CurrentScreen::Shop(shop::Shop::new(shop, &mut self.connection)),
-            protocol::ScreenInfo::OpenShopPack(pack) => match pack {
-                protocol::OpenShopPackInfo::Arcana(info) => CurrentScreen::OpenShopPack(OpenPack::Arcana(boosters::OpenArcanaPack::new(info, &mut self.connection))),
-                protocol::OpenShopPackInfo::Buffoon(info) => CurrentScreen::OpenShopPack(OpenPack::Buffoon(boosters::OpenBuffoonPack::new(info, &mut self.connection))),
-                protocol::OpenShopPackInfo::Celestial(info) => CurrentScreen::OpenShopPack(OpenPack::Celestial(boosters::OpenSpectralPack::new(info, &mut self.connection))),
-                protocol::OpenShopPackInfo::Spectral(info) => CurrentScreen::OpenShopPack(OpenPack::Spectral(boosters::OpenSpectralPack::new(info, &mut self.connection))),
-                protocol::OpenShopPackInfo::Standard(info) => CurrentScreen::OpenShopPack(OpenPack::Standard(boosters::OpenStandardPack::new(info, &mut self.connection))),
+            protocol::ScreenInfo::ShopOpen(pack) => match pack {
+                protocol::OpenShopPackInfo::Arcana(info) => CurrentScreen::ShopOpen(OpenPack::Arcana(boosters::OpenArcanaPack::new(info, &mut self.connection))),
+                protocol::OpenShopPackInfo::Buffoon(info) => CurrentScreen::ShopOpen(OpenPack::Buffoon(boosters::OpenBuffoonPack::new(info, &mut self.connection))),
+                protocol::OpenShopPackInfo::Celestial(info) => CurrentScreen::ShopOpen(OpenPack::Celestial(boosters::OpenCelestialPack::new(info, &mut self.connection))),
+                protocol::OpenShopPackInfo::Spectral(info) => CurrentScreen::ShopOpen(OpenPack::Spectral(boosters::OpenSpectralPack::new(info, &mut self.connection))),
+                protocol::OpenShopPackInfo::Standard(info) => CurrentScreen::ShopOpen(OpenPack::Standard(boosters::OpenStandardPack::new(info, &mut self.connection))),
             }
         };
         Ok(screen)
@@ -48,13 +48,13 @@ pub enum CurrentScreen<'a> {
     SelectBlind(blinds::SelectBlind<'a>),
     Play(play::Play<'a>),
     Shop(shop::Shop<'a>),
-    OpenShopPack(OpenPack<'a, shop::Shop<'a>>)
+    ShopOpen(OpenPack<'a, shop::Shop<'a>>)
 }
 
 pub enum OpenPack<'a, R: Screen<'a>> {
     Arcana(boosters::OpenArcanaPack<'a, R>),
     Buffoon(boosters::OpenBuffoonPack<'a, R>),
-    Celestial(boosters::OpenSpectralPack<'a, R>),
+    Celestial(boosters::OpenCelestialPack<'a, R>),
     Spectral(boosters::OpenSpectralPack<'a, R>),
     Standard(boosters::OpenStandardPack<'a, R>)
 }
@@ -119,14 +119,14 @@ pub(crate) mod protocol {
         SelectBlind(blinds::protocol::BlindInfo),
         Play(play::protocol::PlayInfo),
         Shop(shop::protocol::ShopInfo),
-        OpenShopPack(OpenShopPackInfo<'a>),
+        ShopOpen(OpenShopPackInfo<'a>),
     }
 
     #[derive(Deserialize)]
     pub enum OpenShopPackInfo<'a> {
         Arcana(<boosters::OpenArcanaPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
         Buffoon(<boosters::OpenBuffoonPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
-        Celestial(<boosters::OpenSpectralPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
+        Celestial(<boosters::OpenCelestialPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
         Spectral(<boosters::OpenSpectralPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
         Standard(<boosters::OpenStandardPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
     }

@@ -501,7 +501,44 @@ async fn main() {
                     CurrentScreen::Play(play) => {
                         display_play_menu();
                         println!("\nCurrent State:");
-                        println!("Hand: {:?}", play.hand());
+                        println!("Hand ({} cards):", play.hand().len());
+                        for (i, hand_card) in play.hand().iter().enumerate() {
+                            if let Some(card) = &hand_card.card {
+                                let selection = if hand_card.selected { "[SELECTED]" } else { "         " };
+                                
+                                // Format the basic card
+                                let rank_str = format!("{:?}", card.rank);
+                                let suit_str = format!("{:?}", card.suit);
+                                let mut card_parts = vec![format!("{} of {}", rank_str, suit_str)];
+                                
+                                // Add enhancement if present
+                                if let Some(enhancement) = &card.enhancement {
+                                    card_parts.push(format!("{:?}", enhancement));
+                                }
+                                
+                                // Add edition if present
+                                if let Some(edition) = &card.edition {
+                                    card_parts.push(format!("{:?}", edition));
+                                }
+                                
+                                // Add seal if present
+                                if let Some(seal) = &card.seal {
+                                    card_parts.push(format!("{:?} Seal", seal));
+                                }
+                                
+                                // Combine all parts
+                                let formatted_card = if card_parts.len() > 1 {
+                                    format!("{} ({})", card_parts[0], card_parts[1..].join(", "))
+                                } else {
+                                    card_parts[0].clone()
+                                };
+                                
+                                println!("  {}: {} {}", i, selection, formatted_card);
+                            } else {
+                                let selection = if hand_card.selected { "[SELECTED]" } else { "         " };
+                                println!("  {}: {} [Empty Card Slot]", i, selection);
+                            }
+                        }
                         println!("Blind: {:?}", play.blind());
                         println!("Score: {}", play.score());
                         if let Some(poker_hand) = play.poker_hand() {
@@ -658,7 +695,7 @@ async fn main() {
                             _ => println!("Invalid action. Use 'buy <type> <index>', 'reroll', 'leave', or 'hud'."),
                         }
                     }
-                    CurrentScreen::OpenShopPack(pack) => {
+                    CurrentScreen::ShopOpen(pack) => {
                         display_pack_menu();
                         
                         match pack {
