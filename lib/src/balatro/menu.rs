@@ -40,19 +40,13 @@ impl<'a> Menu<'a> {
         Ok(SelectBlind::new(blinds, self.connection))
     }
 
-    pub async fn resume_run(
-        self,
-        deck: Deck,
-        stake: Stake,
-        seed: Option<Seed>,
+    pub async fn continue_run(
+        self
     ) -> Result<CurrentScreen<'a>, super::Error> {
-        let resume_run = protocol::ResumeRun::<'a> {
-            back: deck,
-            stake,
-            seed,
+        let continue_run = protocol::ContinueRun::<'a> {
             _r_marker: std::marker::PhantomData,
         };
-        let screen: crate::balatro::protocol::ScreenInfo<'a> = self.connection.request(resume_run).await??;
+        let screen: crate::balatro::protocol::ScreenInfo<'a> = self.connection.request(continue_run).await??;
         match screen {
             crate::balatro::protocol::ScreenInfo::SelectBlind(blinds) => Ok(CurrentScreen::SelectBlind(SelectBlind::new(blinds, self.connection))),
             crate::balatro::protocol::ScreenInfo::Play(play) => Ok(CurrentScreen::Play(Play::new(play, self.connection))),
@@ -230,20 +224,17 @@ pub(crate) mod protocol {
     }
 
     #[derive(Serialize)]
-    pub struct ResumeRun<'a> {
-        pub back: Deck,
-        pub stake: Stake,
-        pub seed: Option<Seed>,
+    pub struct ContinueRun<'a> {
         pub _r_marker: std::marker::PhantomData<&'a ()>,
     }
     
-    impl<'a> Request for ResumeRun<'a> {
+    impl<'a> Request for ContinueRun<'a> {
         type Expect = Result<crate::balatro::protocol::ScreenInfo<'a>, String>;
     }
 
-    impl<'a> Packet for ResumeRun<'a> {
+    impl<'a> Packet for ContinueRun<'a> {
         fn kind() -> String {
-            "main_menu/resume_run".to_string()
+            "main_menu/continue_run".to_string()
         }
     }
 }
