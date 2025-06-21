@@ -37,7 +37,7 @@ impl<'a> Play<'a> {
         let result = match info {
             protocol::PlayResult::Again(info) => PlayResult::Again(Self::new(info, self.connection)),
             protocol::PlayResult::RoundOver(info) => PlayResult::RoundOver(RoundOverview::new(info, self.connection)),
-            protocol::PlayResult::GameOver(info) => PlayResult::GameOver(GameOverview::new(self.connection, info)),
+            protocol::PlayResult::GameOver(info) => PlayResult::GameOver(GameOverview::new(info, self.connection)),
         };
         Ok(result)
     }
@@ -46,7 +46,7 @@ impl<'a> Play<'a> {
         let info = self.connection.request(protocol::PlayDiscard).await??;
         let result = match info {
             protocol::DiscardResult::Again(info) => DiscardResult::Again(Self::new(info, self.connection)),
-            protocol::DiscardResult::GameOver(info) => DiscardResult::GameOver(GameOverview::new(self.connection, info)),
+            protocol::DiscardResult::GameOver(info) => DiscardResult::GameOver(GameOverview::new(info, self.connection)),
         };
         Ok(result)
     }

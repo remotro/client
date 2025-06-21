@@ -15,7 +15,16 @@ impl<'a> SelectBlind<'a> {
 
     pub async fn skip(self) -> Result<SkipResult<'a>, super::Error> {
         let info = self.connection.request(protocol::SkipBlind::<'a> { _r_marker: std::marker::PhantomData }).await??;
-        Ok(SkipResult::new(info, self.connection))
+        match info {
+            protocol::SkipBlindResult::Select(info) => Ok(SkipResult::Select(SelectBlind::new(info, self.connection))),
+            protocol::SkipBlindResult::Booster(info) => match info {
+                protocol::SkippedBooster::Arcana(info) => Ok(SkipResult::Booster(boosters::OpenBoosterPack::Arcana(boosters::OpenArcanaPack::new(info, self.connection)))),
+                protocol::SkippedBooster::Buffoon(info) => Ok(SkipResult::Booster(boosters::OpenBoosterPack::Buffoon(boosters::OpenBuffoonPack::new(info, self.connection)))),
+                protocol::SkippedBooster::Celestial(info) => Ok(SkipResult::Booster(boosters::OpenBoosterPack::Celestial(boosters::OpenCelestialPack::new(info, self.connection)))),
+                protocol::SkippedBooster::Spectral(info) => Ok(SkipResult::Booster(boosters::OpenBoosterPack::Spectral(boosters::OpenSpectralPack::new(info, self.connection)))),
+                protocol::SkippedBooster::Standard(info) => Ok(SkipResult::Booster(boosters::OpenBoosterPack::Standard(boosters::OpenStandardPack::new(info, self.connection)))),
+            }
+        }
     }
 
     pub fn small(&self) -> &SmallBlindChoice {
@@ -140,28 +149,7 @@ pub enum BlindState {
 
 pub enum SkipResult<'a> {
     Select(SelectBlind<'a>),
-    Arcana(boosters::OpenArcanaPack<'a, SkipResult<'a>>),
-    Buffoon(boosters::OpenBuffoonPack<'a, SkipResult<'a>>),
-    Celestial(boosters::OpenCelestialPack<'a, SkipResult<'a>>),
-    Spectral(boosters::OpenSpectralPack<'a, SkipResult<'a>>),
-    Standard(boosters::OpenStandardPack<'a, SkipResult<'a>>),
-}
-
-impl<'a> Screen<'a> for SkipResult<'a> {
-    type Info = protocol::SkipBlindResult<'a>;
-    fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
-        match info {
-            protocol::SkipBlindResult::Select(info) => Self::Select(SelectBlind::new(info, connection)),
-            protocol::SkipBlindResult::Arcana(info) => Self::Arcana(boosters::OpenArcanaPack::new(info, connection)),
-            protocol::SkipBlindResult::Buffoon(info) => Self::Buffoon(boosters::OpenBuffoonPack::new(info, connection)),
-            protocol::SkipBlindResult::Celestial(info) => Self::Celestial(boosters::OpenCelestialPack::new(info, connection)),
-            protocol::SkipBlindResult::Spectral(info) => Self::Spectral(boosters::OpenSpectralPack::new(info, connection)),
-            protocol::SkipBlindResult::Standard(info) => Self::Standard(boosters::OpenStandardPack::new(info, connection)),
-        }
-    }
-    fn name() -> &'static str {
-        "skip"
-    }
+    Booster(boosters::OpenBoosterPack<'a, protocol::SkipBlindResult<'a>>),
 }
 
 pub(crate) mod protocol {
@@ -208,21 +196,25 @@ pub(crate) mod protocol {
     #[derive(Deserialize)]
     pub enum SkipBlindResult<'a> {
         Select(BlindInfo),
-        Arcana(<boosters::OpenArcanaPack<'a, SkipResult<'a>> as Screen<'a>>::Info),
-        Buffoon(<boosters::OpenBuffoonPack<'a, SkipResult<'a>> as Screen<'a>>::Info),
-        Celestial(<boosters::OpenCelestialPack<'a, SkipResult<'a>> as Screen<'a>>::Info),
-        Spectral(<boosters::OpenSpectralPack<'a, SkipResult<'a>> as Screen<'a>>::Info),
-        Standard(<boosters::OpenStandardPack<'a, SkipResult<'a>> as Screen<'a>>::Info),
+        Booster(SkippedBooster<'a>),
     }
 
     impl<'a> Response for SkipBlindResult<'a> {}
 
     impl<'a> Packet for SkipBlindResult<'a> {
         fn kind() -> String {
-            "blind_select/skip/result".to_string()
+            "blind_select/skip_result".to_string()
         }
     }
 
+    #[derive(Deserialize)]
+    pub enum SkippedBooster<'a> {
+        Arcana(<boosters::OpenArcanaPack<'a, SkipBlindResult<'a>> as Screen<'a>>::Info),
+        Buffoon(<boosters::OpenBuffoonPack<'a, SkipBlindResult<'a>> as Screen<'a>>::Info),
+        Celestial(<boosters::OpenCelestialPack<'a, SkipBlindResult<'a>> as Screen<'a>>::Info),
+        Spectral(<boosters::OpenSpectralPack<'a, SkipBlindResult<'a>> as Screen<'a>>::Info),
+        Standard(<boosters::OpenStandardPack<'a, SkipBlindResult<'a>> as Screen<'a>>::Info),
+    }
 
 
     #[derive(Serialize)]

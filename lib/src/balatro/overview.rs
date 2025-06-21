@@ -76,7 +76,7 @@ pub struct GameOverview<'a> {
 }
 
 impl<'a> GameOverview<'a> {
-    pub(crate) fn new(connection: &'a mut Connection, info: protocol::GameOverviewInfo) -> Self {
+    pub(crate) fn new(info: protocol::GameOverviewInfo, connection: &'a mut Connection) -> Self {
         Self { connection, info }
     }
 

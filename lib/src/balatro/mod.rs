@@ -30,14 +30,23 @@ impl<'a> Balatro {
             protocol::ScreenInfo::Menu(info) => CurrentScreen::Menu(menu::Menu::new(&mut self.connection, info)),
             protocol::ScreenInfo::SelectBlind(blinds) => CurrentScreen::SelectBlind(blinds::SelectBlind::new(blinds, &mut self.connection)),
             protocol::ScreenInfo::Play(play) => CurrentScreen::Play(play::Play::new(play, &mut self.connection)),
+            protocol::ScreenInfo::RoundOverview(overview) => CurrentScreen::RoundOverview(overview::RoundOverview::new(overview, &mut self.connection)),
             protocol::ScreenInfo::Shop(shop) => CurrentScreen::Shop(shop::Shop::new(shop, &mut self.connection)),
             protocol::ScreenInfo::ShopOpen(pack) => match pack {
-                protocol::OpenShopPackInfo::Arcana(info) => CurrentScreen::ShopOpen(OpenPack::Arcana(boosters::OpenArcanaPack::new(info, &mut self.connection))),
-                protocol::OpenShopPackInfo::Buffoon(info) => CurrentScreen::ShopOpen(OpenPack::Buffoon(boosters::OpenBuffoonPack::new(info, &mut self.connection))),
-                protocol::OpenShopPackInfo::Celestial(info) => CurrentScreen::ShopOpen(OpenPack::Celestial(boosters::OpenCelestialPack::new(info, &mut self.connection))),
-                protocol::OpenShopPackInfo::Spectral(info) => CurrentScreen::ShopOpen(OpenPack::Spectral(boosters::OpenSpectralPack::new(info, &mut self.connection))),
-                protocol::OpenShopPackInfo::Standard(info) => CurrentScreen::ShopOpen(OpenPack::Standard(boosters::OpenStandardPack::new(info, &mut self.connection))),
-            }
+                shop::protocol::BoughtBooster::Arcana(info) => CurrentScreen::ShopOpen(boosters::OpenBoosterPack::Arcana(boosters::OpenArcanaPack::new(info, &mut self.connection))),
+                shop::protocol::BoughtBooster::Buffoon(info) => CurrentScreen::ShopOpen(boosters::OpenBoosterPack::Buffoon(boosters::OpenBuffoonPack::new(info, &mut self.connection))),
+                shop::protocol::BoughtBooster::Celestial(info) => CurrentScreen::ShopOpen(boosters::OpenBoosterPack::Celestial(boosters::OpenCelestialPack::new(info, &mut self.connection))),
+                shop::protocol::BoughtBooster::Spectral(info) => CurrentScreen::ShopOpen(boosters::OpenBoosterPack::Spectral(boosters::OpenSpectralPack::new(info, &mut self.connection))),
+                shop::protocol::BoughtBooster::Standard(info) => CurrentScreen::ShopOpen(boosters::OpenBoosterPack::Standard(boosters::OpenStandardPack::new(info, &mut self.connection))),
+            },
+            protocol::ScreenInfo::SkipOpen(pack) => match pack {
+                blinds::protocol::SkippedBooster::Arcana(info) => CurrentScreen::SkipOpen(boosters::OpenBoosterPack::Arcana(boosters::OpenArcanaPack::new(info, &mut self.connection))),
+                blinds::protocol::SkippedBooster::Buffoon(info) => CurrentScreen::SkipOpen(boosters::OpenBoosterPack::Buffoon(boosters::OpenBuffoonPack::new(info, &mut self.connection))),
+                blinds::protocol::SkippedBooster::Celestial(info) => CurrentScreen::SkipOpen(boosters::OpenBoosterPack::Celestial(boosters::OpenCelestialPack::new(info, &mut self.connection))),
+                blinds::protocol::SkippedBooster::Spectral(info) => CurrentScreen::SkipOpen(boosters::OpenBoosterPack::Spectral(boosters::OpenSpectralPack::new(info, &mut self.connection))),
+                blinds::protocol::SkippedBooster::Standard(info) => CurrentScreen::SkipOpen(boosters::OpenBoosterPack::Standard(boosters::OpenStandardPack::new(info, &mut self.connection))),
+            },
+            protocol::ScreenInfo::GameOver(overview) => CurrentScreen::GameOver(overview::GameOverview::new(overview, &mut self.connection)),
         };
         Ok(screen)
     }
@@ -47,16 +56,11 @@ pub enum CurrentScreen<'a> {
     Menu(menu::Menu<'a>),
     SelectBlind(blinds::SelectBlind<'a>),
     Play(play::Play<'a>),
+    RoundOverview(overview::RoundOverview<'a>), 
     Shop(shop::Shop<'a>),
-    ShopOpen(OpenPack<'a, shop::Shop<'a>>)
-}
-
-pub enum OpenPack<'a, R: Screen<'a>> {
-    Arcana(boosters::OpenArcanaPack<'a, R>),
-    Buffoon(boosters::OpenBuffoonPack<'a, R>),
-    Celestial(boosters::OpenCelestialPack<'a, R>),
-    Spectral(boosters::OpenSpectralPack<'a, R>),
-    Standard(boosters::OpenStandardPack<'a, R>)
+    ShopOpen(boosters::OpenBoosterPack<'a, <shop::Shop<'a> as Screen<'a>>::Info>),
+    SkipOpen(boosters::OpenBoosterPack<'a, blinds::protocol::SkipBlindResult<'a>>),
+    GameOver(overview::GameOverview<'a>),
 }
 
 #[derive(Debug)]
@@ -94,7 +98,7 @@ pub trait Screen<'a> {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
 
-    use crate::{balatro::{boosters, menu::{self, SavedRun}, Screen}, net::protocol::{Packet, Request, Response}};
+    use crate::{balatro::{boosters, menu::{self, SavedRun}, overview, Screen}, net::protocol::{Packet, Request, Response}};
 
     use super::{blinds, play, shop};
 
@@ -118,18 +122,13 @@ pub(crate) mod protocol {
         Menu(menu::protocol::MenuInfo),
         SelectBlind(blinds::protocol::BlindInfo),
         Play(play::protocol::PlayInfo),
+        RoundOverview(overview::protocol::RoundOverviewInfo),
         Shop(shop::protocol::ShopInfo),
-        ShopOpen(OpenShopPackInfo<'a>),
+        ShopOpen(shop::protocol::BoughtBooster<'a>),
+        SkipOpen(blinds::protocol::SkippedBooster<'a>),
+        GameOver(overview::protocol::GameOverviewInfo),
     }
 
-    #[derive(Deserialize)]
-    pub enum OpenShopPackInfo<'a> {
-        Arcana(<boosters::OpenArcanaPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
-        Buffoon(<boosters::OpenBuffoonPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
-        Celestial(<boosters::OpenCelestialPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
-        Spectral(<boosters::OpenSpectralPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
-        Standard(<boosters::OpenStandardPack<'a, shop::Shop<'a>> as Screen<'a>>::Info),
-    }
 
     impl<'a> Response for ScreenInfo<'a> {}
 

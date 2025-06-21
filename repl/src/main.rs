@@ -1,11 +1,11 @@
 use log::{error, info};
 use remotro::{
     balatro::{
-        boosters::{Open, OpenWithHand},
+        boosters::{Open, OpenWithHand, OpenBoosterPack},
         hud::{Hud, RunInfo}, 
         menu::{Deck, Stake}, 
         play::{DiscardResult, PlayResult}, 
-        CurrentScreen, OpenPack
+        CurrentScreen
     }, Remotro
 };
 use std::str::FromStr;
@@ -465,6 +465,41 @@ async fn main() {
                             _ => println!("Invalid action. Use 'new' or 'resume'."),
                         }
                     }
+                    CurrentScreen::RoundOverview(overview) => {
+                        display_overview_menu();
+                        print_hud(&overview);
+                        println!("Total Earned: ${}", overview.total_earned());
+                        println!("Earnings Breakdown: {:?}", overview.earnings());
+                        
+                        let action = get_string_input("Enter action:");
+                        match action.trim().to_lowercase().as_str() {
+                            "continue" => {
+                                match overview.cash_out().await {
+                                    Ok(_) => println!("Proceeding to shop..."),
+                                    Err(e) => error!("Failed to proceed to shop: {}", e),
+                                }
+                            },
+                            _ => println!("Invalid action. Use 'continue'."),
+                        }
+                    }
+                    CurrentScreen::GameOver(game_over) => {
+                        display_game_over_menu();
+                        println!("Outcome: {:?}", game_over.outcome());
+                        if let Some(best) = game_over.best_hand() {
+                            println!("Best Hand: {}", best);
+                        }
+                        println!("Most Played Hand: {:?}", game_over.most_played_hand());
+                        println!("Seed: {:?}", game_over.seed());
+                        
+                        let action = get_string_input("Enter action:");
+                        match action.trim().to_lowercase().as_str() {
+                            "menu" => {
+                                game_over.menu();
+                                return;
+                            },
+                            _ => println!("Invalid action. Use 'menu'."),
+                        }
+                    }
                     CurrentScreen::SelectBlind(blinds) => {
                         display_blinds_menu();
                         print_hud(&blinds);
@@ -699,7 +734,7 @@ async fn main() {
                         display_pack_menu();
                         
                         match pack {
-                            OpenPack::Arcana(pack) => {
+                            OpenBoosterPack::Arcana(pack) => {
                                 println!("\nArcana Pack:");
                                 println!("Options: {:?}", pack.options());
                                 let hand = pack.hand().await;
@@ -764,7 +799,7 @@ async fn main() {
                                     _ => println!("Invalid action. Use 'select <index>', 'click <indices>', or 'skip'."),
                                 }
                             },
-                            OpenPack::Buffoon(pack) => {
+                            OpenBoosterPack::Buffoon(pack) => {
                                 println!("\nBuffoon Pack:");
                                 println!("Options: {:?}", pack.options());
                                 println!("Selections left: {:?}", pack.selections_left());
@@ -796,7 +831,7 @@ async fn main() {
                                     _ => println!("Invalid action. Use 'select <index>' or 'skip'."),
                                 }
                             },
-                            OpenPack::Celestial(pack) => {
+                            OpenBoosterPack::Celestial(pack) => {
                                 println!("\nCelestial Pack:");
                                 println!("Options: {:?}", pack.options());
                                 println!("Selections left: {:?}", pack.selections_left());
@@ -828,7 +863,7 @@ async fn main() {
                                     _ => println!("Invalid action. Use 'select <index>' or 'skip'."),
                                 }
                             },
-                            OpenPack::Spectral(pack) => {
+                            OpenBoosterPack::Spectral(pack) => {
                                 println!("\nSpectral Pack:");
                                 println!("Options: {:?}", pack.options());
                                 let hand = pack.hand().await;
@@ -893,8 +928,240 @@ async fn main() {
                                     _ => println!("Invalid action. Use 'select <index>', 'click <indices>', or 'skip'."),
                                 }
                             },
-                            OpenPack::Standard(pack) => {
+                            OpenBoosterPack::Standard(pack) => {
                                 println!("\nStandard Pack:");
+                                println!("Options: {:?}", pack.options());
+                                println!("Selections left: {:?}", pack.selections_left());
+                                
+                                let input = get_string_input("Enter action:");
+                                let parts: Vec<&str> = input.trim().split_whitespace().collect();
+                                
+                                match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
+                                    Some("select") => {
+                                        if parts.len() > 1 {
+                                            if let Ok(index) = parts[1].parse::<u32>() {
+                                                match pack.select(index).await {
+                                                    Ok(_) => println!("Card selected successfully"),
+                                                    Err(e) => error!("Failed to select card: {}", e),
+                                                }
+                                            } else {
+                                                println!("Invalid index. Use a number.");
+                                            }
+                                        } else {
+                                            println!("Please specify card index (e.g., 'select 0')");
+                                        }
+                                    },
+                                    Some("skip") => {
+                                        match pack.skip().await {
+                                            Ok(_) => println!("Skipped selection"),
+                                            Err(e) => error!("Failed to skip: {}", e),
+                                        }
+                                    },
+                                    _ => println!("Invalid action. Use 'select <index>' or 'skip'."),
+                                }
+                            },
+                        }
+                    }
+                    CurrentScreen::SkipOpen(pack) => {
+                        display_pack_menu();
+                        
+                        match pack {
+                            OpenBoosterPack::Arcana(pack) => {
+                                println!("\nArcana Pack (from skip):");
+                                println!("Options: {:?}", pack.options());
+                                let hand = pack.hand().await;
+                                println!("Hand ({} cards):", hand.len());
+                                for (i, card) in hand.iter().enumerate() {
+                                    let selection = if card.selected { "[SELECTED]" } else { "         " };
+                                    println!("  {}: {} {:?} of {:?}", i, selection, card.card.rank, card.card.suit);
+                                    if let Some(enhancement) = &card.card.enhancement {
+                                        println!("      Enhancement: {:?}", enhancement);
+                                    }
+                                    if let Some(edition) = &card.card.edition {
+                                        println!("      Edition: {:?}", edition);
+                                    }
+                                    if let Some(seal) = &card.card.seal {
+                                        println!("      Seal: {:?}", seal);
+                                    }
+                                }
+                                println!("Selections left: {:?}", pack.selections_left());
+                                
+                                let input = get_string_input("Enter action:");
+                                let parts: Vec<&str> = input.trim().split_whitespace().collect();
+                                
+                                match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
+                                    Some("select") => {
+                                        if parts.len() > 1 {
+                                            if let Ok(index) = parts[1].parse::<u32>() {
+                                                match pack.select(index).await {
+                                                    Ok(_) => println!("Option selected successfully"),
+                                                    Err(e) => error!("Failed to select option: {}", e),
+                                                }
+                                            } else {
+                                                println!("Invalid index. Use a number.");
+                                            }
+                                        } else {
+                                            println!("Please specify option index (e.g., 'select 0')");
+                                        }
+                                    },
+                                    Some("click") => {
+                                        if parts.len() > 1 {
+                                            let indices: Result<Vec<u32>, _> = parts[1..].iter()
+                                                .map(|s| s.parse())
+                                                .collect();
+                                            match indices {
+                                                Ok(indices) => {
+                                                    match pack.click(&indices).await {
+                                                        Ok(_) => println!("Cards clicked successfully"),
+                                                        Err(e) => error!("Failed to click cards: {}", e),
+                                                    }
+                                                },
+                                                Err(_) => println!("Invalid indices"),
+                                            }
+                                        } else {
+                                            println!("Please specify card indices (e.g., 'click 0 1')");
+                                        }
+                                    },
+                                    Some("skip") => {
+                                        match pack.skip().await {
+                                            Ok(_) => println!("Skipped selection"),
+                                            Err(e) => error!("Failed to skip: {}", e),
+                                        }
+                                    },
+                                    _ => println!("Invalid action. Use 'select <index>', 'click <indices>', or 'skip'."),
+                                }
+                            },
+                            OpenBoosterPack::Buffoon(pack) => {
+                                println!("\nBuffoon Pack (from skip):");
+                                println!("Options: {:?}", pack.options());
+                                println!("Selections left: {:?}", pack.selections_left());
+                                
+                                let input = get_string_input("Enter action:");
+                                let parts: Vec<&str> = input.trim().split_whitespace().collect();
+                                
+                                match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
+                                    Some("select") => {
+                                        if parts.len() > 1 {
+                                            if let Ok(index) = parts[1].parse::<u32>() {
+                                                match pack.select(index).await {
+                                                    Ok(_) => println!("Joker selected successfully"),
+                                                    Err(e) => error!("Failed to select joker: {}", e),
+                                                }
+                                            } else {
+                                                println!("Invalid index. Use a number.");
+                                            }
+                                        } else {
+                                            println!("Please specify joker index (e.g., 'select 0')");
+                                        }
+                                    },
+                                    Some("skip") => {
+                                        match pack.skip().await {
+                                            Ok(_) => println!("Skipped selection"),
+                                            Err(e) => error!("Failed to skip: {}", e),
+                                        }
+                                    },
+                                    _ => println!("Invalid action. Use 'select <index>' or 'skip'."),
+                                }
+                            },
+                            OpenBoosterPack::Celestial(pack) => {
+                                println!("\nCelestial Pack (from skip):");
+                                println!("Options: {:?}", pack.options());
+                                println!("Selections left: {:?}", pack.selections_left());
+                                
+                                let input = get_string_input("Enter action:");
+                                let parts: Vec<&str> = input.trim().split_whitespace().collect();
+                                
+                                match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
+                                    Some("select") => {
+                                        if parts.len() > 1 {
+                                            if let Ok(index) = parts[1].parse::<u32>() {
+                                                match pack.select(index).await {
+                                                    Ok(_) => println!("Planet selected successfully"),
+                                                    Err(e) => error!("Failed to select planet: {}", e),
+                                                }
+                                            } else {
+                                                println!("Invalid index. Use a number.");
+                                            }
+                                        } else {
+                                            println!("Please specify planet index (e.g., 'select 0')");
+                                        }
+                                    },
+                                    Some("skip") => {
+                                        match pack.skip().await {
+                                            Ok(_) => println!("Skipped selection"),
+                                            Err(e) => error!("Failed to skip: {}", e),
+                                        }
+                                    },
+                                    _ => println!("Invalid action. Use 'select <index>' or 'skip'."),
+                                }
+                            },
+                            OpenBoosterPack::Spectral(pack) => {
+                                println!("\nSpectral Pack (from skip):");
+                                println!("Options: {:?}", pack.options());
+                                let hand = pack.hand().await;
+                                println!("Hand ({} cards):", hand.len());
+                                for (i, card) in hand.iter().enumerate() {
+                                    let selection = if card.selected { "[SELECTED]" } else { "         " };
+                                    println!("  {}: {} {:?} of {:?}", i, selection, card.card.rank, card.card.suit);
+                                    if let Some(enhancement) = &card.card.enhancement {
+                                        println!("      Enhancement: {:?}", enhancement);
+                                    }
+                                    if let Some(edition) = &card.card.edition {
+                                        println!("      Edition: {:?}", edition);
+                                    }
+                                    if let Some(seal) = &card.card.seal {
+                                        println!("      Seal: {:?}", seal);
+                                    }
+                                }
+                                println!("Selections left: {:?}", pack.selections_left());
+                                
+                                let input = get_string_input("Enter action:");
+                                let parts: Vec<&str> = input.trim().split_whitespace().collect();
+                                
+                                match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
+                                    Some("select") => {
+                                        if parts.len() > 1 {
+                                            if let Ok(index) = parts[1].parse::<u32>() {
+                                                match pack.select(index).await {
+                                                    Ok(_) => println!("Option selected successfully"),
+                                                    Err(e) => error!("Failed to select option: {}", e),
+                                                }
+                                            } else {
+                                                println!("Invalid index. Use a number.");
+                                            }
+                                        } else {
+                                            println!("Please specify option index (e.g., 'select 0')");
+                                        }
+                                    },
+                                    Some("click") => {
+                                        if parts.len() > 1 {
+                                            let indices: Result<Vec<u32>, _> = parts[1..].iter()
+                                                .map(|s| s.parse())
+                                                .collect();
+                                            match indices {
+                                                Ok(indices) => {
+                                                    match pack.click(&indices).await {
+                                                        Ok(_) => println!("Cards clicked successfully"),
+                                                        Err(e) => error!("Failed to click cards: {}", e),
+                                                    }
+                                                },
+                                                Err(_) => println!("Invalid indices"),
+                                            }
+                                        } else {
+                                            println!("Please specify card indices (e.g., 'click 0 1')");
+                                        }
+                                    },
+                                    Some("skip") => {
+                                        match pack.skip().await {
+                                            Ok(_) => println!("Skipped selection"),
+                                            Err(e) => error!("Failed to skip: {}", e),
+                                        }
+                                    },
+                                    _ => println!("Invalid action. Use 'select <index>', 'click <indices>', or 'skip'."),
+                                }
+                            },
+                            OpenBoosterPack::Standard(pack) => {
+                                println!("\nStandard Pack (from skip):");
                                 println!("Options: {:?}", pack.options());
                                 println!("Selections left: {:?}", pack.selections_left());
                                 
