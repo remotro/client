@@ -91,7 +91,7 @@ impl From<String> for Error {
 
 pub trait Screen<'a> {
     type Info: Response;
-    fn name() -> &'static str;
+    fn name() -> String;
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self;
 }
 

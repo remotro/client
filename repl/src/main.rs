@@ -87,6 +87,7 @@ fn display_pack_menu() {
     println!("  {} - Select option by index", "select <index>".cyan().bold());
     println!("  {} - Click cards in hand (for packs with hands)", "click <indices>".cyan().bold());
     println!("  {} - Skip remaining selections", "skip".red().bold());
+    println!("  {} - Manage jokers/consumables", "hud".blue().bold());
 }
 
 fn display_hud_menu() {
@@ -748,6 +749,7 @@ async fn main() {
                         match pack {
                             OpenBoosterPack::Arcana(pack) => {
                                 println!("\nArcana Pack:");
+                                print_hud(&pack);
                                 println!("Options: {:?}", pack.options());
                                 let hand = pack.hand().await;
                                 println!("Hand ({} cards):", hand.len());
@@ -808,11 +810,20 @@ async fn main() {
                                             Err(e) => error!("Failed to skip: {}", e),
                                         }
                                     },
-                                    _ => println!("Invalid action. Use 'select <index>', 'click <indices>', or 'skip'."),
+                                    Some("hud") => {
+                                        match handle_hud_management(pack).await {
+                                            Ok(_updated_pack) => {
+                                                println!("Returned from HUD management");
+                                            },
+                                            Err(e) => error!("HUD management error: {}", e),
+                                        }
+                                    },
+                                    _ => println!("Invalid action. Use 'select <index>', 'click <indices>', 'skip', or 'hud'."),
                                 }
                             },
                             OpenBoosterPack::Buffoon(pack) => {
                                 println!("\nBuffoon Pack:");
+                                print_hud(&pack);
                                 println!("Options: {:?}", pack.options());
                                 println!("Selections left: {:?}", pack.selections_left());
                                 
@@ -840,11 +851,20 @@ async fn main() {
                                             Err(e) => error!("Failed to skip: {}", e),
                                         }
                                     },
-                                    _ => println!("Invalid action. Use 'select <index>' or 'skip'."),
+                                    Some("hud") => {
+                                        match handle_hud_management(pack).await {
+                                            Ok(_updated_pack) => {
+                                                println!("Returned from HUD management");
+                                            },
+                                            Err(e) => error!("HUD management error: {}", e),
+                                        }
+                                    },
+                                    _ => println!("Invalid action. Use 'select <index>', 'skip', or 'hud'."),
                                 }
                             },
                             OpenBoosterPack::Celestial(pack) => {
                                 println!("\nCelestial Pack:");
+                                print_hud(&pack);
                                 println!("Options: {:?}", pack.options());
                                 println!("Selections left: {:?}", pack.selections_left());
                                 
@@ -872,11 +892,20 @@ async fn main() {
                                             Err(e) => error!("Failed to skip: {}", e),
                                         }
                                     },
-                                    _ => println!("Invalid action. Use 'select <index>' or 'skip'."),
+                                    Some("hud") => {
+                                        match handle_hud_management(pack).await {
+                                            Ok(_updated_pack) => {
+                                                println!("Returned from HUD management");
+                                            },
+                                            Err(e) => error!("HUD management error: {}", e),
+                                        }
+                                    },
+                                    _ => println!("Invalid action. Use 'select <index>', 'skip', or 'hud'."),
                                 }
                             },
                             OpenBoosterPack::Spectral(pack) => {
                                 println!("\nSpectral Pack:");
+                                print_hud(&pack);
                                 println!("Options: {:?}", pack.options());
                                 let hand = pack.hand().await;
                                 println!("Hand ({} cards):", hand.len());
@@ -937,11 +966,20 @@ async fn main() {
                                             Err(e) => error!("Failed to skip: {}", e),
                                         }
                                     },
-                                    _ => println!("Invalid action. Use 'select <index>', 'click <indices>', or 'skip'."),
+                                    Some("hud") => {
+                                        match handle_hud_management(pack).await {
+                                            Ok(_updated_pack) => {
+                                                println!("Returned from HUD management");
+                                            },
+                                            Err(e) => error!("HUD management error: {}", e),
+                                        }
+                                    },
+                                    _ => println!("Invalid action. Use 'select <index>', 'click <indices>', 'skip', or 'hud'."),
                                 }
                             },
                             OpenBoosterPack::Standard(pack) => {
                                 println!("\nStandard Pack:");
+                                print_hud(&pack);
                                 println!("Options: {:?}", pack.options());
                                 println!("Selections left: {:?}", pack.selections_left());
                                 
@@ -969,7 +1007,15 @@ async fn main() {
                                             Err(e) => error!("Failed to skip: {}", e),
                                         }
                                     },
-                                    _ => println!("Invalid action. Use 'select <index>' or 'skip'."),
+                                    Some("hud") => {
+                                        match handle_hud_management(pack).await {
+                                            Ok(_updated_pack) => {
+                                                println!("Returned from HUD management");
+                                            },
+                                            Err(e) => error!("HUD management error: {}", e),
+                                        }
+                                    },
+                                    _ => println!("Invalid action. Use 'select <index>', 'skip', or 'hud'."),
                                 }
                             },
                         }
@@ -980,6 +1026,7 @@ async fn main() {
                         match pack {
                             OpenBoosterPack::Arcana(pack) => {
                                 println!("\nArcana Pack (from skip):");
+                                print_hud(&pack);
                                 println!("Options: {:?}", pack.options());
                                 let hand = pack.hand().await;
                                 println!("Hand ({} cards):", hand.len());
@@ -1040,11 +1087,20 @@ async fn main() {
                                             Err(e) => error!("Failed to skip: {}", e),
                                         }
                                     },
-                                    _ => println!("Invalid action. Use 'select <index>', 'click <indices>', or 'skip'."),
+                                    Some("hud") => {
+                                        match handle_hud_management(pack).await {
+                                            Ok(_updated_pack) => {
+                                                println!("Returned from HUD management");
+                                            },
+                                            Err(e) => error!("HUD management error: {}", e),
+                                        }
+                                    },
+                                    _ => println!("Invalid action. Use 'select <index>', 'click <indices>', 'skip', or 'hud'."),
                                 }
                             },
                             OpenBoosterPack::Buffoon(pack) => {
                                 println!("\nBuffoon Pack (from skip):");
+                                print_hud(&pack);
                                 println!("Options: {:?}", pack.options());
                                 println!("Selections left: {:?}", pack.selections_left());
                                 
@@ -1072,11 +1128,20 @@ async fn main() {
                                             Err(e) => error!("Failed to skip: {}", e),
                                         }
                                     },
-                                    _ => println!("Invalid action. Use 'select <index>' or 'skip'."),
+                                    Some("hud") => {
+                                        match handle_hud_management(pack).await {
+                                            Ok(_updated_pack) => {
+                                                println!("Returned from HUD management");
+                                            },
+                                            Err(e) => error!("HUD management error: {}", e),
+                                        }
+                                    },
+                                    _ => println!("Invalid action. Use 'select <index>', 'skip', or 'hud'."),
                                 }
                             },
                             OpenBoosterPack::Celestial(pack) => {
                                 println!("\nCelestial Pack (from skip):");
+                                print_hud(&pack);
                                 println!("Options: {:?}", pack.options());
                                 println!("Selections left: {:?}", pack.selections_left());
                                 
@@ -1104,11 +1169,20 @@ async fn main() {
                                             Err(e) => error!("Failed to skip: {}", e),
                                         }
                                     },
-                                    _ => println!("Invalid action. Use 'select <index>' or 'skip'."),
+                                    Some("hud") => {
+                                        match handle_hud_management(pack).await {
+                                            Ok(_updated_pack) => {
+                                                println!("Returned from HUD management");
+                                            },
+                                            Err(e) => error!("HUD management error: {}", e),
+                                        }
+                                    },
+                                    _ => println!("Invalid action. Use 'select <index>', 'skip', or 'hud'."),
                                 }
                             },
                             OpenBoosterPack::Spectral(pack) => {
                                 println!("\nSpectral Pack (from skip):");
+                                print_hud(&pack);
                                 println!("Options: {:?}", pack.options());
                                 let hand = pack.hand().await;
                                 println!("Hand ({} cards):", hand.len());
@@ -1169,11 +1243,20 @@ async fn main() {
                                             Err(e) => error!("Failed to skip: {}", e),
                                         }
                                     },
-                                    _ => println!("Invalid action. Use 'select <index>', 'click <indices>', or 'skip'."),
+                                    Some("hud") => {
+                                        match handle_hud_management(pack).await {
+                                            Ok(_updated_pack) => {
+                                                println!("Returned from HUD management");
+                                            },
+                                            Err(e) => error!("HUD management error: {}", e),
+                                        }
+                                    },
+                                    _ => println!("Invalid action. Use 'select <index>', 'click <indices>', 'skip', or 'hud'."),
                                 }
                             },
                             OpenBoosterPack::Standard(pack) => {
                                 println!("\nStandard Pack (from skip):");
+                                print_hud(&pack);
                                 println!("Options: {:?}", pack.options());
                                 println!("Selections left: {:?}", pack.selections_left());
                                 
@@ -1201,7 +1284,15 @@ async fn main() {
                                             Err(e) => error!("Failed to skip: {}", e),
                                         }
                                     },
-                                    _ => println!("Invalid action. Use 'select <index>' or 'skip'."),
+                                    Some("hud") => {
+                                        match handle_hud_management(pack).await {
+                                            Ok(_updated_pack) => {
+                                                println!("Returned from HUD management");
+                                            },
+                                            Err(e) => error!("HUD management error: {}", e),
+                                        }
+                                    },
+                                    _ => println!("Invalid action. Use 'select <index>', 'skip', or 'hud'."),
                                 }
                             },
                         }

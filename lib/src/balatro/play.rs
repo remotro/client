@@ -54,8 +54,8 @@ impl<'a> Play<'a> {
 
 impl<'a> Screen<'a> for Play<'a> {
     type Info = protocol::PlayInfo;
-    fn name() -> &'static str {
-        "play"
+    fn name() -> String {
+        "play".to_string()
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }

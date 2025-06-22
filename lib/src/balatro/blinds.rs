@@ -45,8 +45,8 @@ impl<'a> Screen<'a> for SelectBlind<'a> {
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
-    fn name() -> &'static str {
-        "blind_select"
+    fn name() -> String {
+        "blind_select".to_string()
     }
 }
 

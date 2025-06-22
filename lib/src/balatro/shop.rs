@@ -62,8 +62,8 @@ impl<'a> Shop<'a> {
 
 impl<'a> Screen<'a> for Shop<'a> {
     type Info = protocol::ShopInfo;
-    fn name() -> &'static str {
-        "shop"
+    fn name() -> String {
+        "shop".to_string()
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }

@@ -44,8 +44,8 @@ impl<'a> RoundOverview<'a> {
 
 impl<'a> Screen<'a> for RoundOverview<'a> {
     type Info = protocol::RoundOverviewInfo;
-    fn name() -> &'static str {
-        "overview"
+    fn name() -> String {
+        "overview".to_string()
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
