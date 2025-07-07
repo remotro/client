@@ -93,7 +93,7 @@ pub enum BoughtBooster<'a> {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Voucher { kind: VoucherKind, price: u8 }
+pub struct Voucher { pub kind: VoucherKind, pub price: u8 }
 
 balatro_enum!(VoucherKind {
     Blank = "v_blank",

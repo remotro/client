@@ -8,7 +8,8 @@ pub struct PlayingCard {
     pub enhancement: Option<Enhancement>,
     pub rank: Rank,
     pub suit: Suit,
-    pub seal: Option<Seal>
+    pub seal: Option<Seal>,
+    pub debuffed: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq)]

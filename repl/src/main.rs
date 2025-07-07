@@ -573,6 +573,11 @@ async fn main() {
                                 if let Some(seal) = &card.seal {
                                     card_parts.push(format!("{:?} Seal", seal).magenta().bold().to_string());
                                 }
+
+                                // Get debuff status
+                                if card.debuffed {
+                                    card_parts.push("DEBUFFED".red().bold().to_string());
+                                }
                                 
                                 // Combine all parts
                                 let formatted_card = if card_parts.len() > 1 {
