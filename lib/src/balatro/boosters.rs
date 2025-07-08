@@ -120,6 +120,7 @@ pub trait Open<'a>: Sized + Screen<'a> {
 pub trait OpenWithHand<'a>: Sized + Open<'a> {
     async fn hand(&self) -> &[BoosterCard];
     async fn click(self, indices: &[u32]) -> Result<Self, Error>;
+    async fn move_card(self, from: u32, to:u32 ) -> Result<Self, Error>;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -136,11 +137,11 @@ macro_rules! impl_open {
             fn booster(&self) -> BoosterPackKind {
                 self.info.booster
             }
-        
+
             fn selections_left(&self) -> SelectionsLeft {
                 self.info.selections_left
             }
-        
+
             fn options(&self) -> &[Self::Options] {
                 &self.info.options
             }
@@ -148,17 +149,17 @@ macro_rules! impl_open {
             async fn select(self, index: u32) -> Result<SelectResult<'a, Self>, Error> {
                 let response = self.connection.request(protocol::OpenSelect::<'a, Self> {
                     index,
-                    _r_marker: std::marker::PhantomData,
+                    _marker: std::marker::PhantomData,
                 }).await??;
                 match response {
                     protocol::SelectResult::Again(info) => Ok(SelectResult::Again(Self::new(info, self.connection))),
                     protocol::SelectResult::Done(result) => Ok(SelectResult::Done(result)),
                 }
             }
-        
+
             async fn skip(self) -> Result<Self::ReturnTo, Error> {
                 let response = self.connection.request(protocol::BoosterPackSkip::<'a, Self> {
-                    _r_marker: std::marker::PhantomData,
+                    _marker: std::marker::PhantomData,
                 }).await??;
                 Ok(response)
             }
@@ -170,20 +171,28 @@ macro_rules! impl_open_with_hand {
     ($ty:ident, $options:ty) => {
        impl_open!($ty, $options);
 
-        impl<'a, R : Response + 'a> OpenWithHand<'a> for $ty<'a, R> {
-            async fn hand(&self) -> &[BoosterCard] {
-                &self.info.hand
-            }
-            
-            async fn click(self, indices: &[u32]) -> Result<Self, Error> {
-                let response = self.connection.request(protocol::CardBoosterPackClick::<'a, Self> {
-                    indices: indices.to_vec(),
-                    _r_marker: std::marker::PhantomData,
-                    _c_marker: std::marker::PhantomData,
-                }).await??;
-                Ok(Self::new(response, self.connection))
-            }
-        }
+       impl<'a, R : Response + 'a> OpenWithHand<'a> for $ty<'a, R> {
+           async fn hand(&self) -> &[BoosterCard] {
+               &self.info.hand
+           }
+           
+           async fn click(self, indices: &[u32]) -> Result<Self, Error> {
+               let response = self.connection.request(protocol::CardBoosterPackClick::<'a, Self> {
+                   indices: indices.to_vec(),
+                   _marker: std::marker::PhantomData,
+               }).await??;
+               Ok(Self::new(response, self.connection))
+           }
+
+           async fn move_card(self, from: u32, to: u32) -> Result<Self, Error> {
+               let response = self.connection.request(protocol::CardBoosterPackMove::<'a, Self> {
+                   from: from,
+                   to: to,
+                   _marker: std::marker::PhantomData
+               }).await??;
+               Ok(Self::new(response, self.connection))
+           }
+       }
     }
 }
 
@@ -360,7 +369,7 @@ pub(crate) mod protocol {
     #[derive(Serialize)]
     pub struct OpenSelect<'a, B: Open<'a>> {
         pub index: u32,
-        pub _r_marker: std::marker::PhantomData<&'a B>,
+        pub _marker: std::marker::PhantomData<&'a B>,
     }
 
     impl<'a, B: Open<'a>> Request for OpenSelect<'a, B> {
@@ -390,7 +399,7 @@ pub(crate) mod protocol {
 
     #[derive(Serialize)]
     pub struct BoosterPackSkip<'a, B: Open<'a>> {
-        pub _r_marker: std::marker::PhantomData<&'a B>,
+        pub _marker: std::marker::PhantomData<&'a B>,
     }
 
     impl<'a, B: Open<'a>> Request for BoosterPackSkip<'a, B> {
@@ -406,8 +415,7 @@ pub(crate) mod protocol {
     #[derive(Serialize)]
     pub struct CardBoosterPackClick<'a, B: OpenWithHand<'a>> {
         pub indices: Vec<u32>,
-        pub _r_marker: std::marker::PhantomData<&'a B>,
-        pub _c_marker: std::marker::PhantomData<&'a B>,
+        pub _marker: std::marker::PhantomData<&'a B>,
     }
 
     impl<'a, B: OpenWithHand<'a>> Request for CardBoosterPackClick<'a, B> {
@@ -419,6 +427,22 @@ pub(crate) mod protocol {
             format!("{}/click", B::name())
         }
     }
-    
-    
+
+    #[derive(Serialize)]
+    pub struct CardBoosterPackMove<'a, B: OpenWithHand<'a>> {
+        pub from: u32,
+        pub to: u32,
+        pub _marker: std::marker::PhantomData<&'a B>,
+    }
+
+    impl<'a, B: OpenWithHand<'a>> Request for CardBoosterPackMove<'a, B> {
+        type Expect = Result<OpenWithHandInfo<'a, B>, String>;
+    }   
+
+    impl<'a, B: OpenWithHand<'a>> Packet for CardBoosterPackMove<'a, B> {
+        fn kind() -> String {
+            format!("{}/move", B::name())
+        }
+    }
+
 }
