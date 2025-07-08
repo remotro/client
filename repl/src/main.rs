@@ -55,6 +55,7 @@ fn display_play_menu() {
     println!("\n{}", "=== PLAY SCREEN ===".bright_green().bold());
     println!("{}", "Available actions:".white());
     println!("  {} - Select/deselect cards (e.g., 'select 0 1 2')", "select <indices>".cyan().bold());
+    println!("  {} - Rearrange cards in hand", "move <from> <to>".yellow().bold());
     println!("  {} - Play selected cards", "play".green().bold());
     println!("  {} - Discard selected cards", "discard".red().bold());
     println!("  {} - Manage jokers/consumables", "hud".blue().bold());
@@ -271,7 +272,7 @@ async fn handle_joker_management<'a, T: Hud<'a>>(mut screen: T) -> Result<T, Box
         
         screen = match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
             Some("move") => {
-                if parts.len() >= 3 {
+                if parts.len() == 3 {
                     if let (Ok(from), Ok(to)) = (parts[1].parse::<u32>(), parts[2].parse::<u32>()) {
                         match screen.move_joker(from, to).await {
                             Ok(updated_screen) => {
@@ -293,7 +294,7 @@ async fn handle_joker_management<'a, T: Hud<'a>>(mut screen: T) -> Result<T, Box
                 }
             },
             Some("sell") => {
-                if parts.len() >= 2 {
+                if parts.len() == 2 {
                     if let Ok(index) = parts[1].parse::<u32>() {
                         match screen.sell_joker(index).await {
                             Ok(updated_screen) => {
@@ -340,7 +341,7 @@ async fn handle_consumable_management<'a, T: Hud<'a>>(mut screen: T) -> Result<T
         
         screen = match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
             Some("use") => {
-                if parts.len() >= 2 {
+                if parts.len() == 2 {
                     if let Ok(index) = parts[1].parse::<u32>() {
                         match screen.use_consumable(index).await {
                             Ok(updated_screen) => {
@@ -362,7 +363,7 @@ async fn handle_consumable_management<'a, T: Hud<'a>>(mut screen: T) -> Result<T
                 }
             },
             Some("move") => {
-                if parts.len() >= 3 {
+                if parts.len() == 3 {
                     if let (Ok(from), Ok(to)) = (parts[1].parse::<u32>(), parts[2].parse::<u32>()) {
                         match screen.move_consumable(from, to).await {
                             Ok(updated_screen) => {
@@ -384,7 +385,7 @@ async fn handle_consumable_management<'a, T: Hud<'a>>(mut screen: T) -> Result<T
                 }
             },
             Some("sell") => {
-                if parts.len() >= 2 {
+                if parts.len() == 2 {
                     if let Ok(index) = parts[1].parse::<u32>() {
                         match screen.sell_consumable(index).await {
                             Ok(updated_screen) => {
@@ -621,6 +622,25 @@ async fn main() {
                                     println!("Please specify card indices (e.g., 'select 0 1 2')");
                                 }
                             },
+                            Some("move") => {
+                                if parts.len() == 3 {
+                                    let from: Result<u32,_> = parts[1].parse();
+                                    let to: Result<u32,_> = parts[2].parse();
+                                    match (from,to) {
+                                        (Ok(from),Ok(to)) => {
+                                            match play.move_card(from,to).await {
+                                                Ok(_) => println!("Card moved successfully"),
+                                                Err(e) => error!("Failed to move card: {}", e),
+                                            }
+                                        },
+                                        (Err(_),Ok(_)) => {println!("Invalid from index");}
+                                        (Ok(_),Err(_)) => {println!("Invalid to index");}
+                                        (Err(_),Err(_)) => {println!("Both indices are invalid");}
+                                    }
+                                } else {
+                                    println!("Please specify 2 indices \"<from> <to>\"");
+                                }
+                            },
                             Some("play") => {
                                 match play.play().await {
                                     Ok(PlayResult::Again(_)) => {
@@ -694,7 +714,7 @@ async fn main() {
                         
                         match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
                             Some("buy") => {
-                                if parts.len() >= 3 {
+                                if parts.len() == 3 {
                                     let item_type = parts[1].to_lowercase();
                                     if let Ok(index) = parts[2].parse::<u8>() {
                                         match item_type.as_str() {
@@ -778,7 +798,7 @@ async fn main() {
                                 
                                 match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
                                     Some("select") => {
-                                        if parts.len() > 1 {
+                                        if parts.len() == 2 {
                                             if let Ok(index) = parts[1].parse::<u32>() {
                                                 match pack.select(index).await {
                                                     Ok(_) => println!("Option selected successfully"),
@@ -837,7 +857,7 @@ async fn main() {
                                 
                                 match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
                                     Some("select") => {
-                                        if parts.len() > 1 {
+                                        if parts.len() == 2 {
                                             if let Ok(index) = parts[1].parse::<u32>() {
                                                 match pack.select(index).await {
                                                     Ok(_) => println!("Joker selected successfully"),
@@ -878,7 +898,7 @@ async fn main() {
                                 
                                 match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
                                     Some("select") => {
-                                        if parts.len() > 1 {
+                                        if parts.len() == 2 {
                                             if let Ok(index) = parts[1].parse::<u32>() {
                                                 match pack.select(index).await {
                                                     Ok(_) => println!("Planet selected successfully"),
@@ -934,7 +954,7 @@ async fn main() {
                                 
                                 match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
                                     Some("select") => {
-                                        if parts.len() > 1 {
+                                        if parts.len() == 2 {
                                             if let Ok(index) = parts[1].parse::<u32>() {
                                                 match pack.select(index).await {
                                                     Ok(_) => println!("Option selected successfully"),
@@ -993,7 +1013,7 @@ async fn main() {
                                 
                                 match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
                                     Some("select") => {
-                                        if parts.len() > 1 {
+                                        if parts.len() == 2 {
                                             if let Ok(index) = parts[1].parse::<u32>() {
                                                 match pack.select(index).await {
                                                     Ok(_) => println!("Card selected successfully"),
@@ -1055,7 +1075,7 @@ async fn main() {
                                 
                                 match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
                                     Some("select") => {
-                                        if parts.len() > 1 {
+                                        if parts.len() == 2 {
                                             if let Ok(index) = parts[1].parse::<u32>() {
                                                 match pack.select(index).await {
                                                     Ok(_) => println!("Option selected successfully"),
@@ -1114,7 +1134,7 @@ async fn main() {
                                 
                                 match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
                                     Some("select") => {
-                                        if parts.len() > 1 {
+                                        if parts.len() == 2 {
                                             if let Ok(index) = parts[1].parse::<u32>() {
                                                 match pack.select(index).await {
                                                     Ok(_) => println!("Joker selected successfully"),
@@ -1155,7 +1175,7 @@ async fn main() {
                                 
                                 match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
                                     Some("select") => {
-                                        if parts.len() > 1 {
+                                        if parts.len() == 2 {
                                             if let Ok(index) = parts[1].parse::<u32>() {
                                                 match pack.select(index).await {
                                                     Ok(_) => println!("Planet selected successfully"),
@@ -1211,7 +1231,7 @@ async fn main() {
                                 
                                 match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
                                     Some("select") => {
-                                        if parts.len() > 1 {
+                                        if parts.len() == 2 {
                                             if let Ok(index) = parts[1].parse::<u32>() {
                                                 match pack.select(index).await {
                                                     Ok(_) => println!("Option selected successfully"),
@@ -1270,7 +1290,7 @@ async fn main() {
                                 
                                 match parts.get(0).map(|s| s.to_lowercase()).as_deref() {
                                     Some("select") => {
-                                        if parts.len() > 1 {
+                                        if parts.len() == 2 {
                                             if let Ok(index) = parts[1].parse::<u32>() {
                                                 match pack.select(index).await {
                                                     Ok(_) => println!("Card selected successfully"),

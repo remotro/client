@@ -50,6 +50,11 @@ impl<'a> Play<'a> {
         };
         Ok(result)
     }
+
+    pub async fn move_card(self, from: u32, to: u32) -> Result<Self, Error> {
+        let info = self.connection.request(protocol::PlayMove { from: from, to: to }).await??;
+        Ok(Self::new(info, self.connection))
+    }
 }
 
 impl<'a> Screen<'a> for Play<'a> {
@@ -210,5 +215,20 @@ pub(crate) mod protocol {
             "play/discard/result".to_string()
         }
     }
-    
+
+    #[derive(Serialize, Deserialize, Clone)]
+    pub struct PlayMove {
+        pub from: u32,
+        pub to: u32
+    }
+
+    impl Request for PlayMove {
+        type Expect = Result<PlayInfo, String>;
+    }
+
+    impl Packet for PlayMove {
+        fn kind() -> String {
+            "play/move".to_string()
+        }
+    }
 }
