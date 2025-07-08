@@ -10,7 +10,16 @@ pub mod overview;
 pub mod jokers;
 pub mod consumables;
 pub mod boosters;
+pub mod translations;
 
+use serde::Deserialize;
+
+use crate::balatro::blinds::{Boss, Tag};
+use crate::balatro::boosters::BoosterPackKind;
+use crate::balatro::consumables::{PlanetKind, SpectralKind, TarotKind};
+use crate::balatro::deck::{CardEdition, Enhancement, Seal};
+use crate::balatro::jokers::{Joker, JokerEdition, JokerKind};
+use crate::balatro::shop::{Voucher, VoucherKind};
 use crate::net::Connection;
 use crate::net::protocol::Response;
 
@@ -50,6 +59,11 @@ impl<'a> Balatro {
         };
         Ok(screen)
     }
+
+    pub async fn collection(&'a mut self) -> Result<Collection, Error> {
+        let collection = self.connection.request(protocol::GetCollection).await??;
+        Ok(collection.collection)
+    }
 }
 
 pub enum CurrentScreen<'a> {
@@ -61,6 +75,24 @@ pub enum CurrentScreen<'a> {
     ShopOpen(boosters::OpenBoosterPack<'a, <shop::Shop<'a> as Screen<'a>>::Info>),
     SkipOpen(boosters::OpenBoosterPack<'a, blinds::protocol::SkipBlindResult<'a>>),
     GameOver(overview::GameOverview<'a>),
+}
+
+impl<'a> CurrentScreen<'a> {
+    pub fn menu(self) -> menu::Menu<'a> {
+        if let CurrentScreen::Menu(menu) = self {
+            menu
+        } else {
+            panic!();
+        }
+    }
+
+    pub fn play(self) -> play::Play<'a> {
+        if let CurrentScreen::Play(play) = self {
+            play
+        } else {
+            panic!();
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -95,10 +127,27 @@ pub trait Screen<'a> {
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self;
 }
 
+#[derive(Deserialize, Clone, Debug)]
+pub struct Collection {
+    pub jokers: Vec<JokerKind>,
+    pub tarots: Vec<TarotKind>,
+    pub spectrals: Vec<SpectralKind>,
+    pub planets: Vec<PlanetKind>,
+    pub vouchers: Vec<VoucherKind>,
+    pub tags: Vec<Tag>,
+    pub boss_blinds: Vec<Boss>,
+    pub finisher_blinds: Vec<Boss>,
+    pub booster_packs: Vec<BoosterPackKind>,
+    pub enhancements: Vec<Enhancement>,
+    pub card_editions: Vec<CardEdition>,
+    pub joker_editions: Vec<JokerEdition>,
+    pub seals: Vec<Seal>,
+}
+
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
 
-    use crate::{balatro::{boosters, menu::{self, SavedRun}, overview, Screen}, net::protocol::{Packet, Request, Response}};
+    use crate::{balatro::{menu, overview, Collection}, net::protocol::{Packet, Request, Response}};
 
     use super::{blinds, play, shop};
 
@@ -138,5 +187,29 @@ pub(crate) mod protocol {
         }
     }
 
+    #[derive(Serialize, Deserialize)]
+    pub struct GetCollection;
 
+    impl Request for GetCollection {
+        type Expect = Result<CollectionInfo, String>;
+    }
+
+    impl Packet for GetCollection {
+        fn kind() -> String {
+            "collection/get".to_string()
+        }
+    }
+
+    #[derive(Deserialize, Clone, Debug)]
+    pub struct CollectionInfo {
+        pub collection: Collection,
+    }
+
+    impl Packet for CollectionInfo {
+        fn kind() -> String {
+            "collection/info".to_string()
+        }
+    }
+
+    impl Response for CollectionInfo {}
 }

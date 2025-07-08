@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use crate::{balatro::{
-        blinds::SelectBlind, deck::PlayingCard, shop::protocol::ShopInfo, Error
+        blinds::SelectBlind, deck::PlayingCard, shop::protocol::ShopInfo, translations::{Translatable, Translation, Translations}, Error
     }, balatro_enum, net::Connection
 };
 use super::{boosters::{BoosterPackKind, OpenBuffoonPack, OpenCelestialPack, OpenSpectralPack, OpenStandardPack, OpenArcanaPack}, consumables::{PlanetCard, SpectralCard, TarotCard}, jokers::Joker, Screen};
@@ -130,12 +130,18 @@ balatro_enum!(VoucherKind {
     TarotTycoon = "v_tarot_tycoon",
 });
 
+impl Translatable for VoucherKind {
+    fn translate(&self, translations: &Translations) -> Translation {
+        todo!();
+    }
+}
+
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::{
         balatro::{blinds::protocol::BlindInfo, boosters::{OpenBuffoonPack, OpenCelestialPack, OpenSpectralPack, OpenStandardPack, OpenArcanaPack}, hud::protocol::HudInfo, Screen}, net::protocol::{Packet, Request, Response}
     };
-    use super::{BoosterPack, MainCard, Shop, Voucher};
+    use super::{BoosterPack, MainCard, Voucher};
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopInfo {

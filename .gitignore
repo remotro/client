@@ -47,3 +47,5 @@ luac.out
 
 */.bacon*
 */target/
+
+examples/

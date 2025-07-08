@@ -70,9 +70,27 @@ pub enum PlayResult<'a> {
     GameOver(GameOverview<'a>),
 }
 
+impl <'a> PlayResult<'a> {
+    pub fn again(self) -> Play<'a> {
+        match self {
+            PlayResult::Again(play) => play,
+            _ => panic!()
+        }
+    }
+}
+
 pub enum DiscardResult<'a> {
     Again(Play<'a>),
     GameOver(GameOverview<'a>),
+}
+
+impl <'a> DiscardResult<'a> {
+    pub fn again(self) -> Play<'a> {
+        match self {
+            DiscardResult::Again(play) => play,
+            _ => panic!()
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

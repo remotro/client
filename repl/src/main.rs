@@ -118,7 +118,16 @@ fn display_consumable_menu() {
 
 fn print_run_info(run_info: &RunInfo) {
     println!("\n{}", "--- RUN INFO ---".bright_white().bold());
-    println!("{}: {:?}", "Stake".yellow().bold(), run_info.stake);
+    println!("{}: {}", "Stake".yellow().bold(), match run_info.stake {
+        remotro::balatro::menu::Stake::White => "White",
+        remotro::balatro::menu::Stake::Red => "Red", 
+        remotro::balatro::menu::Stake::Green => "Green",
+        remotro::balatro::menu::Stake::Black => "Black",
+        remotro::balatro::menu::Stake::Blue => "Blue",
+        remotro::balatro::menu::Stake::Purple => "Purple",
+        remotro::balatro::menu::Stake::Orange => "Orange",
+        remotro::balatro::menu::Stake::Gold => "Gold",
+    });
     
     if !run_info.vouchers_redeemed.is_empty() {
         println!("{}: {:?}", "Vouchers Redeemed".cyan().bold(), run_info.vouchers_redeemed);
@@ -196,9 +205,24 @@ fn print_run_info(run_info: &RunInfo) {
     }
     
     println!("\nBlinds Progress:");
-    println!("  Small: {:?}", run_info.blinds.small);
-    println!("  Big: {:?}", run_info.blinds.big);
-    println!("  Boss: {:?}", run_info.blinds.boss);
+    println!("  Small: {} ({} chips)", 
+             match run_info.blinds.small.state {
+                 remotro::balatro::blinds::BlindState::Available => "Available",
+                 remotro::balatro::blinds::BlindState::Skipped => "Skipped",
+                 remotro::balatro::blinds::BlindState::Defeated => "Defeated",
+             }, run_info.blinds.small.chips);
+    println!("  Big: {} ({} chips)", 
+             match run_info.blinds.big.state {
+                 remotro::balatro::blinds::BlindState::Available => "Available",
+                 remotro::balatro::blinds::BlindState::Skipped => "Skipped",
+                 remotro::balatro::blinds::BlindState::Defeated => "Defeated",
+             }, run_info.blinds.big.chips);
+    println!("  Boss: {} ({} chips)", 
+             match run_info.blinds.boss.state {
+                 remotro::balatro::blinds::BlindState::Available => "Available",
+                 remotro::balatro::blinds::BlindState::Skipped => "Skipped",
+                 remotro::balatro::blinds::BlindState::Defeated => "Defeated",
+             }, run_info.blinds.boss.chips);
 }
 
 fn print_hud<'a, T: Hud<'a>>(hud: &T) {
@@ -212,13 +236,34 @@ fn print_hud<'a, T: Hud<'a>>(hud: &T) {
              "Ante".magenta().bold(), hud.ante());
     
     if !hud.jokers().is_empty() {
-        println!("{}: {:?}", "Jokers".yellow().bold(), hud.jokers());
+        println!("{}: [{}]", "Jokers".yellow().bold(), 
+                 hud.jokers().iter()
+                     .map(|j| format!("{:?} (${}, {})", j.kind, j.price, 
+                                      match j.lifespan {
+                                          remotro::balatro::jokers::Lifespan::Normal => "Normal".to_string(),
+                                          remotro::balatro::jokers::Lifespan::Eternal => "Eternal".to_string(),
+                                          remotro::balatro::jokers::Lifespan::Perishable { rounds_left } => format!("Perishable ({})", rounds_left),
+                                      }))
+                     .collect::<Vec<_>>()
+                     .join(", "));
     }
     if !hud.consumables().is_empty() {
-        println!("{}: {:?}", "Consumables".magenta().bold(), hud.consumables());
+        println!("{}: [{}]", "Consumables".magenta().bold(), 
+                 hud.consumables().iter()
+                     .map(|c| match c {
+                         remotro::balatro::consumables::Consumable::Planet(p) => format!("Planet {:?} (${}, {})", p.kind, p.price, if p.negative { "Negative" } else { "Normal" }),
+                         remotro::balatro::consumables::Consumable::Tarot(t) => format!("Tarot {:?} (${}, {})", t.kind, t.price, if t.negative { "Negative" } else { "Normal" }),
+                         remotro::balatro::consumables::Consumable::Spectral(s) => format!("Spectral {:?} (${}, {})", s.kind, s.price, if s.negative { "Negative" } else { "Normal" }),
+                     })
+                     .collect::<Vec<_>>()
+                     .join(", "));
     }
     if !hud.tags().is_empty() {
-        println!("{}: {:?}", "Tags".cyan().bold(), hud.tags());
+        println!("{}: [{}]", "Tags".cyan().bold(), 
+                 hud.tags().iter()
+                     .map(|t| format!("{:?}", t))
+                     .collect::<Vec<_>>()
+                     .join(", "));
     }
     print_run_info(hud.run_info());
     println!("{}", "----------------".white().bold());
@@ -443,9 +488,35 @@ async fn main() {
                     CurrentScreen::Menu(menu) => {
                         display_menu();
                         if let Some(saved) = menu.saved_run() {
-                            println!("{}: Deck {:?}, Stake {:?}, Round {}, Ante {}", 
+                            println!("{}: Deck {}, Stake {}, Round {}, Ante {}", 
                                    "Saved run available".bright_green().bold(),
-                                   saved.deck, saved.stake, saved.round, saved.ante);
+                                   match saved.deck {
+                                       remotro::balatro::menu::Deck::Red => "Red",
+                                       remotro::balatro::menu::Deck::Blue => "Blue",
+                                       remotro::balatro::menu::Deck::Yellow => "Yellow",
+                                       remotro::balatro::menu::Deck::Green => "Green",
+                                       remotro::balatro::menu::Deck::Black => "Black",
+                                       remotro::balatro::menu::Deck::Magic => "Magic",
+                                       remotro::balatro::menu::Deck::Nebula => "Nebula",
+                                       remotro::balatro::menu::Deck::Ghost => "Ghost",
+                                       remotro::balatro::menu::Deck::Abandoned => "Abandoned",
+                                       remotro::balatro::menu::Deck::Checkered => "Checkered",
+                                       remotro::balatro::menu::Deck::Zodiac => "Zodiac",
+                                       remotro::balatro::menu::Deck::Painted => "Painted",
+                                       remotro::balatro::menu::Deck::Anaglyph => "Anaglyph",
+                                       remotro::balatro::menu::Deck::Plasma => "Plasma",
+                                       remotro::balatro::menu::Deck::Erratic => "Erratic",
+                                   },
+                                   match saved.stake {
+                                       remotro::balatro::menu::Stake::White => "White",
+                                       remotro::balatro::menu::Stake::Red => "Red",
+                                       remotro::balatro::menu::Stake::Green => "Green",
+                                       remotro::balatro::menu::Stake::Black => "Black",
+                                       remotro::balatro::menu::Stake::Blue => "Blue",
+                                       remotro::balatro::menu::Stake::Purple => "Purple",
+                                       remotro::balatro::menu::Stake::Orange => "Orange",
+                                       remotro::balatro::menu::Stake::Gold => "Gold",
+                                   }, saved.round, saved.ante);
                         }
                         
                         let action = get_string_input("Enter action:");

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::balatro_enum;
+use crate::{balatro::translations::{Translatable, Translation, Translations}, balatro_enum};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Consumable {
@@ -30,6 +30,12 @@ balatro_enum!(PlanetKind {
     Eris = "c_eris",
 });
 
+impl Translatable for PlanetKind {
+    fn translate(&self, translations: &Translations) -> Translation {
+        todo!();
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TarotCard {
     pub kind: TarotKind,
@@ -52,7 +58,7 @@ balatro_enum!(TarotKind {
     Strength = "c_strength",
     HangedMan = "c_hanged_man",
     Death = "c_death",
-    Temperance = "c_temperance",
+    Temperance { earnings: u64 } = "c_temperance",
     Devil = "c_devil",
     Tower = "c_tower",
     Star = "c_star",
@@ -61,6 +67,12 @@ balatro_enum!(TarotKind {
     Judgement = "c_judgement",
     World = "c_world",
 });
+
+impl Translatable for TarotKind {
+    fn translate(&self, translations: &Translations) -> Translation {
+        todo!();
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SpectralCard {
@@ -89,3 +101,9 @@ balatro_enum!(SpectralKind {
     TheSoul = "c_soul",
     BlackHole = "c_black_hole",
 });
+
+impl Translatable for SpectralKind {
+    fn translate(&self, translations: &Translations) -> Translation {
+        todo!();
+    }
+}

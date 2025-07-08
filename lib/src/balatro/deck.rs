@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::balatro_enum;
+use crate::{balatro::translations::{Translatable, Translation, Translations}, balatro_enum};
 
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -50,14 +50,20 @@ pub enum Rank {
 
 balatro_enum!(Enhancement {
     Wild = "m_wild",
-    Glass = "m_glass",
+    Glass { probability: u64 } = "m_glass",
     Bonus = "m_bonus",
     Mult = "m_mult",
-    Lucky = "m_lucky",
+    Lucky { mult_probability: u64, dollars_probability: u64 } = "m_lucky",
     Steel = "m_steel",
     Stone = "m_stone",
     Gold = "m_gold"
 });
+
+impl Translatable for Enhancement {
+    fn translate(&self, translations: &Translations) -> Translation {
+        todo!()
+    }
+}
 
 balatro_enum!(Seal {
     Blue = "blue_seal",
@@ -66,9 +72,20 @@ balatro_enum!(Seal {
     Gold = "gold_seal"
 });
 
+impl Translatable for Seal {
+    fn translate(&self, translations: &Translations) -> Translation {
+        todo!()
+    }
+}
 balatro_enum!(CardEdition {
     None = "e_base",
     Foil = "e_foil",
     Holographic = "e_holo",
     Polychrome = "e_polychrome"
 });
+
+impl Translatable for CardEdition {
+    fn translate(&self, translations: &Translations) -> Translation {
+        todo!()
+    }
+}

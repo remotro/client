@@ -1,4 +1,4 @@
-use crate::{balatro::boosters, balatro_enum, net::Connection};
+use crate::{balatro::{boosters, translations::{Translatable, Translation, Translations}}, balatro_enum, net::Connection};
 use serde::{Deserialize, Serialize};
 use super::{play::Play, Screen};
 
@@ -100,6 +100,12 @@ balatro_enum!(Tag {
     Garbage = "tag_garbage",
 });
 
+impl Translatable for Tag {
+    fn translate(&self, translations: &Translations) -> Translation {
+        todo!()
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BossBlindChoice {
     pub kind: Boss,
@@ -117,7 +123,7 @@ balatro_enum!(Boss {
     TheWall = "bl_wall",
     TheHouse = "bl_house",
     TheMark = "bl_mark",
-    TheWheel = "bl_wheel",
+    TheWheel  = "bl_wheel",
     TheArm = "bl_arm",
     ThePsychic = "bl_psychic",
     TheGoad = "bl_goad",
@@ -137,6 +143,18 @@ balatro_enum!(Boss {
     CrimsonHeart = "bl_final_heart",
 });
 
+impl Boss {
+    pub fn is_finisher(&self) -> bool {
+        matches!(self, Boss::CeruleanBell | Boss::VerdantLeaf | Boss::VioletVessel | Boss::AmberAcorn | Boss::CrimsonHeart)
+    }
+}
+
+impl Translatable for Boss {
+    fn translate(&self, translations: &Translations) -> Translation {
+        todo!()
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 #[serde(rename_all = "PascalCase")]
 pub enum BlindState {
@@ -153,7 +171,7 @@ pub enum SkipResult<'a> {
 }
 
 pub(crate) mod protocol {
-    use crate::{balatro::{blinds::SkipResult, boosters, hud::protocol::HudInfo, play::protocol::PlayInfo, Screen}, net::protocol::{Packet, Request, Response}};
+    use crate::{balatro::{boosters, hud::protocol::HudInfo, play::protocol::PlayInfo, Screen}, net::protocol::{Packet, Request, Response}};
     use serde::{Deserialize, Serialize};
 
     use super::{BigBlindChoice, BossBlindChoice, SmallBlindChoice};

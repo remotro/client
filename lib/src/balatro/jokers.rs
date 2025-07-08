@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 use crate::balatro_enum;
 use crate::balatro::deck::{Rank, Suit};
 use crate::balatro::play::PokerHandKind;
+use crate::balatro::translations::{Translatable, Translation, Translations};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Joker {
@@ -37,13 +38,13 @@ balatro_enum!(JokerKind {
     Devious = "j_devious",
     Crafty = "j_crafty",
     Half = "j_half",
-    EightBall = "j_8_ball",
+    EightBall { probability: u64 } = "j_8_ball",
     Stencil { xmult: u64 } = "j_stencil",
     FourFingers = "j_four_fingers",
     Mime = "j_mime",
     CreditCard = "j_credit_card",
     Ceremonial { mult: u64 } = "j_ceremonial",
-    Banner = "j_banner",
+    Banner = "j_banner", 
     MysticSummit = "j_mystic_summit",
     Marble = "j_marble",
     LoyaltyCard { left: u64 } = "j_loyalty_card",
@@ -58,20 +59,20 @@ balatro_enum!(JokerKind {
     DelayedGrat = "j_delayed_grat",
     Hack = "j_hack",
     Pareidolia = "j_pareidolia",
-    GrosMichel = "j_gros_michel",
+    GrosMichel { probability: u64 } = "j_gros_michel",
     EvenSteven = "j_even_steven",
     OddTodd = "j_odd_todd",
     Scholar = "j_scholar",
-    Business = "j_business",
+    Business { probability: u64 } = "j_business",
     Supernova = "j_supernova",
     RideTheBus { mult: u64 } = "j_ride_the_bus",
-    Space = "j_space",
+    Space { probability: u64 } = "j_space",
     Egg = "j_egg",
     Burglar = "j_burglar",
     Blackboard = "j_blackboard",
-    Runner = "j_runner",
+    Runner { chips: u64 } = "j_runner",
     IceCream { chips: u64 } = "j_ice_cream",
-    Dna = "j_dna",
+    Dna { active: bool } = "j_dna",
     Splash = "j_splash",
     BlueJoker { chips: u64 } = "j_blue_joker",
     SixthSense = "j_sixth_sense",
@@ -81,7 +82,7 @@ balatro_enum!(JokerKind {
     GreenJoker { mult: u64 } = "j_green_joker",
     Superposition = "j_superposition",
     TodoList { poker_hand: PokerHandKind } = "j_todo_list",
-    Cavendish = "j_cavendish",
+    Cavendish { probability: u64 } = "j_cavendish",
     CardSharp = "j_card_sharp",
     RedCard { mult: u64 } = "j_red_card",
     Madness { xmult: f64 } = "j_madness",
@@ -102,10 +103,10 @@ balatro_enum!(JokerKind {
     Gift = "j_gift",
     TurtleBean { hand_size: u64 } = "j_turtle_bean",
     Erosion { mult: u64 } = "j_erosion",
-    ReservedParking = "j_reserved_parking",
+    ReservedParking { probability: u64 } = "j_reserved_parking",
     Mail { rank: Rank } = "j_mail",
     ToTheMoon = "j_to_the_moon",
-    Hallucination = "j_hallucination",
+    Hallucination { probability: u64} = "j_hallucination",
     FortuneTeller { mult: u64 } = "j_fortune_teller",
     Juggler = "j_juggler",
     Drunkard = "j_drunkard",
@@ -137,11 +138,11 @@ balatro_enum!(JokerKind {
     Throwback { xmult: f64 } = "j_throwback",
     HangingChad = "j_hanging_chad",
     RoughGem = "j_rough_gem",
-    Bloodstone = "j_bloodstone",
+    Bloodstone { probability: u64 } = "j_bloodstone",
     Arrowhead = "j_arrowhead",
     OnyxAgate = "j_onyx_agate",
     Glass { xmult: f64  } = "j_glass",
-    RingMaster = "j_ring_master",
+    Showman = "j_ring_master",
     FlowerPot = "j_flower_pot",
     Blueprint = "j_blueprint",
     Wee { chips: u64 } = "j_wee",
@@ -172,6 +173,12 @@ balatro_enum!(JokerKind {
     Chicot = "j_chicot",
     Perkeo = "j_perkeo",
 });
+
+impl Translatable for JokerKind {
+    fn translate(&self, translations: &Translations) -> Translation {
+        todo!();
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Lifespan {

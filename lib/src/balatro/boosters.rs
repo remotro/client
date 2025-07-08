@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use crate::{balatro_enum, net::{protocol::Response, Connection}, balatro::Error};
+use crate::{balatro::{translations::{Translatable, Translation, Translations}, Error}, balatro_enum, net::{protocol::Response, Connection}};
 use super::{consumables::{PlanetKind, SpectralKind, TarotKind}, deck::PlayingCard, jokers::Joker, Screen};
 
 macro_rules! impl_hud_generic {
@@ -104,6 +104,12 @@ balatro_enum!(BoosterPackKind {
     StandardMega = "p_standard_mega",
     StandardJumbo = "p_standard_jumbo",
 });
+
+impl Translatable for BoosterPackKind {
+    fn translate(&self, translations: &Translations) -> Translation {
+        todo!();
+    }
+}
 
 #[allow(async_fn_in_trait)]
 pub trait Open<'a>: Sized + Screen<'a> {
@@ -305,7 +311,7 @@ pub enum SpectralOption {
     Soul
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum TarotOption {
     Tarot(TarotKind),
     Spectral(SpectralOption),
@@ -322,7 +328,7 @@ pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::net::protocol::{Packet, Request, Response};
     use super::{BoosterPackKind, BoosterCard, Open, OpenWithHand, SelectionsLeft};
-    use crate::balatro::{Screen, hud::protocol::HudInfo};
+    use crate::balatro::hud::protocol::HudInfo;
 
     #[derive(Deserialize)]
     pub struct OpenInfo<'a, B: Open<'a>> {

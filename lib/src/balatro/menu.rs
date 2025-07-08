@@ -3,7 +3,6 @@ use crate::balatro::overview;
 use crate::balatro::play::Play;
 use crate::balatro::shop;
 use crate::balatro::shop::Shop;
-use crate::balatro::boosters::OpenBoosterPack;
 use crate::balatro::blinds;
 use crate::balatro::{blinds::SelectBlind, CurrentScreen, Screen};
 use crate::net::Connection;
