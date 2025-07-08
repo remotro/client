@@ -88,6 +88,7 @@ fn display_pack_menu() {
     println!("{}", "Available actions:".white());
     println!("  {} - Select option by index", "select <index>".cyan().bold());
     println!("  {} - Click cards in hand (for packs with hands)", "click <indices>".cyan().bold());
+    println!("  {} - Move cards around (for packs with hands)", "move <from> <to>".yellow().bold());
     println!("  {} - Skip remaining selections", "skip".red().bold());
     println!("  {} - Manage jokers/consumables", "hud".blue().bold());
 }
@@ -626,10 +627,10 @@ async fn main() {
                             Some("move") => {
                                 if parts.len() == 3 {
                                     if let (Ok(from), Ok(to)) = (parts[1].parse::<u32>(), parts[2].parse::<u32>()) {
-                                            match play.move_card(from, to).await {
-                                                Ok(_) => println!("Card moved successfully"),
-                                                Err(e) => error!("Failed to move card: {}", e),
-                                            }
+                                        match play.move_card(from, to).await {
+                                            Ok(_) => println!("Card moved successfully"),
+                                            Err(e) => error!("Failed to move card: {}", e),
+                                        }
                                     }
                                 } else {
                                     println!("Please specify 2 indices \"<from> <to>\"");
@@ -823,6 +824,18 @@ async fn main() {
                                             println!("Please specify card indices (e.g., 'click 0 1')");
                                         }
                                     },
+                                    Some("move") => {
+                                        if parts.len() == 3 {
+                                            if let (Ok(from), Ok(to)) = (parts[1].parse::<u32>(), parts[2].parse::<u32>()) {
+                                                match pack.move_card(from, to).await {
+                                                    Ok(_) => println!("Card moved successfully"),
+                                                    Err(e) => error!("Failed to move card: {}", e),
+                                                }
+                                            }
+                                        } else {
+                                            println!("Please specify 2 indices \"<from> <to>\"");
+                                        }
+                                    },
                                     Some("skip") => {
                                         match pack.skip().await {
                                             Ok(_) => println!("Skipped selection"),
@@ -979,6 +992,18 @@ async fn main() {
                                             println!("Please specify card indices (e.g., 'click 0 1')");
                                         }
                                     },
+                                    Some("move") => {
+                                        if parts.len() == 3 {
+                                            if let (Ok(from), Ok(to)) = (parts[1].parse::<u32>(), parts[2].parse::<u32>()) {
+                                                match pack.move_card(from, to).await {
+                                                    Ok(_) => println!("Card moved successfully"),
+                                                    Err(e) => error!("Failed to move card: {}", e),
+                                                }
+                                            }
+                                        } else {
+                                            println!("Please specify 2 indices \"<from> <to>\"");
+                                        }
+                                    },
                                     Some("skip") => {
                                         match pack.skip().await {
                                             Ok(_) => println!("Skipped selection"),
@@ -1098,6 +1123,18 @@ async fn main() {
                                             }
                                         } else {
                                             println!("Please specify card indices (e.g., 'click 0 1')");
+                                        }
+                                    },
+                                    Some("move") => {
+                                        if parts.len() == 3 {
+                                            if let (Ok(from), Ok(to)) = (parts[1].parse::<u32>(), parts[2].parse::<u32>()) {
+                                                match pack.move_card(from, to).await {
+                                                    Ok(_) => println!("Card moved successfully"),
+                                                    Err(e) => error!("Failed to move card: {}", e),
+                                                }
+                                            }
+                                        } else {
+                                            println!("Please specify 2 indices \"<from> <to>\"");
                                         }
                                     },
                                     Some("skip") => {
@@ -1254,6 +1291,18 @@ async fn main() {
                                             }
                                         } else {
                                             println!("Please specify card indices (e.g., 'click 0 1')");
+                                        }
+                                    },
+                                    Some("move") => {
+                                        if parts.len() == 3 {
+                                            if let (Ok(from), Ok(to)) = (parts[1].parse::<u32>(), parts[2].parse::<u32>()) {
+                                                match pack.move_card(from, to).await {
+                                                    Ok(_) => println!("Card moved successfully"),
+                                                    Err(e) => error!("Failed to move card: {}", e),
+                                                }
+                                            }
+                                        } else {
+                                            println!("Please specify 2 indices \"<from> <to>\"");
                                         }
                                     },
                                     Some("skip") => {
