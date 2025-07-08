@@ -135,7 +135,7 @@ pub struct MostPlayedHand {
 
 pub(crate) mod protocol {
     use crate::{
-        balatro::{hud::protocol::HudInfo, jokers::JokerKind, menu::Seed, overview::{MostPlayedHand, Outcome, Tag}, play, shop::protocol::ShopInfo}, net::protocol::{Packet, Request, Response}
+        balatro::{hud::protocol::HudInfo, jokers::JokerKind, menu::Seed, overview::{MostPlayedHand, Outcome, Tag}, shop::protocol::ShopInfo}, net::protocol::{Packet, Request, Response}
     };
     use serde::{Deserialize, Serialize};
 

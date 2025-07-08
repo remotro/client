@@ -7,7 +7,8 @@ use remotro::{
         menu::{Deck, Stake}, 
         play::{DiscardResult, PlayResult}, 
         CurrentScreen
-    }, Remotro
+    },
+    Remotro
 };
 use std::str::FromStr;
 
@@ -624,18 +625,11 @@ async fn main() {
                             },
                             Some("move") => {
                                 if parts.len() == 3 {
-                                    let from: Result<u32,_> = parts[1].parse();
-                                    let to: Result<u32,_> = parts[2].parse();
-                                    match (from,to) {
-                                        (Ok(from),Ok(to)) => {
-                                            match play.move_card(from,to).await {
+                                    if let (Ok(from), Ok(to)) = (parts[1].parse::<u32>(), parts[2].parse::<u32>()) {
+                                            match play.move_card(from, to).await {
                                                 Ok(_) => println!("Card moved successfully"),
                                                 Err(e) => error!("Failed to move card: {}", e),
                                             }
-                                        },
-                                        (Err(_),Ok(_)) => {println!("Invalid from index");}
-                                        (Ok(_),Err(_)) => {println!("Invalid to index");}
-                                        (Err(_),Err(_)) => {println!("Both indices are invalid");}
                                     }
                                 } else {
                                     println!("Please specify 2 indices \"<from> <to>\"");

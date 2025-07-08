@@ -1,4 +1,3 @@
-use log::{error, info};
 use remotro::{
     balatro::{
         boosters::{BoosterCard, BoosterPackKind, Open, OpenWithHand, SelectResult},
@@ -11,12 +10,23 @@ use remotro::{
     },
     Remotro
 };
-
+macro_rules! as_variant {
+    ($screen:expr, $variant:path) => {
+        if let $variant(screen) = $screen {
+            screen
+        } else {
+            println!("Not in variant");
+            return;
+        }
+    }
+}
 #[tokio::main]
 async fn main() {
-    env_logger::init();
-
     // Host a TCP socket
     let mut remotro = Remotro::host("127.0.0.1", 34143).await.unwrap();
+    loop {
     let mut balatro = remotro.accept().await.unwrap();
+    let screen = as_variant!(balatro.screen().await.unwrap(), CurrentScreen::Menu);
+    let _ = screen.new_run(Deck::Red, Stake::White, None).await.unwrap().select().await;
+    }
 }

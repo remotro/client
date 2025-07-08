@@ -322,7 +322,7 @@ pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
     use crate::net::protocol::{Packet, Request, Response};
     use super::{BoosterPackKind, BoosterCard, Open, OpenWithHand, SelectionsLeft};
-    use crate::balatro::{Screen, hud::protocol::HudInfo};
+    use crate::balatro::hud::protocol::HudInfo;
 
     #[derive(Deserialize)]
     pub struct OpenInfo<'a, B: Open<'a>> {

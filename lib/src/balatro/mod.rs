@@ -98,7 +98,7 @@ pub trait Screen<'a> {
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
 
-    use crate::{balatro::{boosters, menu::{self, SavedRun}, overview, Screen}, net::protocol::{Packet, Request, Response}};
+    use crate::{balatro::{menu::self, overview}, net::protocol::{Packet, Request, Response}};
 
     use super::{blinds, play, shop};
 
