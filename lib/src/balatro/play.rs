@@ -128,6 +128,7 @@ pub(crate) mod protocol {
     use super::{CurrentBlind, HandCard, PokerHand};
     use crate::balatro::overview::protocol::{GameOverviewInfo, RoundOverviewInfo};
     use crate::balatro::hud::protocol::HudInfo;
+    use crate::balatro::deck::PlayingCard;
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct PlayInfo {
@@ -136,6 +137,7 @@ pub(crate) mod protocol {
         pub score: f64,
         pub hud: HudInfo,
         pub poker_hand: Option<PokerHand>,
+        pub discarded: Vec<PlayingCard>,
     }
 
     impl Response for PlayInfo {}

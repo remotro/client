@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::balatro::deck::PlayingCard;
 use crate::balatro::blinds::CurrentBlind;
 use crate::balatro::menu::{self, Menu, Seed};
 use crate::balatro::play::PokerHandKind;

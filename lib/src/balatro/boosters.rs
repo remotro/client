@@ -11,6 +11,10 @@ macro_rules! impl_hud_generic {
                     self.info.hud.hands
                 }
 
+                fn deck(&self) -> &[PlayingCard] {
+                    &self.info.hud.deck
+                }
+
                 fn discards(&self) -> u32 {
                     self.info.hud.discards
                 }

@@ -595,6 +595,9 @@ async fn main() {
                                 println!("  {}: {} {}", i, selection, "[Empty Card Slot]".bright_black().italic());
                             }
                         }
+                        for (i, card) in play.deck().iter().enumerate() {
+                            println!("{i} : {:?} of {:?} ({})", card.rank, card.suit, card.debuffed)
+                        }
                         println!("{}: {:?}", "Blind".red().bold(), play.blind());
                         println!("{}: {}", "Score".bright_yellow().bold(), play.score());
                         if let Some(poker_hand) = play.poker_hand() {

@@ -1,6 +1,7 @@
 use crate::{balatro::boosters, balatro_enum, net::Connection};
 use serde::{Deserialize, Serialize};
 use super::{play::Play, Screen};
+use crate::balatro::deck::PlayingCard;
 
 pub struct SelectBlind<'a> {
     info: protocol::BlindInfo,

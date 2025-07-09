@@ -7,9 +7,13 @@ use crate::balatro::play::PokerHand;
 use crate::balatro::menu::Stake;
 use crate::balatro::shop::VoucherKind;
 use crate::balatro::Screen;
+use crate::balatro::deck::PlayingCard;
 
 #[allow(async_fn_in_trait)]
 pub trait Hud<'a>: Sized + Screen<'a> {
+
+    fn deck(&self) -> &[PlayingCard];
+
     fn hands(&self) -> u32;
 
     fn discards(&self) -> u32;
@@ -46,6 +50,10 @@ macro_rules! impl_hud {
             impl<'a> $crate::balatro::hud::Hud<'a> for $t<'a> {
                 fn hands(&self) -> u32 {
                     self.info.hud.hands
+                }
+
+                fn deck(&self) -> &[PlayingCard] {
+                    &self.info.hud.deck
                 }
 
                 fn discards(&self) -> u32 {
@@ -167,6 +175,7 @@ pub(crate) mod protocol {
     use crate::balatro::hud::RunInfo;
     use crate::balatro::jokers::Joker;
     use crate::net::protocol::{Packet, Request, Response};
+    use crate::balatro::deck::PlayingCard;
     use serde::{Deserialize, Serialize};
 
     use super::Hud;
@@ -182,6 +191,7 @@ pub(crate) mod protocol {
         pub tags: Vec<Tag>,
         pub consumables: Vec<Consumable>,
         pub run_info: RunInfo,
+        pub deck: Vec<PlayingCard>,
     }
 
     impl Response for HudInfo {}
