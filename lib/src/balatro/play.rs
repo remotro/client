@@ -19,6 +19,10 @@ impl<'a> Play<'a> {
         &self.info.hand
     }
 
+    pub fn discarded(&self) -> &[PlayingCard] {
+        &self.info.discarded
+    }
+
     pub fn score(&self) -> f64 {
         self.info.score
     }
