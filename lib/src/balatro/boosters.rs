@@ -35,6 +35,10 @@ macro_rules! impl_hud_generic {
                     &self.info.hud.jokers
                 }
 
+                fn joker_slots(&self) -> u32 {
+                    self.info.hud.joker_slots
+                }
+
                 fn tags(&self) -> &[crate::balatro::blinds::Tag] {
                     &self.info.hud.tags
                 }
@@ -57,6 +61,10 @@ macro_rules! impl_hud_generic {
                         .request(crate::balatro::hud::protocol::SellJoker { index, _marker: std::marker::PhantomData::<&$t<'a, R>> })
                         .await??;
                     Ok(Self::new(new_info, self.connection))
+                }
+
+                fn consumable_slots(&self) -> u32 {
+                    self.info.hud.consumable_slots
                 }
 
                 fn consumables(&self) -> &[crate::balatro::consumables::Consumable] {

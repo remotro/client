@@ -1,15 +1,18 @@
-<<<<<<< resume -- Incoming Change
-use crate::balatro::boosters;
-use crate::balatro::overview;
-use crate::balatro::play::Play;
-use crate::balatro::shop;
-use crate::balatro::shop::Shop;
-use crate::balatro::blinds;
-use crate::balatro::{blinds::SelectBlind, CurrentScreen, Screen};
-=======
-use crate::{balatro_enum,balatro::{Screen, blinds::SelectBlind}};
->>>>>>> main -- Current Change
-use crate::net::Connection;
+use crate::{
+    balatro::{
+        boosters,
+        overview,
+        play::Play,
+        shop,
+        shop::Shop,
+        blinds,
+        blinds::SelectBlind,
+        CurrentScreen,
+        Screen,
+    },
+    balatro_enum,
+    net::Connection
+};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -158,11 +161,6 @@ impl FromStr for Stake {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Seed(String);
-impl Seed {
-    pub fn new(s: &str) -> Self {
-        Seed(s.to_string())
-    }
-}
 
 impl Seed {
     pub fn new(seed: String) -> Option<Self> {

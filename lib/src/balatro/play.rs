@@ -136,7 +136,8 @@ pub(crate) mod protocol {
         net::protocol::{Packet, Request, Response},
         balatro::{
             hud::protocol::HudInfo,
-            deck::PlayignCard,
+            deck::PlayingCard,
+            overview::protocol::{GameOverviewInfo,RoundOverviewInfo}
         }
     };
     use super::{CurrentBlind, HandCard, PokerHand};

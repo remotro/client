@@ -3,7 +3,7 @@ use super::{
     Error,
     consumables::Consumable,
     jokers::Joker,
-}
+};
 use crate::balatro::{
     blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice, Tag},
     play::PokerHand,
@@ -15,29 +15,20 @@ use crate::balatro::{
 
 #[allow(async_fn_in_trait)]
 pub trait Hud<'a>: Sized + Screen<'a> {
-
     fn deck(&self) -> &[PlayingCard];
-
     fn hands(&self) -> u32;
     fn discards(&self) -> u32;
     fn round(&self) -> u32;
     fn ante(&self) -> u32;
     fn money(&self) -> u32;
-
     fn joker_slots(&self) -> u32;
-
     fn jokers(&self) -> &[Joker];
-
     fn tags(&self) -> &[Tag];
-
     fn run_info(&self) -> &RunInfo;
     async fn move_joker(self, from: u32, to: u32) -> Result<Self, Error>;
     async fn sell_joker(self, index: u32) -> Result<Self, Error>;
-
     fn consumable_slots(&self) -> u32;
-
     fn consumables(&self) -> &[Consumable];
-
     async fn move_consumable(self, from: u32, to: u32) -> Result<Self, Error>;
     async fn use_consumable(self, index: u32) -> Result<Self, Error>;
     async fn sell_consumable(self, index: u32) -> Result<Self, Error>;
@@ -185,8 +176,9 @@ pub(crate) mod protocol {
         hud::RunInfo,
         jokers::Joker,
         deck::PlayingCard
-        }
-    },
+        },
+        net::protocol::{Packet, Request, Response}
+    };
     use serde::{Deserialize, Serialize};
     use super::Hud;
 
