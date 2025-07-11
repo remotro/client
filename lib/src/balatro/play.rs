@@ -23,6 +23,10 @@ impl<'a> Play<'a> {
         &self.info.discarded
     }
 
+    pub fn hand_size(&self) -> u32 {
+        self.info.hand_size
+    }
+
     pub fn score(&self) -> f64 {
         self.info.score
     }
@@ -128,17 +132,21 @@ pub enum PokerHandKind {
 
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
-    use crate::net::protocol::{Packet, Request, Response};
+    use crate::{
+        net::protocol::{Packet, Request, Response},
+        balatro::{
+            hud::protocol::HudInfo,
+            deck::PlayignCard,
+        }
+    };
     use super::{CurrentBlind, HandCard, PokerHand};
-    use crate::balatro::overview::protocol::{GameOverviewInfo, RoundOverviewInfo};
-    use crate::balatro::hud::protocol::HudInfo;
-    use crate::balatro::deck::PlayingCard;
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct PlayInfo {
         pub current_blind: CurrentBlind,
         pub hand: Vec<HandCard>,
         pub score: f64,
+        pub hand_size: u32,
         pub hud: HudInfo,
         pub poker_hand: Option<PokerHand>,
         pub discarded: Vec<PlayingCard>,

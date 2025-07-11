@@ -1,13 +1,17 @@
 use serde::{Deserialize, Serialize};
-use super::Error;
-use super::consumables::Consumable;
-use super::jokers::Joker;
-use crate::balatro::blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice, Tag};
-use crate::balatro::play::PokerHand;
-use crate::balatro::menu::Stake;
-use crate::balatro::shop::VoucherKind;
-use crate::balatro::Screen;
-use crate::balatro::deck::PlayingCard;
+use super::{
+    Error,
+    consumables::Consumable,
+    jokers::Joker,
+}
+use crate::balatro::{
+    blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice, Tag},
+    play::PokerHand,
+    menu::Stake,
+    shop::VoucherKind,
+    Screen,
+    deck::PlayingCard,
+};
 
 #[allow(async_fn_in_trait)]
 pub trait Hud<'a>: Sized + Screen<'a> {
@@ -15,31 +19,27 @@ pub trait Hud<'a>: Sized + Screen<'a> {
     fn deck(&self) -> &[PlayingCard];
 
     fn hands(&self) -> u32;
-
     fn discards(&self) -> u32;
-
     fn round(&self) -> u32;
-
     fn ante(&self) -> u32;
-
     fn money(&self) -> u32;
+
+    fn joker_slots(&self) -> u32;
 
     fn jokers(&self) -> &[Joker];
 
     fn tags(&self) -> &[Tag];
 
     fn run_info(&self) -> &RunInfo;
-
     async fn move_joker(self, from: u32, to: u32) -> Result<Self, Error>;
-
     async fn sell_joker(self, index: u32) -> Result<Self, Error>;
+
+    fn consumable_slots(&self) -> u32;
 
     fn consumables(&self) -> &[Consumable];
 
     async fn move_consumable(self, from: u32, to: u32) -> Result<Self, Error>;
-
     async fn use_consumable(self, index: u32) -> Result<Self, Error>;
-
     async fn sell_consumable(self, index: u32) -> Result<Self, Error>;
 }
 
@@ -72,6 +72,10 @@ macro_rules! impl_hud {
                     self.info.hud.money
                 }
 
+                fn joker_slots(&self) -> u32 {
+                    self.info.hud.joker_slots
+                }
+
                 fn jokers(&self) -> &[$crate::balatro::jokers::Joker] {
                     &self.info.hud.jokers
                 }
@@ -98,6 +102,10 @@ macro_rules! impl_hud {
                         .request($crate::balatro::hud::protocol::SellJoker { index, _marker: std::marker::PhantomData::<&$t> })
                         .await??;
                     Ok(Self::new(new_info, self.connection))
+                }
+
+                fn consumable_slots(&self) -> u32 {
+                    self.info.hud.consumable_slots
                 }
 
                 fn consumables(&self) -> &[$crate::balatro::consumables::Consumable] {
@@ -170,14 +178,16 @@ pub struct CurrentBlinds {
 }
 
 pub(crate) mod protocol {
-    use crate::balatro::blinds::Tag;
-    use crate::balatro::consumables::Consumable;
-    use crate::balatro::hud::RunInfo;
-    use crate::balatro::jokers::Joker;
-    use crate::net::protocol::{Packet, Request, Response};
-    use crate::balatro::deck::PlayingCard;
+    use crate::{
+        balatro::{
+        blinds::Tag,
+        consumables::Consumable,
+        hud::RunInfo,
+        jokers::Joker,
+        deck::PlayingCard
+        }
+    },
     use serde::{Deserialize, Serialize};
-
     use super::Hud;
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -187,8 +197,10 @@ pub(crate) mod protocol {
         pub round: u32,
         pub ante: u32,
         pub money: u32,
+        pub joker_slots: u32,
         pub jokers: Vec<Joker>,
         pub tags: Vec<Tag>,
+        pub consumable_slots: u32,
         pub consumables: Vec<Consumable>,
         pub run_info: RunInfo,
         pub deck: Vec<PlayingCard>,
