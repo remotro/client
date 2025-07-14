@@ -68,7 +68,6 @@ balatro_enum!(Seal {
 });
 
 balatro_enum!(CardEdition {
-    None = "e_base",
     Foil = "e_foil",
     Holographic = "e_holo",
     Polychrome = "e_polychrome"
