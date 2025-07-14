@@ -1,6 +1,7 @@
-use crate::{balatro_enum, net::Connection};
+use crate::{balatro::boosters, balatro_enum, net::Connection};
 use serde::{Deserialize, Serialize};
 use super::{play::Play, Screen};
+use crate::balatro::deck::PlayingCard;
 
 pub struct SelectBlind<'a> {
     info: protocol::BlindInfo,
@@ -13,9 +14,18 @@ impl<'a> SelectBlind<'a> {
         Ok(Play::new(info, self.connection))
     }
 
-    pub async fn skip(self) -> Result<SelectBlind<'a>, super::Error> {
-        let info = self.connection.request(protocol::SkipBlind).await??;
-        Ok(Self { info, connection: self.connection })
+    pub async fn skip(self) -> Result<SkipResult<'a>, super::Error> {
+        let info = self.connection.request(protocol::SkipBlind::<'a> { _r_marker: std::marker::PhantomData }).await??;
+        match info {
+            protocol::SkipBlindResult::Select(info) => Ok(SkipResult::Select(SelectBlind::new(info, self.connection))),
+            protocol::SkipBlindResult::Booster(info) => match info {
+                protocol::SkippedBooster::Arcana(info) => Ok(SkipResult::Booster(boosters::OpenBoosterPack::Arcana(boosters::OpenArcanaPack::new(info, self.connection)))),
+                protocol::SkippedBooster::Buffoon(info) => Ok(SkipResult::Booster(boosters::OpenBoosterPack::Buffoon(boosters::OpenBuffoonPack::new(info, self.connection)))),
+                protocol::SkippedBooster::Celestial(info) => Ok(SkipResult::Booster(boosters::OpenBoosterPack::Celestial(boosters::OpenCelestialPack::new(info, self.connection)))),
+                protocol::SkippedBooster::Spectral(info) => Ok(SkipResult::Booster(boosters::OpenBoosterPack::Spectral(boosters::OpenSpectralPack::new(info, self.connection)))),
+                protocol::SkippedBooster::Standard(info) => Ok(SkipResult::Booster(boosters::OpenBoosterPack::Standard(boosters::OpenStandardPack::new(info, self.connection)))),
+            }
+        }
     }
 
     pub fn small(&self) -> &SmallBlindChoice {
@@ -36,8 +46,8 @@ impl<'a> Screen<'a> for SelectBlind<'a> {
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
-    fn name() -> &'static str {
-        "blind_select"
+    fn name() -> String {
+        "blind_select".to_string()
     }
 }
 
@@ -138,8 +148,13 @@ pub enum BlindState {
     Defeated,
 }
 
+pub enum SkipResult<'a> {
+    Select(SelectBlind<'a>),
+    Booster(boosters::OpenBoosterPack<'a, protocol::SkipBlindResult<'a>>),
+}
+
 pub(crate) mod protocol {
-    use crate::{balatro::{hud::protocol::HudInfo, play::protocol::PlayInfo}, net::protocol::{Packet, Request, Response}};
+    use crate::{balatro::{boosters, hud::protocol::HudInfo, play::protocol::PlayInfo, Screen}, net::protocol::{Packet, Request, Response}};
     use serde::{Deserialize, Serialize};
 
     use super::{BigBlindChoice, BossBlindChoice, SmallBlindChoice};
@@ -179,14 +194,40 @@ pub(crate) mod protocol {
         }
     }
 
-    #[derive(Serialize)]
-    pub struct SkipBlind;
-
-    impl Request for SkipBlind {
-        type Expect = Result<BlindInfo, String>;
+    #[derive(Deserialize)]
+    pub enum SkipBlindResult<'a> {
+        Select(BlindInfo),
+        Booster(SkippedBooster<'a>),
     }
 
-    impl Packet for SkipBlind {
+    impl<'a> Response for SkipBlindResult<'a> {}
+
+    impl<'a> Packet for SkipBlindResult<'a> {
+        fn kind() -> String {
+            "blind_select/skip_result".to_string()
+        }
+    }
+
+    #[derive(Deserialize)]
+    pub enum SkippedBooster<'a> {
+        Arcana(<boosters::OpenArcanaPack<'a, SkipBlindResult<'a>> as Screen<'a>>::Info),
+        Buffoon(<boosters::OpenBuffoonPack<'a, SkipBlindResult<'a>> as Screen<'a>>::Info),
+        Celestial(<boosters::OpenCelestialPack<'a, SkipBlindResult<'a>> as Screen<'a>>::Info),
+        Spectral(<boosters::OpenSpectralPack<'a, SkipBlindResult<'a>> as Screen<'a>>::Info),
+        Standard(<boosters::OpenStandardPack<'a, SkipBlindResult<'a>> as Screen<'a>>::Info),
+    }
+
+
+    #[derive(Serialize)]
+    pub struct SkipBlind<'a> {
+        pub _r_marker: std::marker::PhantomData<&'a ()>,
+    }
+
+    impl<'a> Request for SkipBlind<'a> {
+        type Expect = Result<SkipBlindResult<'a>, String>;
+    }
+
+    impl<'a> Packet for SkipBlind<'a> {
         fn kind() -> String {
             "blind_select/skip".to_string()
         }

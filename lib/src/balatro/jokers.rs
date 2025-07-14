@@ -13,7 +13,6 @@ pub struct Joker {
 }
 
 balatro_enum!(JokerEdition {
-    None = "e_base",
     Foil = "e_foil",
     Holographic = "e_holo",
     Polychrome = "e_polychrome",

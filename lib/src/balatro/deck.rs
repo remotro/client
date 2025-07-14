@@ -8,7 +8,8 @@ pub struct PlayingCard {
     pub enhancement: Option<Enhancement>,
     pub rank: Rank,
     pub suit: Suit,
-    pub seal: Option<Seal>
+    pub seal: Option<Seal>,
+    pub debuffed: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq)]
@@ -67,7 +68,6 @@ balatro_enum!(Seal {
 });
 
 balatro_enum!(CardEdition {
-    None = "e_base",
     Foil = "e_foil",
     Holographic = "e_holo",
     Polychrome = "e_polychrome"

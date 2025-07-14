@@ -1,13 +1,18 @@
-<<<<<<< resume -- Incoming Change
-use crate::balatro::boosters;
-use crate::balatro::play::Play;
-use crate::balatro::shop::Shop;
-use crate::balatro::OpenPack;
-use crate::balatro::{blinds::SelectBlind, CurrentScreen, Screen};
-=======
-use crate::{balatro_enum,balatro::{Screen, blinds::SelectBlind}};
->>>>>>> main -- Current Change
-use crate::net::Connection;
+use crate::{
+    balatro::{
+        boosters,
+        overview,
+        play::Play,
+        shop,
+        shop::Shop,
+        blinds,
+        blinds::SelectBlind,
+        CurrentScreen,
+        Screen,
+    },
+    balatro_enum,
+    net::Connection
+};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -33,7 +38,7 @@ impl<'a> Menu<'a> {
         seed: Option<Seed>,
     ) -> Result<SelectBlind<'a>, super::Error> {
         let new_run = protocol::StartRun {
-            back: deck,
+            deck,
             stake,
             seed,
         };
@@ -41,31 +46,34 @@ impl<'a> Menu<'a> {
         Ok(SelectBlind::new(blinds, self.connection))
     }
 
-    pub async fn resume_run(
-        self,
-        deck: Deck,
-        stake: Stake,
-        seed: Option<Seed>,
+    pub async fn continue_run(
+        self
     ) -> Result<CurrentScreen<'a>, super::Error> {
-        let resume_run = protocol::ResumeRun::<'a> {
-            back: deck,
-            stake,
-            seed,
+        let continue_run = protocol::ContinueRun::<'a> {
             _r_marker: std::marker::PhantomData,
         };
-        let screen: crate::balatro::protocol::ScreenInfo<'a> = self.connection.request(resume_run).await??;
+        let screen: crate::balatro::protocol::ScreenInfo<'a> = self.connection.request(continue_run).await??;
         match screen {
             crate::balatro::protocol::ScreenInfo::SelectBlind(blinds) => Ok(CurrentScreen::SelectBlind(SelectBlind::new(blinds, self.connection))),
             crate::balatro::protocol::ScreenInfo::Play(play) => Ok(CurrentScreen::Play(Play::new(play, self.connection))),
+            crate::balatro::protocol::ScreenInfo::RoundOverview(overview) => Ok(CurrentScreen::RoundOverview(overview::RoundOverview::new(overview, self.connection))),
             crate::balatro::protocol::ScreenInfo::Shop(shop) => Ok(CurrentScreen::Shop(Shop::new(shop, self.connection))),
             crate::balatro::protocol::ScreenInfo::Menu(info) => Ok(CurrentScreen::Menu(Menu::new(self.connection, info))),
-            crate::balatro::protocol::ScreenInfo::OpenShopPack(pack) => match pack {
-                crate::balatro::protocol::OpenShopPackInfo::Arcana(info) => Ok(CurrentScreen::OpenShopPack(OpenPack::Arcana(boosters::OpenArcanaPack::new(info, self.connection)))),
-                crate::balatro::protocol::OpenShopPackInfo::Buffoon(info) => Ok(CurrentScreen::OpenShopPack(OpenPack::Buffoon(boosters::OpenBuffoonPack::new(info, self.connection)))),
-                crate::balatro::protocol::OpenShopPackInfo::Celestial(info) => Ok(CurrentScreen::OpenShopPack(OpenPack::Celestial(boosters::OpenSpectralPack::new(info, self.connection)))),
-                crate::balatro::protocol::OpenShopPackInfo::Spectral(info) => Ok(CurrentScreen::OpenShopPack(OpenPack::Spectral(boosters::OpenSpectralPack::new(info, self.connection)))),
-                crate::balatro::protocol::OpenShopPackInfo::Standard(info) => Ok(CurrentScreen::OpenShopPack(OpenPack::Standard(boosters::OpenStandardPack::new(info, self.connection)))),
-            }
+            crate::balatro::protocol::ScreenInfo::ShopOpen(pack) => match pack {
+                shop::protocol::BoughtBooster::Arcana(info) => Ok(CurrentScreen::ShopOpen(boosters::OpenBoosterPack::Arcana(boosters::OpenArcanaPack::new(info, self.connection)))),
+                shop::protocol::BoughtBooster::Buffoon(info) => Ok(CurrentScreen::ShopOpen(boosters::OpenBoosterPack::Buffoon(boosters::OpenBuffoonPack::new(info, self.connection)))),
+                shop::protocol::BoughtBooster::Celestial(info) => Ok(CurrentScreen::ShopOpen(boosters::OpenBoosterPack::Celestial(boosters::OpenCelestialPack::new(info, self.connection)))),
+                shop::protocol::BoughtBooster::Spectral(info) => Ok(CurrentScreen::ShopOpen(boosters::OpenBoosterPack::Spectral(boosters::OpenSpectralPack::new(info, self.connection)))),
+                shop::protocol::BoughtBooster::Standard(info) => Ok(CurrentScreen::ShopOpen(boosters::OpenBoosterPack::Standard(boosters::OpenStandardPack::new(info, self.connection)))),
+            },
+            crate::balatro::protocol::ScreenInfo::SkipOpen(pack) => match pack {
+                blinds::protocol::SkippedBooster::Arcana(info) => Ok(CurrentScreen::SkipOpen(boosters::OpenBoosterPack::Arcana(boosters::OpenArcanaPack::new(info, self.connection)))),
+                blinds::protocol::SkippedBooster::Buffoon(info) => Ok(CurrentScreen::SkipOpen(boosters::OpenBoosterPack::Buffoon(boosters::OpenBuffoonPack::new(info, self.connection)))),
+                blinds::protocol::SkippedBooster::Celestial(info) => Ok(CurrentScreen::SkipOpen(boosters::OpenBoosterPack::Celestial(boosters::OpenCelestialPack::new(info, self.connection)))),
+                blinds::protocol::SkippedBooster::Spectral(info) => Ok(CurrentScreen::SkipOpen(boosters::OpenBoosterPack::Spectral(boosters::OpenSpectralPack::new(info, self.connection)))),
+                blinds::protocol::SkippedBooster::Standard(info) => Ok(CurrentScreen::SkipOpen(boosters::OpenBoosterPack::Standard(boosters::OpenStandardPack::new(info, self.connection)))),
+            },
+            crate::balatro::protocol::ScreenInfo::GameOver(overview) => Ok(CurrentScreen::GameOver(overview::GameOverview::new(overview, self.connection))),
         }
     }
 }
@@ -153,9 +161,14 @@ impl FromStr for Stake {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Seed(String);
+
 impl Seed {
-    pub fn new(s: &str) -> Self {
-        Seed(s.to_string())
+    pub fn new(seed: String) -> Option<Self> {
+        if seed.len() == 7 {
+            Some(Self(seed))
+        } else {
+            None
+        }
     }
 }
 
@@ -187,7 +200,7 @@ pub(crate) mod protocol {
 
     #[derive(Serialize)]
     pub struct StartRun {
-        pub back: Deck,
+        pub deck: Deck,
         pub stake: Stake,
         pub seed: Option<Seed>,
     }
@@ -203,20 +216,17 @@ pub(crate) mod protocol {
     }
 
     #[derive(Serialize)]
-    pub struct ResumeRun<'a> {
-        pub back: Deck,
-        pub stake: Stake,
-        pub seed: Option<Seed>,
+    pub struct ContinueRun<'a> {
         pub _r_marker: std::marker::PhantomData<&'a ()>,
     }
     
-    impl<'a> Request for ResumeRun<'a> {
+    impl<'a> Request for ContinueRun<'a> {
         type Expect = Result<crate::balatro::protocol::ScreenInfo<'a>, String>;
     }
 
-    impl<'a> Packet for ResumeRun<'a> {
+    impl<'a> Packet for ContinueRun<'a> {
         fn kind() -> String {
-            "main_menu/resume_run".to_string()
+            "main_menu/continue_run".to_string()
         }
     }
 }

@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
-use crate::{balatro_enum, net::Connection,
-    balatro::{
-        Error,
-        deck::{PlayingCard},
-        blinds::SelectBlind,
-    }
+use crate::{balatro::{
+        blinds::SelectBlind, deck::PlayingCard, shop::protocol::ShopInfo, Error
+    }, balatro_enum, net::Connection
 };
 use super::{boosters::{BoosterPackKind, OpenBuffoonPack, OpenCelestialPack, OpenSpectralPack, OpenStandardPack, OpenArcanaPack}, consumables::{PlanetCard, SpectralCard, TarotCard}, jokers::Joker, Screen};
 
@@ -65,8 +62,8 @@ impl<'a> Shop<'a> {
 
 impl<'a> Screen<'a> for Shop<'a> {
     type Info = protocol::ShopInfo;
-    fn name() -> &'static str {
-        "shop"
+    fn name() -> String {
+        "shop".to_string()
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
@@ -88,15 +85,15 @@ pub enum MainCard {
 pub struct BoosterPack { pub kind: BoosterPackKind, pub price: u8 }
 
 pub enum BoughtBooster<'a> {
-    Arcana(OpenArcanaPack<'a, Shop<'a>>),
-    Buffoon(OpenBuffoonPack<'a, Shop<'a>>),
-    Celestial(OpenCelestialPack<'a, Shop<'a>>),
-    Spectral(OpenSpectralPack<'a, Shop<'a>>),
-    Standard(OpenStandardPack<'a, Shop<'a>>),
+    Arcana(OpenArcanaPack<'a, ShopInfo>),
+    Buffoon(OpenBuffoonPack<'a, ShopInfo>),
+    Celestial(OpenCelestialPack<'a, ShopInfo>),
+    Spectral(OpenSpectralPack<'a, ShopInfo>),
+    Standard(OpenStandardPack<'a, ShopInfo>),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Voucher { kind: VoucherKind, price: u8 }
+pub struct Voucher { pub kind: VoucherKind, pub price: u8 }
 
 balatro_enum!(VoucherKind {
     Blank = "v_blank",
@@ -138,7 +135,7 @@ pub(crate) mod protocol {
     use crate::{
         balatro::{blinds::protocol::BlindInfo, boosters::{OpenBuffoonPack, OpenCelestialPack, OpenSpectralPack, OpenStandardPack, OpenArcanaPack}, hud::protocol::HudInfo, Screen}, net::protocol::{Packet, Request, Response}
     };
-    use super::{BoosterPack, MainCard, Shop, Voucher};
+    use super::{BoosterPack, MainCard, Voucher};
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopInfo {
@@ -219,11 +216,11 @@ pub(crate) mod protocol {
 
     #[derive(Deserialize)]
     pub enum BoughtBooster<'a> {
-        Buffoon(<OpenBuffoonPack<'a, Shop<'a>> as Screen<'a>>::Info),
-        Celestial(<OpenCelestialPack<'a, Shop<'a>> as Screen<'a>>::Info),
-        Spectral(<OpenSpectralPack<'a, Shop<'a>> as Screen<'a>>::Info),
-        Standard(<OpenStandardPack<'a, Shop<'a>> as Screen<'a>>::Info),
-        Arcana(<OpenArcanaPack<'a, Shop<'a>> as Screen<'a>>::Info),
+        Buffoon(<OpenBuffoonPack<'a, ShopInfo> as Screen<'a>>::Info),
+        Celestial(<OpenCelestialPack<'a, ShopInfo> as Screen<'a>>::Info),
+        Spectral(<OpenSpectralPack<'a, ShopInfo> as Screen<'a>>::Info),
+        Standard(<OpenStandardPack<'a, ShopInfo> as Screen<'a>>::Info),
+        Arcana(<OpenArcanaPack<'a, ShopInfo> as Screen<'a>>::Info),
     }
 
     impl Response for BoughtBooster<'_> {}

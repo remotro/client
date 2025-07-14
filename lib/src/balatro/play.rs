@@ -19,6 +19,10 @@ impl<'a> Play<'a> {
         &self.info.hand
     }
 
+    pub fn discarded(&self) -> &[PlayingCard] {
+        &self.info.discarded
+    }
+
     pub fn hand_size(&self) -> u32 {
         self.info.hand_size
     }
@@ -41,7 +45,7 @@ impl<'a> Play<'a> {
         let result = match info {
             protocol::PlayResult::Again(info) => PlayResult::Again(Self::new(info, self.connection)),
             protocol::PlayResult::RoundOver(info) => PlayResult::RoundOver(RoundOverview::new(info, self.connection)),
-            protocol::PlayResult::GameOver(_) => PlayResult::GameOver(GameOverview::new(self.connection)),
+            protocol::PlayResult::GameOver(info) => PlayResult::GameOver(GameOverview::new(info, self.connection)),
         };
         Ok(result)
     }
@@ -50,16 +54,21 @@ impl<'a> Play<'a> {
         let info = self.connection.request(protocol::PlayDiscard).await??;
         let result = match info {
             protocol::DiscardResult::Again(info) => DiscardResult::Again(Self::new(info, self.connection)),
-            protocol::DiscardResult::GameOver(_) => DiscardResult::GameOver(GameOverview::new(self.connection)),
+            protocol::DiscardResult::GameOver(info) => DiscardResult::GameOver(GameOverview::new(info, self.connection)),
         };
         Ok(result)
+    }
+
+    pub async fn move_card(self, from: u32, to: u32) -> Result<Self, Error> {
+        let info = self.connection.request(protocol::PlayMove { from: from, to: to }).await??;
+        Ok(Self::new(info, self.connection))
     }
 }
 
 impl<'a> Screen<'a> for Play<'a> {
     type Info = protocol::PlayInfo;
-    fn name() -> &'static str {
-        "play"
+    fn name() -> String {
+        "play".to_string()
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
@@ -81,16 +90,16 @@ pub enum DiscardResult<'a> {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct HandCard {
-    card: Option<PlayingCard>,
-    selected: bool,
+    pub card: Option<PlayingCard>,
+    pub selected: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PokerHand {
-    kind: PokerHandKind,
-    level: u64,
-    chips: u64,
-    mult: u64,
+    pub kind: PokerHandKind,
+    pub level: u64,
+    pub chips: u64,
+    pub mult: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
@@ -123,10 +132,15 @@ pub enum PokerHandKind {
 
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
-    use crate::net::protocol::{Packet, Request, Response};
+    use crate::{
+        net::protocol::{Packet, Request, Response},
+        balatro::{
+            hud::protocol::HudInfo,
+            deck::PlayingCard,
+            overview::protocol::{GameOverviewInfo,RoundOverviewInfo}
+        }
+    };
     use super::{CurrentBlind, HandCard, PokerHand};
-    use crate::balatro::overview::protocol::RoundOverviewInfo;
-    use crate::balatro::hud::protocol::HudInfo;
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct PlayInfo {
@@ -136,6 +150,7 @@ pub(crate) mod protocol {
         pub hand_size: u32,
         pub hud: HudInfo,
         pub poker_hand: Option<PokerHand>,
+        pub discarded: Vec<PlayingCard>,
     }
 
     impl Response for PlayInfo {}
@@ -191,7 +206,7 @@ pub(crate) mod protocol {
     pub enum PlayResult {
         Again(PlayInfo),
         RoundOver(RoundOverviewInfo),
-        GameOver(Vec<()>),
+        GameOver(GameOverviewInfo),
     }
 
     impl Response for PlayResult {}
@@ -205,7 +220,7 @@ pub(crate) mod protocol {
     #[derive(Serialize, Deserialize, Clone)]
     pub enum DiscardResult {
         Again(PlayInfo),
-        GameOver(Vec<()>),
+        GameOver(GameOverviewInfo),
     }
 
     impl Response for DiscardResult {}
@@ -215,5 +230,20 @@ pub(crate) mod protocol {
             "play/discard/result".to_string()
         }
     }
-    
+
+    #[derive(Serialize, Deserialize, Clone)]
+    pub struct PlayMove {
+        pub from: u32,
+        pub to: u32
+    }
+
+    impl Request for PlayMove {
+        type Expect = Result<PlayInfo, String>;
+    }
+
+    impl Packet for PlayMove {
+        fn kind() -> String {
+            "play/move".to_string()
+        }
+    }
 }

@@ -1,15 +1,21 @@
 use serde::{Deserialize, Serialize};
-use super::Error;
-use super::consumables::Consumable;
-use super::jokers::Joker;
-use crate::balatro::blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice};
-use crate::balatro::play::PokerHand;
-use crate::balatro::menu::Stake;
-use crate::balatro::shop::VoucherKind;
-use crate::balatro::Screen;
+use super::{
+    Error,
+    consumables::Consumable,
+    jokers::Joker,
+};
+use crate::balatro::{
+    blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice, Tag},
+    play::PokerHand,
+    menu::Stake,
+    shop::VoucherKind,
+    Screen,
+    deck::PlayingCard,
+};
 
 #[allow(async_fn_in_trait)]
 pub trait Hud<'a>: Sized + Screen<'a> {
+    fn deck(&self) -> &[PlayingCard];
     fn hands(&self) -> u32;
     fn discards(&self) -> u32;
     fn round(&self) -> u32;
@@ -17,6 +23,7 @@ pub trait Hud<'a>: Sized + Screen<'a> {
     fn money(&self) -> u32;
     fn joker_slots(&self) -> u32;
     fn jokers(&self) -> &[Joker];
+    fn tags(&self) -> &[Tag];
     fn run_info(&self) -> &RunInfo;
     async fn move_joker(self, from: u32, to: u32) -> Result<Self, Error>;
     async fn sell_joker(self, index: u32) -> Result<Self, Error>;
@@ -34,6 +41,10 @@ macro_rules! impl_hud {
             impl<'a> $crate::balatro::hud::Hud<'a> for $t<'a> {
                 fn hands(&self) -> u32 {
                     self.info.hud.hands
+                }
+
+                fn deck(&self) -> &[PlayingCard] {
+                    &self.info.hud.deck
                 }
 
                 fn discards(&self) -> u32 {
@@ -58,6 +69,10 @@ macro_rules! impl_hud {
 
                 fn jokers(&self) -> &[$crate::balatro::jokers::Joker] {
                     &self.info.hud.jokers
+                }
+
+                fn tags(&self) -> &[$crate::balatro::blinds::Tag] {
+                    &self.info.hud.tags
                 }
 
                 fn run_info(&self) -> &$crate::balatro::hud::RunInfo {
@@ -142,8 +157,8 @@ pub struct CurrentPokerHands {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CurrentPokerHand {
-    hand: PokerHand,
-    played: u64,
+    pub hand: PokerHand,
+    pub played: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -154,12 +169,17 @@ pub struct CurrentBlinds {
 }
 
 pub(crate) mod protocol {
-    use crate::balatro::consumables::Consumable;
-    use crate::balatro::hud::RunInfo;
-    use crate::balatro::jokers::Joker;
-    use crate::net::protocol::{Packet, Request, Response};
+    use crate::{
+        balatro::{
+        blinds::Tag,
+        consumables::Consumable,
+        hud::RunInfo,
+        jokers::Joker,
+        deck::PlayingCard
+        },
+        net::protocol::{Packet, Request, Response}
+    };
     use serde::{Deserialize, Serialize};
-
     use super::Hud;
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -171,9 +191,11 @@ pub(crate) mod protocol {
         pub money: u32,
         pub joker_slots: u32,
         pub jokers: Vec<Joker>,
+        pub tags: Vec<Tag>,
         pub consumable_slots: u32,
         pub consumables: Vec<Consumable>,
         pub run_info: RunInfo,
+        pub deck: Vec<PlayingCard>,
     }
 
     impl Response for HudInfo {}
