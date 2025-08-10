@@ -7,7 +7,7 @@ use super::{
 use crate::balatro::{
     blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice, Tag},
     play::PokerHand,
-    menu::Stake,
+    menu::{Stake,Deck},
     shop::VoucherKind,
     Screen,
     deck::PlayingCard,
@@ -82,7 +82,8 @@ macro_rules! impl_hud {
                 async fn move_joker(self, from: u32, to: u32) -> Result<Self, $crate::balatro::Error> {
                     let new_info = self
                         .connection
-                        .request($crate::balatro::hud::protocol::MoveJoker { from, to, _marker: std::marker::PhantomData::<&$t> })
+                        .request($crate::balatro::hud::protocol::MoveJoker 
+                            { from, to, _marker: std::marker::PhantomData::<&$t> })
                         .await??;
                     Ok(Self::new(new_info, self.connection))
                 }
@@ -90,7 +91,8 @@ macro_rules! impl_hud {
                 async fn sell_joker(self, index: u32) -> Result<Self, $crate::balatro::Error> {
                     let new_info = self
                         .connection
-                        .request($crate::balatro::hud::protocol::SellJoker { index, _marker: std::marker::PhantomData::<&$t> })
+                        .request($crate::balatro::hud::protocol::SellJoker
+                            { index, _marker: std::marker::PhantomData::<&$t> })
                         .await??;
                     Ok(Self::new(new_info, self.connection))
                 }
@@ -136,7 +138,8 @@ pub struct RunInfo {
     pub poker_hands: CurrentPokerHands,
     pub blinds: CurrentBlinds,
     pub vouchers_redeemed: Vec<VoucherKind>,
-    pub stake: Stake
+    pub stake: Stake,
+    pub deck: Deck
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
