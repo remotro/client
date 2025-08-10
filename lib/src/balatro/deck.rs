@@ -20,11 +20,8 @@ pub enum Suit {
     Diamonds,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq)]
-#[serde(rename_all = "PascalCase")]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord)]
 pub enum Rank {
-    #[serde(rename = "Ace")]
-    Ace,
     #[serde(rename = "2")]
     Two,
     #[serde(rename = "3")]
@@ -46,6 +43,8 @@ pub enum Rank {
     Jack,
     Queen,
     King,
+    #[serde(rename = "Ace")]
+    Ace,
 }
 
 balatro_enum!(Enhancement {
