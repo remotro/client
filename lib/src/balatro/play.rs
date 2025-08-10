@@ -1,10 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-use crate::net::Connection;
 use super::{
-    blinds::CurrentBlind, deck::PlayingCard, overview::{GameOverview, RoundOverview}, Screen, Error
+    Error, Screen,
+    blinds::CurrentBlind,
+    deck::PlayingCard,
+    overview::{GameOverview, RoundOverview},
 };
 use crate::balatro_enum;
+use crate::net::Connection;
 
 pub struct Play<'a> {
     info: protocol::PlayInfo,
@@ -31,22 +34,33 @@ impl<'a> Play<'a> {
     pub fn score(&self) -> f64 {
         self.info.score
     }
-    
+
     pub fn poker_hand(&self) -> Option<&PokerHand> {
         self.info.poker_hand.as_ref()
     }
 
     pub async fn click(self, indices: &[u32]) -> Result<Self, Error> {
-        let info = self.connection.request(protocol::PlayClick { indices: indices.to_vec() }).await??;
+        let info = self
+            .connection
+            .request(protocol::PlayClick {
+                indices: indices.to_vec(),
+            })
+            .await??;
         Ok(Self::new(info, self.connection))
     }
 
     pub async fn play(self) -> Result<PlayResult<'a>, Error> {
         let info = self.connection.request(protocol::PlayPlay).await??;
         let result = match info {
-            protocol::PlayResult::Again(info) => PlayResult::Again(Self::new(info, self.connection)),
-            protocol::PlayResult::RoundOver(info) => PlayResult::RoundOver(RoundOverview::new(info, self.connection)),
-            protocol::PlayResult::GameOver(info) => PlayResult::GameOver(GameOverview::new(info, self.connection)),
+            protocol::PlayResult::Again(info) => {
+                PlayResult::Again(Self::new(info, self.connection))
+            }
+            protocol::PlayResult::RoundOver(info) => {
+                PlayResult::RoundOver(RoundOverview::new(info, self.connection))
+            }
+            protocol::PlayResult::GameOver(info) => {
+                PlayResult::GameOver(GameOverview::new(info, self.connection))
+            }
         };
         Ok(result)
     }
@@ -54,14 +68,21 @@ impl<'a> Play<'a> {
     pub async fn discard(self) -> Result<DiscardResult<'a>, Error> {
         let info = self.connection.request(protocol::PlayDiscard).await??;
         let result = match info {
-            protocol::DiscardResult::Again(info) => DiscardResult::Again(Self::new(info, self.connection)),
-            protocol::DiscardResult::GameOver(info) => DiscardResult::GameOver(GameOverview::new(info, self.connection)),
+            protocol::DiscardResult::Again(info) => {
+                DiscardResult::Again(Self::new(info, self.connection))
+            }
+            protocol::DiscardResult::GameOver(info) => {
+                DiscardResult::GameOver(GameOverview::new(info, self.connection))
+            }
         };
         Ok(result)
     }
 
     pub async fn move_card(self, from: u32, to: u32) -> Result<Self, Error> {
-        let info = self.connection.request(protocol::PlayMove { from: from, to: to }).await??;
+        let info = self
+            .connection
+            .request(protocol::PlayMove { from: from, to: to })
+            .await??;
         Ok(Self::new(info, self.connection))
     }
 }
@@ -119,16 +140,16 @@ balatro_enum!(PokerHandKind {
 });
 
 pub(crate) mod protocol {
-    use serde::{Deserialize, Serialize};
-    use crate::{
-        net::protocol::{Packet, Request, Response},
-        balatro::{
-            hud::protocol::HudInfo,
-            deck::PlayingCard,
-            overview::protocol::{GameOverviewInfo,RoundOverviewInfo}
-        }
-    };
     use super::{CurrentBlind, HandCard, PokerHand};
+    use crate::{
+        balatro::{
+            deck::PlayingCard,
+            hud::protocol::HudInfo,
+            overview::protocol::{GameOverviewInfo, RoundOverviewInfo},
+        },
+        net::protocol::{Packet, Request, Response},
+    };
+    use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct PlayInfo {
@@ -151,7 +172,7 @@ pub(crate) mod protocol {
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct PlayClick {
-        pub indices: Vec<u32>
+        pub indices: Vec<u32>,
     }
 
     impl Request for PlayClick {
@@ -222,7 +243,7 @@ pub(crate) mod protocol {
     #[derive(Serialize, Deserialize, Clone)]
     pub struct PlayMove {
         pub from: u32,
-        pub to: u32
+        pub to: u32,
     }
 
     impl Request for PlayMove {

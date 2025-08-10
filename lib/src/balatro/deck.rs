@@ -1,6 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::balatro_enum;
-
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PlayingCard {
@@ -18,7 +17,7 @@ pub enum Suit {
     Spades,
     Hearts,
     Clubs,
-    Diamonds
+    Diamonds,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq)]
@@ -46,7 +45,7 @@ pub enum Rank {
     Ten,
     Jack,
     Queen,
-    King
+    King,
 }
 
 balatro_enum!(Enhancement {

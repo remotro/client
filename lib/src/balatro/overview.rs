@@ -1,18 +1,15 @@
 use serde::{Deserialize, Serialize};
 
-use crate::balatro::deck::PlayingCard;
 use crate::balatro::blinds::CurrentBlind;
+use crate::balatro::deck::PlayingCard;
 use crate::balatro::menu::{self, Menu, Seed};
 use crate::balatro::play::PokerHandKind;
+use crate::balatro::{Error, shop::Shop};
 use crate::net::Connection;
-use crate::balatro::{
-    Error,
-    shop::Shop,
-};
 
+use super::Screen;
 use super::blinds::Tag;
 use super::jokers::JokerKind;
-use super::Screen;
 pub struct RoundOverview<'a> {
     connection: &'a mut Connection,
     info: protocol::RoundOverviewInfo,
@@ -20,17 +17,24 @@ pub struct RoundOverview<'a> {
 
 impl<'a> RoundOverview<'a> {
     pub fn earnings(&self) -> Vec<Earning> {
-        self.info.earnings.iter().map(|e| {
-            let kind = match e.kind.clone() {
-                protocol::EarningKind::Joker(k) => EarningKind::Joker(k),
-                protocol::EarningKind::Tag(t) => EarningKind::Tag(t),
-                protocol::EarningKind::Blind(_) => EarningKind::Blind,
-                protocol::EarningKind::Interest(_) => EarningKind::Interest,
-                protocol::EarningKind::Hands(h) => EarningKind::Hands(h),
-                protocol::EarningKind::Discards(d) => EarningKind::Discards(d),
-            };
-            Earning { kind, value: e.value }
-        }).collect()
+        self.info
+            .earnings
+            .iter()
+            .map(|e| {
+                let kind = match e.kind.clone() {
+                    protocol::EarningKind::Joker(k) => EarningKind::Joker(k),
+                    protocol::EarningKind::Tag(t) => EarningKind::Tag(t),
+                    protocol::EarningKind::Blind(_) => EarningKind::Blind,
+                    protocol::EarningKind::Interest(_) => EarningKind::Interest,
+                    protocol::EarningKind::Hands(h) => EarningKind::Hands(h),
+                    protocol::EarningKind::Discards(d) => EarningKind::Discards(d),
+                };
+                Earning {
+                    kind,
+                    value: e.value,
+                }
+            })
+            .collect()
     }
 
     pub fn total_earned(&self) -> u64 {
@@ -118,14 +122,21 @@ impl<'a> GameOverview<'a> {
     }
 
     pub fn menu(self) -> Menu<'a> {
-        Menu::new(self.connection, menu::protocol::MenuInfo { saved_run: None })
+        Menu::new(
+            self.connection,
+            menu::protocol::MenuInfo { saved_run: None },
+        )
     }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Outcome {
     Win,
-    Loss { defeated_by: CurrentBlind, round: u64, ante: u64 },
+    Loss {
+        defeated_by: CurrentBlind,
+        round: u64,
+        ante: u64,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -136,7 +147,14 @@ pub struct MostPlayedHand {
 
 pub(crate) mod protocol {
     use crate::{
-        balatro::{hud::protocol::HudInfo, jokers::JokerKind, menu::Seed, overview::{MostPlayedHand, Outcome, Tag}, shop::protocol::ShopInfo}, net::protocol::{Packet, Request, Response}
+        balatro::{
+            hud::protocol::HudInfo,
+            jokers::JokerKind,
+            menu::Seed,
+            overview::{MostPlayedHand, Outcome, Tag},
+            shop::protocol::ShopInfo,
+        },
+        net::protocol::{Packet, Request, Response},
     };
     use serde::{Deserialize, Serialize};
 
