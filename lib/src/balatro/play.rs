@@ -72,7 +72,7 @@ impl<'a> Play<'a> {
                 DiscardResult::Again(Self::new(info, self.connection))
             }
             protocol::DiscardResult::GameOver(info) => {
-                DiscardResult::GameOver(GameOverview::new(info, self.connection))
+                DiscardResult::GameOver(Box::new(GameOverview::new(*info, self.connection)))
             }
         };
         Ok(result)
@@ -105,9 +105,10 @@ pub enum PlayResult<'a> {
     GameOver(GameOverview<'a>),
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum DiscardResult<'a> {
     Again(Play<'a>),
-    GameOver(GameOverview<'a>),
+    GameOver(Box<GameOverview<'a>>),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -226,10 +227,11 @@ pub(crate) mod protocol {
         }
     }
 
+    #[allow(clippy::large_enum_variant)]
     #[derive(Serialize, Deserialize, Clone)]
     pub enum DiscardResult {
         Again(PlayInfo),
-        GameOver(GameOverviewInfo),
+        GameOver(Box<GameOverviewInfo>),
     }
 
     impl Response for DiscardResult {}
