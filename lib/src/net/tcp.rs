@@ -85,7 +85,7 @@ impl TcpStreamExt {
         let body = serde_json::to_string(&msg)?;
         let packet_str = format!("{}!{}", T::kind(), body);
         self.tx_outgoing.send(packet_str).await.map_err(|_| {
-            Error::ChannelError(Cow::Borrowed("Failed to send packet to background task"))
+            Error::Channel(Cow::Borrowed("Failed to send packet to background task"))
         })?;
         Ok(())
     }
