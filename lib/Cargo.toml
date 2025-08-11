@@ -2,6 +2,10 @@
 name = "remotro"
 version = "0.1.0"
 edition = "2024"
+description = "A crate allowing remote control of Balatro"
+license = "MIT"
+repository = "https://github.com/remotro/client"
+readme = "../README.md"
 
 [dependencies]
 crossbeam-channel = "0.5.14"
