@@ -220,8 +220,8 @@ macro_rules! impl_open_with_hand {
                 let response = self
                     .connection
                     .request(protocol::CardBoosterPackMove::<'a, Self> {
-                        from: from,
-                        to: to,
+                        from,
+                        to,
                         _marker: std::marker::PhantomData,
                     })
                     .await??;

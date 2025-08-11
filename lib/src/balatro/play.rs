@@ -81,7 +81,7 @@ impl<'a> Play<'a> {
     pub async fn move_card(self, from: u32, to: u32) -> Result<Self, Error> {
         let info = self
             .connection
-            .request(protocol::PlayMove { from: from, to: to })
+            .request(protocol::PlayMove { from, to })
             .await??;
         Ok(Self::new(info, self.connection))
     }
