@@ -1,5 +1,6 @@
 use crate::balatro_enum;
 use serde::{Deserialize, Serialize};
+use self::Rank::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PlayingCard {
@@ -45,6 +46,26 @@ pub enum Rank {
     King,
     #[serde(rename = "Ace")]
     Ace,
+}
+
+impl Rank {
+    pub fn next(self) -> Rank {
+        match self {
+            Ace => Two,
+            Two => Three,
+            Three => Four,
+            Four => Five,
+            Five => Six,
+            Six => Seven,
+            Seven => Eight,
+            Eight => Nine,
+            Nine => Ten,
+            Ten => Jack,
+            Jack => Queen,
+            Queen => King,
+            King => Ace,
+        }
+    }
 }
 
 balatro_enum!(Enhancement {
