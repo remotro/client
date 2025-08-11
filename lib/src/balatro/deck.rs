@@ -11,7 +11,7 @@ pub struct PlayingCard {
     pub debuffed: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord)]
 #[serde(rename_all = "PascalCase")]
 pub enum Suit {
     Spades,
