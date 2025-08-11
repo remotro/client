@@ -1,11 +1,11 @@
-use serde::{Deserialize, Serialize};
 use crate::balatro_enum;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Consumable {
     Planet(PlanetCard),
     Tarot(TarotCard),
-    Spectral(SpectralCard)
+    Spectral(SpectralCard),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

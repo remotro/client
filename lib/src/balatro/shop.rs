@@ -1,9 +1,18 @@
-use serde::{Deserialize, Serialize};
-use crate::{balatro::{
-        blinds::SelectBlind, deck::PlayingCard, shop::protocol::ShopInfo, Error
-    }, balatro_enum, net::Connection
+use super::{
+    Screen,
+    boosters::{
+        BoosterPackKind, OpenArcanaPack, OpenBuffoonPack, OpenCelestialPack, OpenSpectralPack,
+        OpenStandardPack,
+    },
+    consumables::{PlanetCard, SpectralCard, TarotCard},
+    jokers::Joker,
 };
-use super::{boosters::{BoosterPackKind, OpenBuffoonPack, OpenCelestialPack, OpenSpectralPack, OpenStandardPack, OpenArcanaPack}, consumables::{PlanetCard, SpectralCard, TarotCard}, jokers::Joker, Screen};
+use crate::{
+    balatro::{Error, blinds::SelectBlind, deck::PlayingCard, shop::protocol::ShopInfo},
+    balatro_enum,
+    net::Connection,
+};
+use serde::{Deserialize, Serialize};
 
 pub struct Shop<'a> {
     info: protocol::ShopInfo,
@@ -24,28 +33,53 @@ impl<'a> Shop<'a> {
     }
 
     pub async fn buy_main(self, index: u8) -> Result<Self, Error> {
-        let info = self.connection.request(protocol::ShopBuyMain { index }).await??;
+        let info = self
+            .connection
+            .request(protocol::ShopBuyMain { index })
+            .await??;
         Ok(Self::new(info, self.connection))
     }
 
     pub async fn buy_and_use(self, index: u8) -> Result<Self, Error> {
-        let info = self.connection.request(protocol::ShopBuyUse { index }).await??;
+        let info = self
+            .connection
+            .request(protocol::ShopBuyUse { index })
+            .await??;
         Ok(Self::new(info, self.connection))
     }
 
     pub async fn buy_voucher(self, index: u8) -> Result<Self, Error> {
-        let info = self.connection.request(protocol::ShopBuyVoucher { index }).await??;
+        let info = self
+            .connection
+            .request(protocol::ShopBuyVoucher { index })
+            .await??;
         Ok(Self::new(info, self.connection))
     }
-    
+
     pub async fn buy_booster(self, index: u8) -> Result<BoughtBooster<'a>, Error> {
-        let info = self.connection.request(protocol::ShopBuyBooster { index, _r_marker: std::marker::PhantomData }).await??;
+        let info = self
+            .connection
+            .request(protocol::ShopBuyBooster {
+                index,
+                _r_marker: std::marker::PhantomData,
+            })
+            .await??;
         match info {
-            protocol::BoughtBooster::Buffoon(info) => Ok(BoughtBooster::Buffoon(OpenBuffoonPack::new(info, self.connection))),
-            protocol::BoughtBooster::Celestial(info) => Ok(BoughtBooster::Celestial(OpenCelestialPack::new(info, self.connection))),
-            protocol::BoughtBooster::Spectral(info) => Ok(BoughtBooster::Spectral(OpenSpectralPack::new(info, self.connection))),
-            protocol::BoughtBooster::Standard(info) => Ok(BoughtBooster::Standard(OpenStandardPack::new(info, self.connection))),
-            protocol::BoughtBooster::Arcana(info) => Ok(BoughtBooster::Arcana(OpenArcanaPack::new(info, self.connection))),
+            protocol::BoughtBooster::Buffoon(info) => Ok(BoughtBooster::Buffoon(
+                OpenBuffoonPack::new(info, self.connection),
+            )),
+            protocol::BoughtBooster::Celestial(info) => Ok(BoughtBooster::Celestial(
+                OpenCelestialPack::new(info, self.connection),
+            )),
+            protocol::BoughtBooster::Spectral(info) => Ok(BoughtBooster::Spectral(
+                OpenSpectralPack::new(info, self.connection),
+            )),
+            protocol::BoughtBooster::Standard(info) => Ok(BoughtBooster::Standard(
+                OpenStandardPack::new(info, self.connection),
+            )),
+            protocol::BoughtBooster::Arcana(info) => Ok(BoughtBooster::Arcana(
+                OpenArcanaPack::new(info, self.connection),
+            )),
         }
     }
 
@@ -82,7 +116,10 @@ pub enum MainCard {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct BoosterPack { pub kind: BoosterPackKind, pub price: u8 }
+pub struct BoosterPack {
+    pub kind: BoosterPackKind,
+    pub price: u8,
+}
 
 pub enum BoughtBooster<'a> {
     Arcana(OpenArcanaPack<'a, ShopInfo>),
@@ -93,7 +130,10 @@ pub enum BoughtBooster<'a> {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Voucher { pub kind: VoucherKind, pub price: u8 }
+pub struct Voucher {
+    pub kind: VoucherKind,
+    pub price: u8,
+}
 
 balatro_enum!(VoucherKind {
     Blank = "v_blank",
@@ -131,11 +171,20 @@ balatro_enum!(VoucherKind {
 });
 
 pub(crate) mod protocol {
-    use serde::{Deserialize, Serialize};
-    use crate::{
-        balatro::{blinds::protocol::BlindInfo, boosters::{OpenBuffoonPack, OpenCelestialPack, OpenSpectralPack, OpenStandardPack, OpenArcanaPack}, hud::protocol::HudInfo, Screen}, net::protocol::{Packet, Request, Response}
-    };
     use super::{BoosterPack, MainCard, Voucher};
+    use crate::{
+        balatro::{
+            Screen,
+            blinds::protocol::BlindInfo,
+            boosters::{
+                OpenArcanaPack, OpenBuffoonPack, OpenCelestialPack, OpenSpectralPack,
+                OpenStandardPack,
+            },
+            hud::protocol::HudInfo,
+        },
+        net::protocol::{Packet, Request, Response},
+    };
+    use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopInfo {
@@ -155,7 +204,7 @@ pub(crate) mod protocol {
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopBuyMain {
-        pub index: u8
+        pub index: u8,
     }
 
     impl Request for ShopBuyMain {
@@ -170,7 +219,7 @@ pub(crate) mod protocol {
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopBuyUse {
-        pub index: u8
+        pub index: u8,
     }
 
     impl Request for ShopBuyUse {
@@ -182,10 +231,10 @@ pub(crate) mod protocol {
             "shop/buyuse".to_string()
         }
     }
-    
+
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopBuyVoucher {
-        pub index: u8
+        pub index: u8,
     }
 
     impl Request for ShopBuyVoucher {
@@ -197,7 +246,7 @@ pub(crate) mod protocol {
             "shop/buyvoucher".to_string()
         }
     }
-    
+
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopBuyBooster<'a> {
         pub index: u8,
@@ -233,7 +282,7 @@ pub(crate) mod protocol {
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopReroll {}
-    
+
     impl Request for ShopReroll {
         type Expect = Result<ShopInfo, String>;
     }
@@ -246,7 +295,7 @@ pub(crate) mod protocol {
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ShopContinue {}
-    
+
     impl Request for ShopContinue {
         type Expect = Result<BlindInfo, String>;
     }

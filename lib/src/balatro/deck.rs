@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
 use crate::balatro_enum;
-
+use serde::{Deserialize, Serialize};
+use self::Rank::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PlayingCard {
@@ -12,20 +12,17 @@ pub struct PlayingCard {
     pub debuffed: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord)]
 #[serde(rename_all = "PascalCase")]
 pub enum Suit {
     Spades,
     Hearts,
     Clubs,
-    Diamonds
+    Diamonds,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq)]
-#[serde(rename_all = "PascalCase")]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord)]
 pub enum Rank {
-    #[serde(rename = "Ace")]
-    Ace,
     #[serde(rename = "2")]
     Two,
     #[serde(rename = "3")]
@@ -46,7 +43,29 @@ pub enum Rank {
     Ten,
     Jack,
     Queen,
-    King
+    King,
+    #[serde(rename = "Ace")]
+    Ace,
+}
+
+impl Rank {
+    pub fn next(self) -> Rank {
+        match self {
+            Ace => Two,
+            Two => Three,
+            Three => Four,
+            Four => Five,
+            Five => Six,
+            Six => Seven,
+            Seven => Eight,
+            Eight => Nine,
+            Nine => Ten,
+            Ten => Jack,
+            Jack => Queen,
+            Queen => King,
+            King => Ace,
+        }
+    }
 }
 
 balatro_enum!(Enhancement {

@@ -45,12 +45,12 @@ pub enum Error {
     Json(serde_json::Error),
     Timeout,
     ConnectionClosed,
-    ChannelError(Cow<'static, str>),
+    Channel(Cow<'static, str>),
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 

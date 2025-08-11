@@ -85,7 +85,7 @@ impl TcpStreamExt {
         let body = serde_json::to_string(&msg)?;
         let packet_str = format!("{}!{}", T::kind(), body);
         self.tx_outgoing.send(packet_str).await.map_err(|_| {
-            Error::ChannelError(Cow::Borrowed("Failed to send packet to background task"))
+            Error::Channel(Cow::Borrowed("Failed to send packet to background task"))
         })?;
         Ok(())
     }
@@ -115,7 +115,7 @@ impl TcpStreamExt {
             ))));
         }
 
-        log::info!("Recieved: {}", body);
+        log::info!("Recieved: {body}");
 
         let response: R = serde_json::from_str(body)?;
         Ok(response)
@@ -191,7 +191,7 @@ async fn run_connection(
                         break;
                     }
                     Ok(bytes_read) => { // Received some data.
-                        trace!("Read {} bytes.", bytes_read);
+                        trace!("Read {bytes_read} bytes.");
                         // Any received data resets inactivity and ping state.
                         inactivity_timer.as_mut().reset(Instant::now() + inactivity_timeout);
                         // No need to reset ping_timer here; the `if` condition in select!
@@ -203,19 +203,19 @@ async fn run_connection(
 
                         // Process the received line (remove trailing newline).
                         let received_line = line_buf.trim_end();
-                        trace!("Received line: '{}'", received_line);
+                        trace!("Received line: '{received_line}'");
 
                         if received_line == PING_PACKET {
                             // Received a ping, send a pong back immediately.
                             // Note: We add the newline back for the write.
                             debug!("Received PING, sending PONG.");
-                            if let Err(e) = writer.write_all(format!("{}\n", PONG_PACKET).as_bytes()).await {
-                                error!("Failed to send PONG: {}", e);
+                            if let Err(e) = writer.write_all(format!("{PONG_PACKET}\n").as_bytes()).await {
+                                error!("Failed to send PONG: {e}");
                                 let _ = tx_incoming.send(Err(e.into())).await; // Report write error upstream.
                                 break;
                             }
                             if let Err(e) = writer.flush().await {
-                                error!("Failed to flush PONG: {}", e);
+                                error!("Failed to flush PONG: {e}");
                                 let _ = tx_incoming.send(Err(e.into())).await; // Report flush error upstream.
                                 break;
                             }
@@ -244,7 +244,7 @@ async fn run_connection(
                         line_buf.clear();
                     }
                     Err(e) => { // Error during read.
-                        error!("TCP read error: {}", e);
+                        error!("TCP read error: {e}");
                         let _ = tx_incoming.send(Err(e.into())).await; // Report IO error upstream.
                         break;
                     }
@@ -253,20 +253,20 @@ async fn run_connection(
 
             // 3. Send an outgoing packet requested by `TcpStreamExt::send`.
             Some(packet_str) = rx_outgoing.recv() => {
-                trace!("Received packet from upstream to send: '{}'", packet_str);
+                trace!("Received packet from upstream to send: '{packet_str}'");
                 // Add newline because the reader side uses `read_line`.
-                let packet_with_newline = format!("{}\n", packet_str);
+                let packet_with_newline = format!("{packet_str}\n");
                 if let Err(e) = writer.write_all(packet_with_newline.as_bytes()).await {
-                    error!("TCP write error: {}", e);
+                    error!("TCP write error: {e}");
                     let _ = tx_incoming.send(Err(e.into())).await; // Report write error upstream.
                     break;
                 }
                 if let Err(e) = writer.flush().await {
-                    error!("TCP flush error: {}", e);
+                    error!("TCP flush error: {e}");
                     let _ = tx_incoming.send(Err(e.into())).await; // Report flush error upstream.
                     break;
                 }
-                debug!("Successfully sent packet: '{}'", packet_str);
+                debug!("Successfully sent packet: '{packet_str}'");
                 // Successfully sent data, so reset the inactivity timer.
                 inactivity_timer.as_mut().reset(Instant::now() + inactivity_timeout);
                 // Sending data also counts as activity, reset ping state if we were waiting.
@@ -280,14 +280,14 @@ async fn run_connection(
                 // No packets sent or received for INACTIVITY_TIMEOUT_SECS.
                 // Send the first ping if we aren't already in a ping/pong cycle.
                 if pings_sent_without_response == 0 {
-                    debug!("Inactivity detected, sending PING (Attempt 1/{})", MAX_PING_RETRIES);
-                    if let Err(e) = writer.write_all(format!("{}\n", PING_PACKET).as_bytes()).await {
-                        error!("Failed to send PING (Attempt 1): {}", e);
+                    debug!("Inactivity detected, sending PING (Attempt 1/{MAX_PING_RETRIES})");
+                    if let Err(e) = writer.write_all(format!("{PING_PACKET}\n").as_bytes()).await {
+                        error!("Failed to send PING (Attempt 1): {e}");
                         let _ = tx_incoming.send(Err(e.into())).await;
                         break;
                     }
                     if let Err(e) = writer.flush().await {
-                        error!("Failed to flush PING (Attempt 1): {}", e);
+                        error!("Failed to flush PING (Attempt 1): {e}");
                         let _ = tx_incoming.send(Err(e.into())).await;
                         break;
                     }
@@ -307,29 +307,29 @@ async fn run_connection(
 
             // 5. Ping response timer fired (only active if pings_sent_without_response > 0).
             _ = &mut ping_timer, if pings_sent_without_response > 0 => {
-                warn!("No response received after PING (Attempt {}/{})", pings_sent_without_response, MAX_PING_RETRIES);
+                warn!("No response received after PING (Attempt {pings_sent_without_response}/{MAX_PING_RETRIES})");
                 // Waited PING_RESPONSE_TIMEOUT_SECS for *any* packet after sending a ping, but received none.
                 if pings_sent_without_response >= MAX_PING_RETRIES {
                     // Exceeded max retries, declare timeout.
-                    error!("Ping timeout after {} retries. Closing connection.", MAX_PING_RETRIES);
+                    error!("Ping timeout after {MAX_PING_RETRIES} retries. Closing connection.");
                     let _ = tx_incoming.send(Err(Error::Timeout)).await;
                     break;
                 }
 
                 // Send another ping (retry).
                 let next_attempt = pings_sent_without_response + 1;
-                debug!("Sending PING (Attempt {}/{})", next_attempt, MAX_PING_RETRIES);
-                if let Err(e) = writer.write_all(format!("{}\n", PING_PACKET).as_bytes()).await {
-                    error!("Failed to send PING (Attempt {}): {}", next_attempt, e);
+                debug!("Sending PING (Attempt {next_attempt}/{MAX_PING_RETRIES})");
+                if let Err(e) = writer.write_all(format!("{PING_PACKET}\n").as_bytes()).await {
+                    error!("Failed to send PING (Attempt {next_attempt}): {e}");
                     let _ = tx_incoming.send(Err(e.into())).await;
                     break;
                 }
                 if let Err(e) = writer.flush().await {
-                     error!("Failed to flush PING (Attempt {}): {}", next_attempt, e);
+                     error!("Failed to flush PING (Attempt {next_attempt}): {e}");
                     let _ = tx_incoming.send(Err(e.into())).await;
                     break;
                 }
-                trace!("PING (Attempt {}) sent successfully.", next_attempt);
+                trace!("PING (Attempt {next_attempt}) sent successfully.");
 
                 pings_sent_without_response += 1;
                 // Reset the ping response timer for the next retry.

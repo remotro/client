@@ -1,7 +1,7 @@
-use serde::{Serialize, Deserialize};
-use crate::balatro_enum;
 use crate::balatro::deck::{Rank, Suit};
 use crate::balatro::play::PokerHandKind;
+use crate::balatro_enum;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Joker {
@@ -9,7 +9,7 @@ pub struct Joker {
     pub price: u64,
     pub edition: Option<JokerEdition>,
     pub rental: bool,
-    pub lifespan: Lifespan
+    pub lifespan: Lifespan,
 }
 
 balatro_enum!(JokerEdition {
@@ -176,5 +176,5 @@ balatro_enum!(JokerKind {
 pub enum Lifespan {
     Normal,
     Eternal,
-    Perishable { rounds_left: u64 }
+    Perishable { rounds_left: u64 },
 }

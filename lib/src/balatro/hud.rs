@@ -1,17 +1,13 @@
-use serde::{Deserialize, Serialize};
-use super::{
-    Error,
-    consumables::Consumable,
-    jokers::Joker,
-};
+use super::{Error, consumables::Consumable, jokers::Joker};
 use crate::balatro::{
-    blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice, Tag},
-    play::PokerHand,
-    menu::Stake,
-    shop::VoucherKind,
     Screen,
+    blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice, Tag},
     deck::PlayingCard,
+    menu::{Deck, Stake},
+    play::PokerHand,
+    shop::VoucherKind,
 };
+use serde::{Deserialize, Serialize};
 
 #[allow(async_fn_in_trait)]
 pub trait Hud<'a>: Sized + Screen<'a> {
@@ -82,7 +78,8 @@ macro_rules! impl_hud {
                 async fn move_joker(self, from: u32, to: u32) -> Result<Self, $crate::balatro::Error> {
                     let new_info = self
                         .connection
-                        .request($crate::balatro::hud::protocol::MoveJoker { from, to, _marker: std::marker::PhantomData::<&$t> })
+                        .request($crate::balatro::hud::protocol::MoveJoker
+                            { from, to, _marker: std::marker::PhantomData::<&$t> })
                         .await??;
                     Ok(Self::new(new_info, self.connection))
                 }
@@ -90,7 +87,8 @@ macro_rules! impl_hud {
                 async fn sell_joker(self, index: u32) -> Result<Self, $crate::balatro::Error> {
                     let new_info = self
                         .connection
-                        .request($crate::balatro::hud::protocol::SellJoker { index, _marker: std::marker::PhantomData::<&$t> })
+                        .request($crate::balatro::hud::protocol::SellJoker
+                            { index, _marker: std::marker::PhantomData::<&$t> })
                         .await??;
                     Ok(Self::new(new_info, self.connection))
                 }
@@ -136,7 +134,8 @@ pub struct RunInfo {
     pub poker_hands: CurrentPokerHands,
     pub blinds: CurrentBlinds,
     pub vouchers_redeemed: Vec<VoucherKind>,
-    pub stake: Stake
+    pub stake: Stake,
+    pub deck: Deck,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -152,7 +151,7 @@ pub struct CurrentPokerHands {
     pub straight_flush: CurrentPokerHand,
     pub five_of_a_kind: Option<CurrentPokerHand>,
     pub flush_house: Option<CurrentPokerHand>,
-    pub flush_fives: Option<CurrentPokerHand>
+    pub flush_fives: Option<CurrentPokerHand>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -169,18 +168,14 @@ pub struct CurrentBlinds {
 }
 
 pub(crate) mod protocol {
+    use super::Hud;
     use crate::{
         balatro::{
-        blinds::Tag,
-        consumables::Consumable,
-        hud::RunInfo,
-        jokers::Joker,
-        deck::PlayingCard
+            blinds::Tag, consumables::Consumable, deck::PlayingCard, hud::RunInfo, jokers::Joker,
         },
-        net::protocol::{Packet, Request, Response}
+        net::protocol::{Packet, Request, Response},
     };
     use serde::{Deserialize, Serialize};
-    use super::Hud;
 
     #[derive(Serialize, Deserialize, Clone, Debug)]
     pub struct HudInfo {
