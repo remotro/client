@@ -6,7 +6,7 @@ use crate::balatro::blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice, 
 use crate::balatro::play::PokerHand;
 use crate::balatro::menu::Stake;
 use crate::balatro::shop::VoucherKind;
-use crate::balatro::Screen;
+use crate::balatro::{Collection, Screen};
 
 #[allow(async_fn_in_trait)]
 pub trait Hud<'a>: Sized + Screen<'a> {
@@ -37,6 +37,8 @@ pub trait Hud<'a>: Sized + Screen<'a> {
     async fn use_consumable(self, index: u32) -> Result<Self, Error>;
 
     async fn sell_consumable(self, index: u32) -> Result<Self, Error>;
+
+    async fn collection(self) -> Result<Collection, Error>;
 }
 
 #[macro_export]
@@ -119,6 +121,11 @@ macro_rules! impl_hud {
                         .await??;
                     Ok(Self::new(new_info, self.connection))
                 }
+
+                async fn collection(self) -> Result<$crate::balatro::Collection, $crate::balatro::Error> {
+                    let collection = self.connection.request($crate::balatro::hud::protocol::GetCollection).await??;
+                    Ok(collection.collection)
+                }
             }
         )*
     };
@@ -166,6 +173,7 @@ pub(crate) mod protocol {
     use crate::balatro::consumables::Consumable;
     use crate::balatro::hud::RunInfo;
     use crate::balatro::jokers::Joker;
+    use crate::balatro::Collection;
     use crate::net::protocol::{Packet, Request, Response};
     use serde::{Deserialize, Serialize};
 
@@ -273,4 +281,30 @@ pub(crate) mod protocol {
             format!("{}/hud/consumables/sell", S::name())
         }
     }
+
+    #[derive(Serialize, Deserialize)]
+    pub struct GetCollection;
+
+    impl Request for GetCollection {
+        type Expect = Result<CollectionInfo, String>;
+    }
+
+    impl Packet for GetCollection {
+        fn kind() -> String {
+            "collection/get".to_string()
+        }
+    }
+
+    #[derive(Deserialize, Clone, Debug)]
+    pub struct CollectionInfo {
+        pub collection: Collection,
+    }
+
+    impl Packet for CollectionInfo {
+        fn kind() -> String {
+            "collection/info".to_string()
+        }
+    }
+
+    impl Response for CollectionInfo {}
 }

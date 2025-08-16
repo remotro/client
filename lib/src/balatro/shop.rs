@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use crate::{balatro::{
-        blinds::SelectBlind, deck::PlayingCard, shop::protocol::ShopInfo, translations::{Translatable, Translation, Translations}, Error
-    }, balatro_enum, net::Connection
+        blinds::SelectBlind, deck::PlayingCard, shop::protocol::ShopInfo, translations::{Translatable, Translation, Translations}, Collection, Error
+    }, balatro_enum, net::Connection, render
 };
 use super::{boosters::{BoosterPackKind, OpenBuffoonPack, OpenCelestialPack, OpenSpectralPack, OpenStandardPack, OpenArcanaPack}, consumables::{PlanetCard, SpectralCard, TarotCard}, jokers::Joker, Screen};
 
@@ -68,6 +68,10 @@ impl<'a> Screen<'a> for Shop<'a> {
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
+    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
+        let collection = self.connection.request(super::protocol::GetCollection).await??;
+        Ok(collection.collection)
+    }
 }
 
 crate::impl_hud!(Shop);
@@ -132,7 +136,41 @@ balatro_enum!(VoucherKind {
 
 impl Translatable for VoucherKind {
     fn translate(&self, translations: &Translations) -> Translation {
-        todo!();
+        let path = format!["misc.Voucher.{}", self.id()];
+        match self {
+            Self::Blank => render!(translations, path).unwrap(),
+            Self::Antimatter => render!(translations, path).unwrap(),
+            Self::ClearanceSale => render!(translations, path, 25).unwrap(),
+            Self::Liquidation => render!(translations, path, 50).unwrap(),
+            Self::CrystalBall => render!(translations, path).unwrap(),
+            Self::OmenGlobe => render!(translations, path).unwrap(),
+            Self::DirectorsCut => render!(translations, path, 10).unwrap(),
+            Self::Retcon => render!(translations, path, 10).unwrap(),
+            Self::Hone => render!(translations, path, 2).unwrap(),
+            Self::GlowUp => render!(translations, path, 4).unwrap(),
+            Self::Grabber => render!(translations, path, 1).unwrap(),
+            Self::NachoTong => render!(translations, path, 1).unwrap(),
+            Self::Hieroglyph => render!(translations, path, 1, 1).unwrap(),
+            Self::Petroglyph => render!(translations, path, 1, 1).unwrap(),
+            Self::MagicTrick => render!(translations, path).unwrap(),
+            Self::Illusion => render!(translations, path).unwrap(),
+            Self::SeedMoney => render!(translations, path, 10).unwrap(),
+            Self::MoneyTree => render!(translations, path, 20).unwrap(),
+            Self::Telescope => render!(translations, path, 20).unwrap(),
+            Self::Observatory => render!(translations, path, 1.5).unwrap(),
+            Self::Overstock => render!(translations, path).unwrap(),
+            Self::OverstockPlus => render!(translations, path).unwrap(),
+            Self::PaintBrush => render!(translations, path, 1).unwrap(),
+            Self::Palette => render!(translations, path, 1).unwrap(),
+            Self::PlanetMerchant => render!(translations, path, 2).unwrap(),
+            Self::PlanetTycoon => render!(translations, path, 4).unwrap(),
+            Self::Wasteful => render!(translations, path, 1).unwrap(),
+            Self::Recyclomancy => render!(translations, path, 1).unwrap(),
+            Self::RerollSurplus => render!(translations, path, 2).unwrap(),
+            Self::RerollGlut => render!(translations, path, 2).unwrap(),
+            Self::TarotMerchant => render!(translations, path, 2).unwrap(),
+            Self::TarotTycoon => render!(translations, path, 4).unwrap()
+        }
     }
 }
 

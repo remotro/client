@@ -18,8 +18,8 @@ use crate::balatro::blinds::{Boss, Tag};
 use crate::balatro::boosters::BoosterPackKind;
 use crate::balatro::consumables::{PlanetKind, SpectralKind, TarotKind};
 use crate::balatro::deck::{CardEdition, Enhancement, Seal};
-use crate::balatro::jokers::{Joker, JokerEdition, JokerKind};
-use crate::balatro::shop::{Voucher, VoucherKind};
+use crate::balatro::jokers::{JokerEdition, JokerKind};
+use crate::balatro::shop::VoucherKind;
 use crate::net::Connection;
 use crate::net::protocol::Response;
 
@@ -36,7 +36,7 @@ impl<'a> Balatro {
     pub async fn screen(&'a mut self) -> Result<CurrentScreen<'a>, Error> {
         let info = self.connection.request(protocol::GetScreen::<'a> { _r_marker: std::marker::PhantomData }).await??;
         let screen = match info {
-            protocol::ScreenInfo::Menu(info) => CurrentScreen::Menu(menu::Menu::new(&mut self.connection, info)),
+            protocol::ScreenInfo::Menu(info) => CurrentScreen::Menu(menu::Menu::new(info, &mut self.connection)),
             protocol::ScreenInfo::SelectBlind(blinds) => CurrentScreen::SelectBlind(blinds::SelectBlind::new(blinds, &mut self.connection)),
             protocol::ScreenInfo::Play(play) => CurrentScreen::Play(play::Play::new(play, &mut self.connection)),
             protocol::ScreenInfo::RoundOverview(overview) => CurrentScreen::RoundOverview(overview::RoundOverview::new(overview, &mut self.connection)),
@@ -58,11 +58,6 @@ impl<'a> Balatro {
             protocol::ScreenInfo::GameOver(overview) => CurrentScreen::GameOver(overview::GameOverview::new(overview, &mut self.connection)),
         };
         Ok(screen)
-    }
-
-    pub async fn collection(&'a mut self) -> Result<Collection, Error> {
-        let collection = self.connection.request(protocol::GetCollection).await??;
-        Ok(collection.collection)
     }
 }
 
@@ -91,6 +86,19 @@ impl<'a> CurrentScreen<'a> {
             play
         } else {
             panic!();
+        }
+    }
+
+    pub async fn collection(self) -> Result<Collection, crate::balatro::Error> {
+        match self {
+            CurrentScreen::Menu(menu) => menu.collection().await,
+            CurrentScreen::SelectBlind(select_blind) => select_blind.collection().await,
+            CurrentScreen::Play(play) => play.collection().await,
+            CurrentScreen::RoundOverview(overview) => overview.collection().await,
+            CurrentScreen::Shop(shop) => shop.collection().await,
+            CurrentScreen::ShopOpen(open_pack) => open_pack.collection().await,
+            CurrentScreen::SkipOpen(skip_pack) => skip_pack.collection().await,
+            CurrentScreen::GameOver(game_over) => game_over.collection().await,
         }
     }
 }
@@ -125,6 +133,7 @@ pub trait Screen<'a> {
     type Info: Response;
     fn name() -> String;
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self;
+    async fn collection(self) -> Result<Collection, crate::balatro::Error>;
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -142,6 +151,7 @@ pub struct Collection {
     pub card_editions: Vec<CardEdition>,
     pub joker_editions: Vec<JokerEdition>,
     pub seals: Vec<Seal>,
+    pub blind_scaling: Vec<u64>
 }
 
 pub(crate) mod protocol {
@@ -187,7 +197,7 @@ pub(crate) mod protocol {
         }
     }
 
-    #[derive(Serialize, Deserialize)]
+    #[derive(Serialize, Deserialize, Clone, Debug)]
     pub struct GetCollection;
 
     impl Request for GetCollection {

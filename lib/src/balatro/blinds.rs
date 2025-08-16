@@ -1,6 +1,6 @@
-use crate::{balatro::{boosters, translations::{Translatable, Translation, Translations}}, balatro_enum, net::Connection};
+use crate::{balatro::{boosters, translations::{Translatable, Translation, Translations}, Collection}, balatro_enum, net::Connection, render};
 use serde::{Deserialize, Serialize};
-use super::{play::Play, Screen};
+use super::{play::{Play, PokerHandKind}, Screen};
 
 pub struct SelectBlind<'a> {
     info: protocol::BlindInfo,
@@ -48,6 +48,10 @@ impl<'a> Screen<'a> for SelectBlind<'a> {
     fn name() -> String {
         "blind_select".to_string()
     }
+    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
+        let collection = self.connection.request(super::protocol::GetCollection).await??;
+        Ok(collection.collection)
+    }
 }
 
 crate::impl_hud!(SelectBlind);
@@ -87,22 +91,32 @@ balatro_enum!(Tag {
     Charm = "tag_charm",
     Meteor = "tag_meteor",
     Buffoon = "tag_buffoon",
-    Handy = "tag_handy",
+    Handy { earnings: u64 } = "tag_handy",
     Ethereal = "tag_ethereal",
     Coupon = "tag_coupon",
     Double = "tag_double",
     Juggle = "tag_juggle",
     D6 = "tag_d_six",
     TopUp = "tag_top_up",
-    Skip = "tag_skip",
-    Orbital = "tag_orbital",
+    Skip { earnings: u64 } = "tag_skip",
+    Orbital { hand: PokerHandKind } = "tag_orbital",
     Economy = "tag_economy",
-    Garbage = "tag_garbage",
+    Garbage { earnings: u64 } = "tag_garbage",
 });
 
 impl Translatable for Tag {
     fn translate(&self, translations: &Translations) -> Translation {
-        todo!()
+        let path = format!["descriptions.Tag.{}", self.id()];
+        match self {
+            Self::Investment => render!(translations, path, 25).unwrap(),
+            Self::Handy { earnings } => render!(translations, path, 1, *earnings).unwrap(),
+            Self::Orbital { hand } => render!(translations, path, hand.translate(translations).name, 3).unwrap(),
+            Self::Juggle => render!(translations, path, 3).unwrap(),
+            Self::TopUp => render!(translations, path, 2).unwrap(),
+            Self::Skip { earnings } => render!(translations, path, 5, *earnings).unwrap(),
+            Self::Garbage { earnings } => render!(translations, path, 1, *earnings).unwrap(),
+            _ => render!(translations, path).unwrap(),
+        }
     }
 }
 
@@ -113,7 +127,7 @@ pub struct BossBlindChoice {
     pub chips: f64,
 }
 balatro_enum!(Boss {
-    TheOx = "bl_ox",
+    TheOx { hand: PokerHandKind } = "bl_ox",
     TheHook = "bl_hook",
     TheMouth = "bl_mouth",
     TheFish = "bl_fish",
@@ -123,7 +137,7 @@ balatro_enum!(Boss {
     TheWall = "bl_wall",
     TheHouse = "bl_house",
     TheMark = "bl_mark",
-    TheWheel  = "bl_wheel",
+    TheWheel { probability: u64 }  = "bl_wheel",
     TheArm = "bl_arm",
     ThePsychic = "bl_psychic",
     TheGoad = "bl_goad",
@@ -151,7 +165,18 @@ impl Boss {
 
 impl Translatable for Boss {
     fn translate(&self, translations: &Translations) -> Translation {
-        todo!()
+        let path = format!["descriptions.Blind.{}", self.id()];
+        match self {
+            Self::TheOx { hand } => render!(translations, path, hand.translate(translations).name).unwrap(),
+            Self::TheWheel { probability } => {
+                let translation = render!(translations, path).unwrap();
+                Translation {
+                    name: translation.name,
+                    text: Some(probability.to_string() + &translation.text.unwrap())
+                }
+            }
+            _ => render!(translations, path).unwrap()
+        }
     }
 }
 

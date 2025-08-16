@@ -4,6 +4,7 @@ use crate::balatro::play::Play;
 use crate::balatro::shop;
 use crate::balatro::shop::Shop;
 use crate::balatro::blinds;
+use crate::balatro::Collection;
 use crate::balatro::{blinds::SelectBlind, CurrentScreen, Screen};
 use crate::net::Connection;
 use serde::{Deserialize, Serialize};
@@ -16,10 +17,6 @@ pub struct Menu<'a> {
 }
 
 impl<'a> Menu<'a> {
-    pub(crate) fn new(connection: &'a mut Connection, info: protocol::MenuInfo) -> Self {
-        Self { connection, info }
-    }
-
     pub fn saved_run(&self) -> Option<&SavedRun> {
         self.info.saved_run.as_ref()
     }
@@ -51,7 +48,7 @@ impl<'a> Menu<'a> {
             crate::balatro::protocol::ScreenInfo::Play(play) => Ok(CurrentScreen::Play(Play::new(play, self.connection))),
             crate::balatro::protocol::ScreenInfo::RoundOverview(overview) => Ok(CurrentScreen::RoundOverview(overview::RoundOverview::new(overview, self.connection))),
             crate::balatro::protocol::ScreenInfo::Shop(shop) => Ok(CurrentScreen::Shop(Shop::new(shop, self.connection))),
-            crate::balatro::protocol::ScreenInfo::Menu(info) => Ok(CurrentScreen::Menu(Menu::new(self.connection, info))),
+            crate::balatro::protocol::ScreenInfo::Menu(info) => Ok(CurrentScreen::Menu(Menu::new(info, self.connection))),
             crate::balatro::protocol::ScreenInfo::ShopOpen(pack) => match pack {
                 shop::protocol::BoughtBooster::Arcana(info) => Ok(CurrentScreen::ShopOpen(boosters::OpenBoosterPack::Arcana(boosters::OpenArcanaPack::new(info, self.connection)))),
                 shop::protocol::BoughtBooster::Buffoon(info) => Ok(CurrentScreen::ShopOpen(boosters::OpenBoosterPack::Buffoon(boosters::OpenBuffoonPack::new(info, self.connection)))),
@@ -68,6 +65,20 @@ impl<'a> Menu<'a> {
             },
             crate::balatro::protocol::ScreenInfo::GameOver(overview) => Ok(CurrentScreen::GameOver(overview::GameOverview::new(overview, self.connection))),
         }
+    }
+}
+
+impl<'a> Screen<'a> for Menu<'a> {
+    type Info = protocol::MenuInfo;
+    fn name() -> String {
+        "menu".to_string()
+    }
+    fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
+        Self { info, connection }
+    }
+    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
+        let collection = self.connection.request(super::protocol::GetCollection).await??;
+        Ok(collection.collection)
     }
 }
 
@@ -193,7 +204,7 @@ pub(crate) mod protocol {
     use super::{Deck, Seed, Stake, SavedRun};
     use crate::{
         balatro::blinds::protocol::BlindInfo,
-        net::protocol::{Packet, Request},
+        net::protocol::{Packet, Request, Response},
     };
     use serde::{Deserialize, Serialize};
 
@@ -201,6 +212,14 @@ pub(crate) mod protocol {
     pub struct MenuInfo {
         pub saved_run: Option<SavedRun>,
     }
+
+    impl Packet for MenuInfo {
+        fn kind() -> String {
+            "menu/info".to_string()
+        }
+    }
+
+    impl Response for MenuInfo {}
 
     // Hide serialization impls here since they're specific to Balatro's
     // internals.

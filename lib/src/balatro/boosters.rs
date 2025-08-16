@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use crate::{balatro::{translations::{Translatable, Translation, Translations}, Error}, balatro_enum, net::{protocol::Response, Connection}};
+use crate::{balatro::{translations::{Translatable, Translation, Translations}, Collection, Error}, balatro_enum, net::{protocol::Response, Connection}, render};
 use super::{consumables::{PlanetKind, SpectralKind, TarotKind}, deck::PlayingCard, jokers::Joker, Screen};
 
 macro_rules! impl_hud_generic {
@@ -82,6 +82,11 @@ macro_rules! impl_hud_generic {
                         .await??;
                     Ok(Self::new(new_info, self.connection))
                 }
+
+                async fn collection(self) -> Result<$crate::balatro::Collection, $crate::balatro::Error> {
+                    let collection = self.connection.request($crate::balatro::hud::protocol::GetCollection).await??;
+                    Ok(collection.collection)
+                }
             }
         )*
     };
@@ -107,7 +112,24 @@ balatro_enum!(BoosterPackKind {
 
 impl Translatable for BoosterPackKind {
     fn translate(&self, translations: &Translations) -> Translation {
-        todo!();
+        let path = format!["descriptions.Other.{}", self.id()];
+        match self {
+            BoosterPackKind::ArcanaNormal => render!(translations, path, 1, 3).unwrap(),
+            BoosterPackKind::ArcanaMega => render!(translations, path, 2, 5).unwrap(),
+            BoosterPackKind::ArcanaJumbo => render!(translations, path, 1, 5).unwrap(),
+            BoosterPackKind::BuffoonNormal => render!(translations, path, 1, 3).unwrap(),
+            BoosterPackKind::BuffoonMega =>  render!(translations, path, 1, 5).unwrap(),
+            BoosterPackKind::BuffoonJumbo =>  render!(translations, path, 2, 5).unwrap(),
+            BoosterPackKind::CelestialNormal => render!(translations, path, 1, 3).unwrap(),
+            BoosterPackKind::CelestialMega =>  render!(translations, path, 1, 5).unwrap(),
+            BoosterPackKind::CelestialJumbo =>  render!(translations, path, 2, 5).unwrap(),
+            BoosterPackKind::SpectralNormal =>  render!(translations, path, 1, 2).unwrap(),
+            BoosterPackKind::SpectralMega => render!(translations, path, 2, 4).unwrap(),
+            BoosterPackKind::SpectralJumbo => render!(translations, path, 1, 4).unwrap(),
+            BoosterPackKind::StandardNormal => render!(translations, path, 1, 3).unwrap(),
+            BoosterPackKind::StandardMega => render!(translations, path, 1, 5).unwrap(),
+            BoosterPackKind::StandardJumbo => render!(translations, path, 2, 5).unwrap()
+        }
     }
 }
 
@@ -201,6 +223,18 @@ pub enum OpenBoosterPack<'a, R : Response + 'a> {
     Standard(OpenStandardPack<'a, R>),
 }
 
+impl <'a, R : Response + 'a> OpenBoosterPack<'a, R> {
+    pub async fn collection(self) -> Result<Collection, crate::balatro::Error> {
+        match self {
+            OpenBoosterPack::Arcana(pack) => pack.collection().await,
+            OpenBoosterPack::Buffoon(pack) => pack.collection().await,
+            OpenBoosterPack::Celestial(pack) => pack.collection().await,
+            OpenBoosterPack::Spectral(pack) => pack.collection().await,
+            OpenBoosterPack::Standard(pack) => pack.collection().await
+        }
+    }
+}
+
 pub struct OpenArcanaPack<'a, R : Response + 'a> {
     info: protocol::OpenWithHandInfo<'a, Self>,
     connection: &'a mut Connection,
@@ -215,6 +249,10 @@ impl <'a, R : Response + 'a> Screen<'a> for OpenArcanaPack<'a, R> {
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
+    }
+    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
+        let collection = self.connection.request(super::protocol::GetCollection).await??;
+        Ok(collection.collection)
     }
 }
 
@@ -234,6 +272,10 @@ impl <'a, R : Response + 'a> Screen<'a> for OpenBuffoonPack<'a, R> {
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
+    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
+        let collection = self.connection.request(super::protocol::GetCollection).await??;
+        Ok(collection.collection)
+    }
 }
 
 
@@ -251,6 +293,10 @@ impl <'a, R : Response + 'a> Screen<'a> for OpenCelestialPack<'a, R> {
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
+    }
+    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
+        let collection = self.connection.request(super::protocol::GetCollection).await??;
+        Ok(collection.collection)
     }
 }
 
@@ -270,6 +316,10 @@ impl <'a, R : Response + 'a> Screen<'a> for OpenSpectralPack<'a, R> {
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
+    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
+        let collection = self.connection.request(super::protocol::GetCollection).await??;
+        Ok(collection.collection)
+    }
 }
 
 
@@ -287,6 +337,10 @@ impl <'a, R : Response + 'a> Screen<'a> for OpenStandardPack<'a, R> {
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
+    }
+    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
+        let collection = self.connection.request(super::protocol::GetCollection).await??;
+        Ok(collection.collection)
     }
 }
 

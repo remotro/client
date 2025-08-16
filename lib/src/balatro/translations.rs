@@ -7,15 +7,14 @@ pub struct Translations {
 }
 
 impl Translations {
-    pub fn from<R: Read>(mut input: R) -> Self {
-        let mut contents = String::new();
-        input.read_to_string(&mut contents).expect("Failed to read file");
-        
+    pub fn from_string(contents: String) -> Self {
+        println!("method called");
         let data = Self::parse_lua_table(&contents);
         Self { data }
     }
 
     fn parse_lua_table(input: &str) -> LuaTable {
+        println!("parse");
         let mut chars = input.trim().chars().peekable();
         
         // Skip "return " if present
@@ -25,67 +24,181 @@ impl Translations {
             }
         }
         
+        println!("parse2");
         Self::parse_table_value(&mut chars)
     }
 
     fn parse_table_value(chars: &mut std::iter::Peekable<std::str::Chars>) -> LuaTable {
         Self::skip_whitespace(chars);
         
+        println!("parse3");
+        // EOF protection
+        if chars.peek().is_none() {
+            return LuaTable::Item(String::new());
+        }
+        
         if chars.peek() == Some(&'{') {
             chars.next(); // consume '{'
-            let mut map = HashMap::new();
+            Self::skip_whitespace(chars);
             
-            loop {
-                Self::skip_whitespace(chars);
+            // Check if this is a list (starts with a value without a key)
+            let is_list = chars.peek() == Some(&'"') || 
+                         chars.peek() == Some(&'{') || 
+                         (chars.peek().map_or(false, |c| c.is_alphanumeric()) && 
+                          !Self::has_equals_ahead(chars));
+            
+            if is_list {
+                let mut list = Vec::new();
                 
-                if chars.peek() == Some(&'}') {
-                    chars.next(); // consume '}'
-                    break;
-                }
-                
-                // Parse key
-                let key = if chars.peek() == Some(&'"') {
-                    Self::parse_string(chars)
-                } else if chars.peek() == Some(&'[') {
-                    chars.next(); // consume '['
+                loop {
                     Self::skip_whitespace(chars);
-                    let key = Self::parse_string(chars);
-                    Self::skip_whitespace(chars);
-                    if chars.peek() == Some(&']') {
-                        chars.next(); // consume ']'
+                    
+                    if chars.peek() == Some(&'}') {
+                        chars.next(); // consume '}'
+                        break;
                     }
-                    key
-                } else {
-                    Self::parse_identifier(chars)
-                };
-                
-                Self::skip_whitespace(chars);
-                
-                // Skip '='
-                if chars.peek() == Some(&'=') {
-                    chars.next();
+                    
+                    // EOF protection
+                    if chars.peek().is_none() {
+                        break;
+                    }
+                    
+                    // Check if we're at a comma (empty list element)
+                    if chars.peek() == Some(&',') {
+                        chars.next();
+                        continue;
+                    }
+                    
+                    // Parse value
+                    let value = Self::parse_table_value(chars);
+                    list.push(value);
+                    
+                    Self::skip_whitespace(chars);
+                    
+                    // Skip comma if present
+                    if chars.peek() == Some(&',') {
+                        chars.next();
+                    }
                 }
                 
-                Self::skip_whitespace(chars);
+                LuaTable::List(list)
+            } else {
+                let mut map = HashMap::new();
                 
-                // Parse value
-                let value = Self::parse_table_value(chars);
-                map.insert(key, value);
-                
-                Self::skip_whitespace(chars);
-                
-                // Skip comma if present
-                if chars.peek() == Some(&',') {
-                    chars.next();
+                loop {
+                    Self::skip_whitespace(chars);
+                    
+                    if chars.peek() == Some(&'}') {
+                        chars.next(); // consume '}'
+                        break;
+                    }
+                    
+                    // EOF protection
+                    if chars.peek().is_none() {
+                        break;
+                    }
+                    
+                    // Check if we're at a comma (skip it)
+                    if chars.peek() == Some(&',') {
+                        chars.next();
+                        continue;
+                    }
+                    
+                    // Parse key
+                    let key = if chars.peek() == Some(&'"') {
+                        Self::parse_string(chars)
+                    } else if chars.peek() == Some(&'[') {
+                        chars.next(); // consume '['
+                        Self::skip_whitespace(chars);
+                        let key = Self::parse_string(chars);
+                        Self::skip_whitespace(chars);
+                        if chars.peek() == Some(&']') {
+                            chars.next(); // consume ']'
+                        }
+                        key
+                    } else {
+                        let id = Self::parse_identifier(chars);
+                        // If we couldn't parse an identifier, skip this character to avoid infinite loop
+                        if id.is_empty() && chars.peek().is_some() {
+                            chars.next(); // consume the problematic character
+                            continue;
+                        }
+                        id
+                    };
+                    
+                    Self::skip_whitespace(chars);
+                    
+                    // Skip '='
+                    if chars.peek() == Some(&'=') {
+                        chars.next();
+                    } else if !key.is_empty() {
+                        // No '=' found but we have a key - this might be a parsing error
+                        // Skip to avoid infinite loop
+                        continue;
+                    }
+                    
+                    Self::skip_whitespace(chars);
+                    
+                    // Parse value
+                    let value = Self::parse_table_value(chars);
+                    if !key.is_empty() {
+                        map.insert(key, value);
+                    }
+                    
+                    Self::skip_whitespace(chars);
+                    
+                    // Skip comma if present
+                    if chars.peek() == Some(&',') {
+                        chars.next();
+                    }
                 }
+                
+                LuaTable::Map(map)
             }
-            
-            LuaTable::Map(map)
         } else if chars.peek() == Some(&'"') {
             LuaTable::Item(Self::parse_string(chars))
         } else {
-            LuaTable::Item(Self::parse_identifier(chars))
+            let id = Self::parse_identifier(chars);
+            // If we couldn't parse anything and we're not at EOF, consume the character to avoid infinite loop
+            if id.is_empty() && chars.peek().is_some() {
+                // Try to parse as a literal value (like numbers, booleans, etc.)
+                let mut literal = String::new();
+                while let Some(&ch) = chars.peek() {
+                    if ch == ',' || ch == '}' || ch == ']' || ch.is_whitespace() {
+                        break;
+                    }
+                    literal.push(ch);
+                    chars.next();
+                }
+                LuaTable::Item(literal)
+            } else {
+                LuaTable::Item(id)
+            }
         }
+    }
+    
+    fn has_equals_ahead(chars: &mut std::iter::Peekable<std::str::Chars>) -> bool {
+        let mut temp_chars = chars.clone();
+        
+        // Skip identifier
+        while let Some(&ch) = temp_chars.peek() {
+            if ch.is_alphanumeric() || ch == '_' {
+                temp_chars.next();
+            } else {
+                break;
+            }
+        }
+        
+        // Skip whitespace
+        while let Some(&ch) = temp_chars.peek() {
+            if ch.is_whitespace() {
+                temp_chars.next();
+            } else {
+                break;
+            }
+        }
+        
+        temp_chars.peek() == Some(&'=')
     }
 
     fn parse_string(chars: &mut std::iter::Peekable<std::str::Chars>) -> String {
@@ -113,6 +226,10 @@ impl Translations {
                             result.push(escaped);
                         }
                     }
+                } else {
+                    // EOF after backslash
+                    result.push('\\');
+                    break;
                 }
             } else {
                 result.push(ch);
@@ -153,15 +270,57 @@ impl Translations {
             current = current.get(component)?;
         }
         let name = current.get("name")?.as_item()?;
-        let text = current.get("text")?.as_item()?;
+        let text_table = current.get("text");
+        
+        let text = if let Some(text_table) = text_table {
+            if let Some(text_item) = text_table.as_item() {
+                Some(text_item.clone())
+            } else if let Some(text_list) = text_table.as_list() {
+                if text_list.is_empty() {
+                    None
+                } else {
+                    Some(text_list.iter()
+                        .filter_map(|item| item.as_item())
+                        .cloned()
+                        .collect::<Vec<String>>()
+                        .join(" "))
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
         let parsed_name = Self::parse_text(&name, &args);
-        let parsed_text = Self::parse_text(&text, &args);
+        let parsed_text = text.as_ref().map(|t| Self::parse_text(t, &args));
 
         Some(Translation {
             name: parsed_name,
             text: parsed_text,
         })
+    }
+
+    pub fn render_single(&self, path: String) -> Option<String> {
+        let components = path.split('.').collect::<Vec<&str>>();
+        let mut current = &self.data;
+        for component in components {
+            current = current.get(component)?;
+        }
+        
+        if let Some(list) = current.as_list() {
+            if list.is_empty() {
+                None
+            } else {
+                Some(list.iter()
+                    .filter_map(|item| item.as_item())
+                    .cloned()
+                    .collect::<Vec<String>>()
+                    .join(" "))
+            }
+        } else {
+            None
+        }
     }
 
     fn parse_text(text: &str, args: &[Box<dyn ToString>]) -> String {
@@ -208,7 +367,7 @@ impl Translations {
 
 pub struct Translation {
     pub name: String,
-    pub text: String
+    pub text: Option<String>
 }
 
 pub trait Translatable {
@@ -217,7 +376,8 @@ pub trait Translatable {
 
 enum LuaTable {
     Item(String),
-    Map(HashMap<String, LuaTable>)
+    Map(HashMap<String, LuaTable>),
+    List(Vec<LuaTable>)
 }
 
 impl LuaTable {
@@ -225,6 +385,7 @@ impl LuaTable {
         match self {
             LuaTable::Item(_) => None,
             LuaTable::Map(map) => map.get(key),
+            LuaTable::List(_) => None,
         }
     }
 
@@ -232,6 +393,30 @@ impl LuaTable {
         match self {
             LuaTable::Item(item) => Some(item),
             LuaTable::Map(_) => None,
+            LuaTable::List(_) => None,
         }
     }
+    
+    pub fn as_list(&self) -> Option<&Vec<LuaTable>> {
+        match self {
+            LuaTable::List(list) => Some(list),
+            _ => None,
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! render {
+    ($translations:expr, $path:expr) => {
+        {
+            let args: Vec<Box<dyn ToString>> = vec![];
+            $translations.render($path.to_string(), args)
+        }
+    };
+    ($translations:expr, $path:expr, $($arg:expr),+) => {
+        {
+            let args: Vec<Box<dyn ToString>> = vec![$(Box::new($arg)),+];
+            $translations.render($path.to_string(), args)
+        }
+    };
 }

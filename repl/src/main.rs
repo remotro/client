@@ -207,21 +207,27 @@ fn print_run_info(run_info: &RunInfo) {
     println!("\nBlinds Progress:");
     println!("  Small: {} ({} chips)", 
              match run_info.blinds.small.state {
-                 remotro::balatro::blinds::BlindState::Available => "Available",
+                 remotro::balatro::blinds::BlindState::Current => "Current",
                  remotro::balatro::blinds::BlindState::Skipped => "Skipped",
                  remotro::balatro::blinds::BlindState::Defeated => "Defeated",
+                 remotro::balatro::blinds::BlindState::Upcoming => "Upcoming",
+                 remotro::balatro::blinds::BlindState::Select => "Select",
              }, run_info.blinds.small.chips);
     println!("  Big: {} ({} chips)", 
              match run_info.blinds.big.state {
-                 remotro::balatro::blinds::BlindState::Available => "Available",
+                 remotro::balatro::blinds::BlindState::Current => "Current",
                  remotro::balatro::blinds::BlindState::Skipped => "Skipped",
                  remotro::balatro::blinds::BlindState::Defeated => "Defeated",
+                 remotro::balatro::blinds::BlindState::Upcoming => "Upcoming",
+                 remotro::balatro::blinds::BlindState::Select => "Select",
              }, run_info.blinds.big.chips);
     println!("  Boss: {} ({} chips)", 
              match run_info.blinds.boss.state {
-                 remotro::balatro::blinds::BlindState::Available => "Available",
+                 remotro::balatro::blinds::BlindState::Current => "Current",
                  remotro::balatro::blinds::BlindState::Skipped => "Skipped",
                  remotro::balatro::blinds::BlindState::Defeated => "Defeated",
+                 remotro::balatro::blinds::BlindState::Upcoming => "Upcoming",
+                 remotro::balatro::blinds::BlindState::Select => "Select",
              }, run_info.blinds.boss.chips);
 }
 

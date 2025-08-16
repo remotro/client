@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::net::Connection;
+use crate::{balatro::{translations::{Translatable, Translation, Translations}, Collection}, balatro_enum, net::Connection};
 use super::{
     blinds::CurrentBlind, deck::PlayingCard, overview::{GameOverview, RoundOverview}, Screen, Error
 };
@@ -60,6 +60,10 @@ impl<'a> Screen<'a> for Play<'a> {
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
+    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
+        let collection = self.connection.request(super::protocol::GetCollection).await??;
+        Ok(collection.collection)
+    }
 }
 
 crate::impl_hud!(Play);
@@ -107,32 +111,30 @@ pub struct PokerHand {
     pub mult: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
-pub enum PokerHandKind {
-    #[serde(rename = "High Card")]
-    HighCard,
-    #[serde(rename = "Pair")]
-    Pair,
-    #[serde(rename = "Two Pair")]
-    TwoPair,
-    #[serde(rename = "Three of a Kind")]
-    ThreeOfAKind,
-    #[serde(rename = "Straight")]
-    Straight,
-    #[serde(rename = "Flush")]
-    Flush,
-    #[serde(rename = "Full House")]
-    FullHouse,
-    #[serde(rename = "Four of a Kind")]
-    FourOfAKind,
-    #[serde(rename = "Straight Flush")]
-    StraightFlush,
-    #[serde(rename = "Five of a Kind")]
-    FiveOfAKind,
-    #[serde(rename = "Flush House")]
-    FlushHouse,
-    #[serde(rename = "Flush Five")]
-    FlushFive,
+balatro_enum!(PokerHandKind {
+    HighCard = "High Card",
+    Pair = "Pair",
+    TwoPair = "Two Pair",
+    ThreeOfAKind = "Three of a Kind",
+    Straight = "Straight",
+    Flush = "Flush",
+    FullHouse = "Full House",
+    FourOfAKind = "Four of a Kind",
+    StraightFlush = "Straight Flush",
+    FiveOfAKind = "Five of a Kind",
+    FlushHouse = "Flush House",
+    FlushFive = "Flush Five",
+});
+
+impl Translatable for PokerHandKind {
+    fn translate(&self, translations: &Translations) -> Translation {
+        let name = translations.render_single(format!["misc.poker_hands.{}", self.id()]).unwrap();
+        let desc = translations.render_single(format!["misc.poker_hand_descriptions.{}", self.id()]).unwrap();
+        return Translation {
+            name: name,
+            text: Some(desc),
+        }
+    }
 }
 
 pub(crate) mod protocol {
