@@ -1,4 +1,4 @@
-use crate::{balatro::{boosters, translations::{Translatable, Translation, Translations}, Collection}, balatro_enum, net::Connection, render};
+use crate::{balatro::{boosters, translations::{Translatable, Translation, Translations}}, balatro_enum, net::Connection, render};
 use serde::{Deserialize, Serialize};
 use super::{play::{Play, PokerHandKind}, Screen};
 
@@ -47,10 +47,6 @@ impl<'a> Screen<'a> for SelectBlind<'a> {
     }
     fn name() -> String {
         "blind_select".to_string()
-    }
-    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
-        let collection = self.connection.request(super::protocol::GetCollection).await??;
-        Ok(collection.collection)
     }
 }
 

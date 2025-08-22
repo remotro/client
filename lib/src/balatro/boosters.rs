@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use crate::{balatro::{translations::{Translatable, Translation, Translations}, Collection, Error}, balatro_enum, net::{protocol::Response, Connection}, render};
+use crate::{balatro::{translations::{Translatable, Translation, Translations}, Error}, balatro_enum, net::{protocol::Response, Connection}, render};
 use super::{consumables::{PlanetKind, SpectralKind, TarotKind}, deck::PlayingCard, jokers::Joker, Screen};
 
 macro_rules! impl_hud_generic {
@@ -81,11 +81,6 @@ macro_rules! impl_hud_generic {
                         .request(crate::balatro::hud::protocol::SellConsumable { index, _marker: std::marker::PhantomData::<&$t<'a, R>> })
                         .await??;
                     Ok(Self::new(new_info, self.connection))
-                }
-
-                async fn collection(self) -> Result<$crate::balatro::Collection, $crate::balatro::Error> {
-                    let collection = self.connection.request($crate::balatro::hud::protocol::GetCollection).await??;
-                    Ok(collection.collection)
                 }
             }
         )*
@@ -223,18 +218,6 @@ pub enum OpenBoosterPack<'a, R : Response + 'a> {
     Standard(OpenStandardPack<'a, R>),
 }
 
-impl <'a, R : Response + 'a> OpenBoosterPack<'a, R> {
-    pub async fn collection(self) -> Result<Collection, crate::balatro::Error> {
-        match self {
-            OpenBoosterPack::Arcana(pack) => pack.collection().await,
-            OpenBoosterPack::Buffoon(pack) => pack.collection().await,
-            OpenBoosterPack::Celestial(pack) => pack.collection().await,
-            OpenBoosterPack::Spectral(pack) => pack.collection().await,
-            OpenBoosterPack::Standard(pack) => pack.collection().await
-        }
-    }
-}
-
 pub struct OpenArcanaPack<'a, R : Response + 'a> {
     info: protocol::OpenWithHandInfo<'a, Self>,
     connection: &'a mut Connection,
@@ -249,10 +232,6 @@ impl <'a, R : Response + 'a> Screen<'a> for OpenArcanaPack<'a, R> {
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
-    }
-    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
-        let collection = self.connection.request(super::protocol::GetCollection).await??;
-        Ok(collection.collection)
     }
 }
 
@@ -272,10 +251,6 @@ impl <'a, R : Response + 'a> Screen<'a> for OpenBuffoonPack<'a, R> {
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
-    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
-        let collection = self.connection.request(super::protocol::GetCollection).await??;
-        Ok(collection.collection)
-    }
 }
 
 
@@ -293,10 +268,6 @@ impl <'a, R : Response + 'a> Screen<'a> for OpenCelestialPack<'a, R> {
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
-    }
-    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
-        let collection = self.connection.request(super::protocol::GetCollection).await??;
-        Ok(collection.collection)
     }
 }
 
@@ -316,10 +287,6 @@ impl <'a, R : Response + 'a> Screen<'a> for OpenSpectralPack<'a, R> {
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
     }
-    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
-        let collection = self.connection.request(super::protocol::GetCollection).await??;
-        Ok(collection.collection)
-    }
 }
 
 
@@ -337,10 +304,6 @@ impl <'a, R : Response + 'a> Screen<'a> for OpenStandardPack<'a, R> {
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
-    }
-    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
-        let collection = self.connection.request(super::protocol::GetCollection).await??;
-        Ok(collection.collection)
     }
 }
 

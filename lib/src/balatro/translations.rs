@@ -8,13 +8,11 @@ pub struct Translations {
 
 impl Translations {
     pub fn from_string(contents: String) -> Self {
-        println!("method called");
         let data = Self::parse_lua_table(&contents);
         Self { data }
     }
 
     fn parse_lua_table(input: &str) -> LuaTable {
-        println!("parse");
         let mut chars = input.trim().chars().peekable();
         
         // Skip "return " if present
@@ -24,14 +22,12 @@ impl Translations {
             }
         }
         
-        println!("parse2");
         Self::parse_table_value(&mut chars)
     }
 
     fn parse_table_value(chars: &mut std::iter::Peekable<std::str::Chars>) -> LuaTable {
         Self::skip_whitespace(chars);
         
-        println!("parse3");
         // EOF protection
         if chars.peek().is_none() {
             return LuaTable::Item(String::new());
@@ -318,6 +314,8 @@ impl Translations {
                     .collect::<Vec<String>>()
                     .join(" "))
             }
+        } else if let Some(item) = current.as_item() {
+            Some(item.clone())
         } else {
             None
         }
@@ -330,10 +328,37 @@ impl Translations {
         while let Some(ch) = chars.next() {
             match ch {
                 '{' => {
+                    // Collect the content inside braces
+                    let mut brace_content = String::new();
+                    let mut depth = 1;
+                    
                     while let Some(ch) = chars.next() {
-                        if ch == '}' {
-                            break;
+                        if ch == '{' {
+                            depth += 1;
+                            brace_content.push(ch);
+                        } else if ch == '}' {
+                            depth -= 1;
+                            if depth == 0 {
+                                break;
+                            }
+                            brace_content.push(ch);
+                        } else {
+                            brace_content.push(ch);
                         }
+                    }
+                    
+                    // Keep the content if it doesn't start with a formatting directive
+                    // (C:, X:, V:, etc.) otherwise skip it
+                    if !brace_content.starts_with("C:") && 
+                       !brace_content.starts_with("X:") && 
+                       !brace_content.starts_with("V:") &&
+                       !brace_content.starts_with("s:") &&
+                       !brace_content.starts_with("S:") &&
+                       !brace_content.starts_with("E:") &&
+                       !brace_content.starts_with("T:") &&
+                       !brace_content.starts_with("attention") {
+                        // Keep content that isn't a formatting directive
+                        result.push_str(&brace_content);
                     }
                 }
                 '#' => {

@@ -4,7 +4,6 @@ use crate::balatro::play::Play;
 use crate::balatro::shop;
 use crate::balatro::shop::Shop;
 use crate::balatro::blinds;
-use crate::balatro::Collection;
 use crate::balatro::{blinds::SelectBlind, CurrentScreen, Screen};
 use crate::net::Connection;
 use serde::{Deserialize, Serialize};
@@ -75,10 +74,6 @@ impl<'a> Screen<'a> for Menu<'a> {
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
-    }
-    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
-        let collection = self.connection.request(super::protocol::GetCollection).await??;
-        Ok(collection.collection)
     }
 }
 

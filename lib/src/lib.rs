@@ -1,5 +1,5 @@
 pub mod balatro;
-mod net;
+pub mod net;
 
 use balatro::Balatro;
 use net::Socket;

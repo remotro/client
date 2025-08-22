@@ -25,6 +25,14 @@ macro_rules! balatro_enum {
                     )*
                 }
             }
+            
+            pub fn entries() -> Vec<Self> {
+                vec![
+                    $(
+                        Self::$variant $({ $($field: Default::default()),* })?,
+                    )*
+                ]
+            }
         }
     };
 }

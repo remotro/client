@@ -88,19 +88,6 @@ impl<'a> CurrentScreen<'a> {
             panic!();
         }
     }
-
-    pub async fn collection(self) -> Result<Collection, crate::balatro::Error> {
-        match self {
-            CurrentScreen::Menu(menu) => menu.collection().await,
-            CurrentScreen::SelectBlind(select_blind) => select_blind.collection().await,
-            CurrentScreen::Play(play) => play.collection().await,
-            CurrentScreen::RoundOverview(overview) => overview.collection().await,
-            CurrentScreen::Shop(shop) => shop.collection().await,
-            CurrentScreen::ShopOpen(open_pack) => open_pack.collection().await,
-            CurrentScreen::SkipOpen(skip_pack) => skip_pack.collection().await,
-            CurrentScreen::GameOver(game_over) => game_over.collection().await,
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -133,31 +120,12 @@ pub trait Screen<'a> {
     type Info: Response;
     fn name() -> String;
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self;
-    async fn collection(self) -> Result<Collection, crate::balatro::Error>;
-}
-
-#[derive(Deserialize, Clone, Debug)]
-pub struct Collection {
-    pub jokers: Vec<JokerKind>,
-    pub tarots: Vec<TarotKind>,
-    pub spectrals: Vec<SpectralKind>,
-    pub planets: Vec<PlanetKind>,
-    pub vouchers: Vec<VoucherKind>,
-    pub tags: Vec<Tag>,
-    pub boss_blinds: Vec<Boss>,
-    pub finisher_blinds: Vec<Boss>,
-    pub booster_packs: Vec<BoosterPackKind>,
-    pub enhancements: Vec<Enhancement>,
-    pub card_editions: Vec<CardEdition>,
-    pub joker_editions: Vec<JokerEdition>,
-    pub seals: Vec<Seal>,
-    pub blind_scaling: Vec<u64>
 }
 
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
 
-    use crate::{balatro::{menu, overview, Collection}, net::protocol::{Packet, Request, Response}};
+    use crate::{balatro::{menu, overview}, net::protocol::{Packet, Request, Response}};
 
     use super::{blinds, play, shop};
 
@@ -196,30 +164,4 @@ pub(crate) mod protocol {
             "screen/current".to_string()
         }
     }
-
-    #[derive(Serialize, Deserialize, Clone, Debug)]
-    pub struct GetCollection;
-
-    impl Request for GetCollection {
-        type Expect = Result<CollectionInfo, String>;
-    }
-
-    impl Packet for GetCollection {
-        fn kind() -> String {
-            "collection/get".to_string()
-        }
-    }
-
-    #[derive(Deserialize, Clone, Debug)]
-    pub struct CollectionInfo {
-        pub collection: Collection,
-    }
-
-    impl Packet for CollectionInfo {
-        fn kind() -> String {
-            "collection/info".to_string()
-        }
-    }
-
-    impl Response for CollectionInfo {}
 }

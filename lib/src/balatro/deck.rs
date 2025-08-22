@@ -21,10 +21,17 @@ balatro_enum!(Suit {
 
 impl Translatable for Suit {
     fn translate(&self, translations: &Translations) -> Translation {
-        let path = format!["misc.suits_plural.{}", self.id()];
-        return render!(translations, path).unwrap();
+        let path = format!["misc.suits_singular.{}", self.id()];
+        return Translation { name: translations.render_single(path).unwrap(), text: None };
     }
 }
+
+impl Default for Suit {
+    fn default() -> Self {
+        Self::Spades
+    }
+}
+
 balatro_enum!(Rank {
     Ace = "Ace",
     Two = "2",
@@ -44,7 +51,13 @@ balatro_enum!(Rank {
 impl Translatable for Rank {
     fn translate(&self, translations: &Translations) -> Translation {
         let path = format!["misc.ranks.{}", self.id()];
-        return render!(translations, path).unwrap();
+        return Translation { name: translations.render_single(path).unwrap(), text: None };
+    }
+}
+
+impl Default for Rank{
+    fn default() -> Self {
+        Self::Ace
     }
 }
 

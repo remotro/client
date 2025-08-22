@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use crate::{balatro::{
-        blinds::SelectBlind, deck::PlayingCard, shop::protocol::ShopInfo, translations::{Translatable, Translation, Translations}, Collection, Error
+        blinds::SelectBlind, deck::PlayingCard, shop::protocol::ShopInfo, translations::{Translatable, Translation, Translations}, Error
     }, balatro_enum, net::Connection, render
 };
 use super::{boosters::{BoosterPackKind, OpenBuffoonPack, OpenCelestialPack, OpenSpectralPack, OpenStandardPack, OpenArcanaPack}, consumables::{PlanetCard, SpectralCard, TarotCard}, jokers::Joker, Screen};
@@ -67,10 +67,6 @@ impl<'a> Screen<'a> for Shop<'a> {
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
-    }
-    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
-        let collection = self.connection.request(super::protocol::GetCollection).await??;
-        Ok(collection.collection)
     }
 }
 

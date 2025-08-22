@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use crate::balatro::blinds::CurrentBlind;
 use crate::balatro::menu::{self, Menu, Seed};
 use crate::balatro::play::PokerHandKind;
-use crate::balatro::Collection;
 use crate::net::Connection;
 use crate::balatro::{
     Error,
@@ -50,10 +49,6 @@ impl<'a> Screen<'a> for RoundOverview<'a> {
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
-    }
-    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
-        let collection = self.connection.request(super::protocol::GetCollection).await??;
-        Ok(collection.collection)
     }
 }
 
@@ -133,10 +128,6 @@ impl <'a> Screen<'a> for GameOverview<'a> {
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { connection, info }
-    }
-    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
-        let collection = self.connection.request(super::protocol::GetCollection).await??;
-        Ok(collection.collection)
     }
 }
 

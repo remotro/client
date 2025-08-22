@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{balatro::{translations::{Translatable, Translation, Translations}, Collection}, balatro_enum, net::Connection};
+use crate::{balatro::{translations::{Translatable, Translation, Translations}}, balatro_enum, net::Connection};
 use super::{
     blinds::CurrentBlind, deck::PlayingCard, overview::{GameOverview, RoundOverview}, Screen, Error
 };
@@ -59,10 +59,6 @@ impl<'a> Screen<'a> for Play<'a> {
     }
     fn new(info: Self::Info, connection: &'a mut Connection) -> Self {
         Self { info, connection }
-    }
-    async fn collection(self) -> Result<Collection, crate::balatro::Error> {
-        let collection = self.connection.request(super::protocol::GetCollection).await??;
-        Ok(collection.collection)
     }
 }
 
@@ -134,6 +130,12 @@ impl Translatable for PokerHandKind {
             name: name,
             text: Some(desc),
         }
+    }
+}
+
+impl Default for PokerHandKind {
+    fn default() -> Self {
+        Self::HighCard
     }
 }
 
