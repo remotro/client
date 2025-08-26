@@ -9,7 +9,7 @@ pub struct PlayingCard {
     pub rank: Rank,
     pub suit: Suit,
     pub seal: Option<Seal>,
-    pub extra_chips: u64
+    pub extra_chips: Option<u64>
 }
 
 balatro_enum!(Suit {
@@ -47,6 +47,26 @@ balatro_enum!(Rank {
     Queen = "Queen",
     King = "King"
 });
+
+impl Rank {
+    pub fn chips(&self) -> u64 {
+        match self {
+            Self::Ace => 11,
+            Self::Two => 2,
+            Self::Three => 3,
+            Self::Four => 4,
+            Self::Five => 5,
+            Self::Six => 6,
+            Self::Seven => 7,
+            Self::Eight => 8,
+            Self::Nine => 9,
+            Self::Ten => 10,
+            Self::Jack => 10,
+            Self::Queen => 10,
+            Self::King => 10,
+        }
+    }
+}
 
 impl Translatable for Rank {
     fn translate(&self, translations: &Translations) -> Translation {

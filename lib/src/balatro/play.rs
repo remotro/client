@@ -27,6 +27,10 @@ impl<'a> Play<'a> {
         self.info.poker_hand.as_ref()
     }
 
+    pub fn last_score(&self) -> Option<LastScore> {
+        self.info.last_score
+    }
+
     pub async fn click(self, indices: &[u32]) -> Result<Self, Error> {
         let info = self.connection.request(protocol::PlayClick { indices: indices.to_vec() }).await??;
         Ok(Self::new(info, self.connection))
@@ -139,8 +143,15 @@ impl Default for PokerHandKind {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct LastScore {
+    pub chips: u64,
+    pub mult: f64
+}
+
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
+    use crate::balatro::play::LastScore;
     use crate::net::protocol::{Packet, Request, Response};
     use super::{CurrentBlind, HandCard, PokerHand};
     use crate::balatro::overview::protocol::{GameOverviewInfo, RoundOverviewInfo};
@@ -153,6 +164,7 @@ pub(crate) mod protocol {
         pub score: f64,
         pub hud: HudInfo,
         pub poker_hand: Option<PokerHand>,
+        pub last_score: Option<LastScore>
     }
 
     impl Response for PlayInfo {}

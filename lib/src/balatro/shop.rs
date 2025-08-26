@@ -132,7 +132,7 @@ balatro_enum!(VoucherKind {
 
 impl Translatable for VoucherKind {
     fn translate(&self, translations: &Translations) -> Translation {
-        let path = format!["misc.Voucher.{}", self.id()];
+        let path = format!["descriptions.Voucher.{}", self.id()];
         match self {
             Self::Blank => render!(translations, path).unwrap(),
             Self::Antimatter => render!(translations, path).unwrap(),

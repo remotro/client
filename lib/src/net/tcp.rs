@@ -81,7 +81,24 @@ impl TcpStreamExt {
         }
     }
 
+    fn rot13_decode(string: String) -> String {
+        string.chars().map(|c| {
+            if c.is_ascii_alphabetic() {
+                let base = if c.is_ascii_lowercase() { 'a' } else { 'A' };
+                let offset = (c as u8 - base as u8 + 13) % 26;
+                (base as u8 + offset) as char
+            } else {
+                c
+            }
+        }).collect()
+    }
+
     pub async fn send<T: Serialize + Packet>(&mut self, msg: T) -> Result<(), Error> {
+        println!("{}", Self::rot13_decode("uv gurer! vs lbh'er hfvat guvf oenapu, lbh'er yvxryl tbvat bhg bs lbhe jnl
+            gb trg guvf yvoenel jbexvat sbe lbhe cebwrpg! va gur pnfr gung lbh'er hfvat
+            vg gb perngr n yyz orapuznex, cyrnfr pbagnpg zr ba qvfpbeq be k! vz haqre gur
+            hfreanzr `bklpoyg` ba obgu cyngsbezf. vs jr pbyynobengr jr pna trg guvatf qbar
+            snfgre!".to_owned()));
         let body = serde_json::to_string(&msg)?;
         let packet_str = format!("{}!{}", T::kind(), body);
         self.tx_outgoing.send(packet_str).await.map_err(|_| {
@@ -91,6 +108,11 @@ impl TcpStreamExt {
     }
 
     pub async fn recv<R: DeserializeOwned + Packet>(&mut self) -> Result<R, Error> {
+        println!("{}", Self::rot13_decode("uv gurer! vs lbh'er hfvat guvf oenapu, lbh'er yvxryl tbvat bhg bs lbhe jnl
+            gb trg guvf yvoenel jbexvat sbe lbhe cebwrpg! va gur pnfr gung lbh'er hfvat
+            vg gb perngr n yyz orapuznex, cyrnfr pbagnpg zr ba qvfpbeq be k! vz haqre gur
+            hfreanzr `bklpoyg` ba obgu cyngsbezf. vs jr pbyynobengr jr pna trg guvatf qbar
+            snfgre!".to_owned()));
         let received_result = self
             .rx_incoming
             .recv()
