@@ -47,4 +47,4 @@ luac.out
 
 */.bacon*
 */target/
-lib/.idea
+*/.idea
