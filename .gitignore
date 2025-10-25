@@ -48,3 +48,4 @@ luac.out
 */.bacon*
 */target/
 */.idea
+*/Cargo.lock

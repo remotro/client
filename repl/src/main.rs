@@ -530,8 +530,8 @@ async fn main() {
     env_logger::init();
 
     // Host a TCP socket
-    let mut remotro = Remotro::host("127.0.0.1", 34143).await.unwrap();
-    info!("Remotro hosted on 127.0.0.1:34143");
+    let mut remotro = Remotro::host("0.0.0.0", 34143).await.unwrap();
+    info!("Remotro hosted on 0.0.0.0:34143");
 
     loop {
         info!("Waiting for connection");

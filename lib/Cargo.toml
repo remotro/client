@@ -9,8 +9,6 @@ readme = "../README.md"
 authors = ["HeadedBranch", "OxygenCobalt"]
 
 [dependencies]
-crossbeam-channel = "0.5.14"
-websocket = "0.27.1"
 tokio = { version = "1", features = ["full"] }
 log = "0.4"
 serde = { version = "1.0.219", features = ["derive"] }
