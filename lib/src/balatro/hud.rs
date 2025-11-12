@@ -172,27 +172,27 @@ impl IntoIterator for CurrentPokerHands {
             self.five_of_a_kind.unwrap_or(CurrentPokerHand {
                 hand: PokerHand {
                     kind: FiveOfAKind,
-                    level: 0,
-                    chips: 0,
-                    mult: 0,
+                    level: 1,
+                    chips: 120,
+                    mult: 12,
                 },
                 played: 0,
             }),
             self.flush_house.unwrap_or(CurrentPokerHand {
                 hand: PokerHand {
                     kind: FlushHouse,
-                    level: 0,
-                    chips: 0,
-                    mult: 0,
+                    level: 1,
+                    chips: 140,
+                    mult: 14,
                 },
                 played: 0,
             }),
             self.flush_fives.unwrap_or(CurrentPokerHand {
                 hand: PokerHand {
                     kind: FlushFive,
-                    level: 0,
-                    chips: 0,
-                    mult: 0,
+                    level: 1,
+                    chips: 160,
+                    mult: 16,
                 },
                 played: 0,
             }),
