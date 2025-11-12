@@ -222,7 +222,8 @@ impl Display for Deck {
             Deck::Anaglyph => "Anaglyph",
             Deck::Plasma => "Plasma",
             Deck::Erratic => "Erratic",
-        }.to_string();
+        }
+        .to_string();
         write!(f, "{}", str)
     }
 }
@@ -291,7 +292,11 @@ pub struct SavedRun {
 }
 impl Display for SavedRun {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} deck, {} stake, ante {} round {}, ${}", self.deck, self.stake,self.ante, self.round, self.money)
+        write!(
+            f,
+            "{} deck, {} stake, ante {} round {}, ${}",
+            self.deck, self.stake, self.ante, self.round, self.money
+        )
     }
 }
 
