@@ -1,4 +1,5 @@
 use super::{Error, consumables::Consumable, jokers::Joker};
+use crate::balatro::play::PokerHandKind::{FiveOfAKind, FlushFive, FlushHouse};
 use crate::balatro::{
     Screen,
     blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice, Tag},
@@ -152,6 +153,51 @@ pub struct CurrentPokerHands {
     pub five_of_a_kind: Option<CurrentPokerHand>,
     pub flush_house: Option<CurrentPokerHand>,
     pub flush_fives: Option<CurrentPokerHand>,
+}
+impl IntoIterator for CurrentPokerHands {
+    type Item = CurrentPokerHand;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+    fn into_iter(self) -> Self::IntoIter {
+        vec![
+            self.high_card,
+            self.pair,
+            self.two_pair,
+            self.three_of_a_kind,
+            self.straight,
+            self.flush,
+            self.full_house,
+            self.four_of_a_kind,
+            self.straight_flush,
+            self.five_of_a_kind.unwrap_or(CurrentPokerHand {
+                hand: PokerHand {
+                    kind: FiveOfAKind,
+                    level: 0,
+                    chips: 0,
+                    mult: 0,
+                },
+                played: 0,
+            }),
+            self.flush_house.unwrap_or(CurrentPokerHand {
+                hand: PokerHand {
+                    kind: FlushHouse,
+                    level: 0,
+                    chips: 0,
+                    mult: 0,
+                },
+                played: 0,
+            }),
+            self.flush_fives.unwrap_or(CurrentPokerHand {
+                hand: PokerHand {
+                    kind: FlushFive,
+                    level: 0,
+                    chips: 0,
+                    mult: 0,
+                },
+                played: 0,
+            }),
+        ]
+        .into_iter()
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
