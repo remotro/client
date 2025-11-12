@@ -31,6 +31,7 @@ pub trait Hud<'a>: Sized + Screen<'a> {
     async fn sell_consumable(self, index: u32) -> Result<Self, Error>;
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! impl_hud {
     ($($t:ident),*) => {

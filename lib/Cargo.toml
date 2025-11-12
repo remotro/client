@@ -5,7 +5,7 @@ edition = "2024"
 description = "A crate allowing remote control of Balatro"
 license = "MIT"
 repository = "https://github.com/remotro/client"
-readme = "../README.md"
+readme = "README.md"
 authors = ["HeadedBranch", "OxygenCobalt"]
 
 [dependencies]
