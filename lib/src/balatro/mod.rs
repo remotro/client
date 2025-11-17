@@ -1,10 +1,12 @@
 pub mod blinds;
 pub mod deck;
+#[doc(hidden)]
 pub mod hud;
 pub mod menu;
 pub mod play;
 pub mod shop;
 #[macro_use]
+#[doc(hidden)]
 pub mod util;
 pub mod boosters;
 pub mod consumables;
@@ -19,6 +21,7 @@ pub struct Balatro {
 }
 
 impl<'a> Balatro {
+    #[doc(hidden)]
     pub fn new(connection: Connection) -> Self {
         Self { connection }
     }
@@ -110,16 +113,25 @@ impl<'a> Balatro {
 }
 
 pub enum CurrentScreen<'a> {
+    /// The Main menu / Title screen, where you can start a new run or load an old run
     Menu(menu::Menu<'a>),
+    /// The Blind selection, containing the 3 blinds in the ante
     SelectBlind(blinds::SelectBlind<'a>),
+    /// The playing section when playing against each blind
     Play(play::Play<'a>),
+    /// The summary of earnings at the end of the blind
     RoundOverview(overview::RoundOverview<'a>),
+    /// The shop between blinds
     Shop(shop::Shop<'a>),
+    /// Booster packs opened from the Shop
     ShopOpen(boosters::OpenBoosterPack<'a, <shop::Shop<'a> as Screen<'a>>::Info>),
+    /// Booster packs opened from skip tags
     SkipOpen(boosters::OpenBoosterPack<'a, blinds::protocol::SkipBlindResult<'a>>),
+    /// Game Lost (Currently not working from the mod side)
     GameOver(overview::GameOverview<'a>),
 }
 
+#[doc(hidden)]
 #[derive(Debug)]
 pub enum Error {
     Net(crate::net::Error),
@@ -146,6 +158,7 @@ impl From<String> for Error {
     }
 }
 
+#[doc(hidden)]
 pub trait Screen<'a> {
     type Info: Response;
     fn name() -> String;
