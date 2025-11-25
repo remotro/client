@@ -177,6 +177,7 @@ impl IntoIterator for CurrentPokerHands {
                     mult: 12,
                 },
                 played: 0,
+                played_round: 0,
             }),
             self.flush_house.unwrap_or(CurrentPokerHand {
                 hand: PokerHand {
@@ -186,6 +187,7 @@ impl IntoIterator for CurrentPokerHands {
                     mult: 14,
                 },
                 played: 0,
+                played_round: 0,
             }),
             self.flush_fives.unwrap_or(CurrentPokerHand {
                 hand: PokerHand {
@@ -195,6 +197,7 @@ impl IntoIterator for CurrentPokerHands {
                     mult: 16,
                 },
                 played: 0,
+                played_round: 0,
             }),
         ]
         .into_iter()
@@ -205,6 +208,7 @@ impl IntoIterator for CurrentPokerHands {
 pub struct CurrentPokerHand {
     pub hand: PokerHand,
     pub played: u64,
+    pub played_round: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
