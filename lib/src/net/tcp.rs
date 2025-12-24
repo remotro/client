@@ -117,6 +117,7 @@ impl TcpStreamExt {
 
         info!("Received: {body}");
 
+        // Extract version from the json and ensure it matches the version of the crate
         let mut body = serde_json::Value::from_str(body)?;
         let body = body.as_object_mut().unwrap();
         let version = body.remove("version").unwrap();
