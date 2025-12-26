@@ -117,11 +117,15 @@ impl TcpStreamExt {
 
         info!("Received: {body}");
 
-        // Extract version from the json and ensure it matches the version of the crate
+        // Extract version from json and ensure it matches crate version
         let mut body = serde_json::Value::from_str(body)?;
-        let body = body.as_object_mut().unwrap();
-        let version = body.remove("version").unwrap();
-        if version != env!("CARGO_PKG_VERSION") {
+        let body = match body.as_object_mut() {
+            Some(b) => b,
+            None => return Err(Error::VersionMismatch),
+        };
+        if let Some(version) = body.remove("version")
+            && version != env!("CARGO_PKG_VERSION")
+        {
             return Err(Error::VersionMismatch);
         }
         let body = serde_json::to_string(&body)?;
