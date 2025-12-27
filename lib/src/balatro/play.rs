@@ -117,7 +117,7 @@ pub struct HandCard {
     pub selected: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct PokerHand {
     pub kind: PokerHandKind,
     pub level: u64,

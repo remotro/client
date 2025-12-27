@@ -1,4 +1,5 @@
 use super::{Error, consumables::Consumable, jokers::Joker};
+use crate::balatro::play::PokerHandKind::{FiveOfAKind, FlushFive, FlushHouse};
 use crate::balatro::{
     Screen,
     blinds::{BigBlindChoice, BossBlindChoice, SmallBlindChoice, Tag},
@@ -30,6 +31,7 @@ pub trait Hud<'a>: Sized + Screen<'a> {
     async fn sell_consumable(self, index: u32) -> Result<Self, Error>;
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! impl_hud {
     ($($t:ident),*) => {
@@ -153,11 +155,60 @@ pub struct CurrentPokerHands {
     pub flush_house: Option<CurrentPokerHand>,
     pub flush_fives: Option<CurrentPokerHand>,
 }
+impl IntoIterator for CurrentPokerHands {
+    type Item = CurrentPokerHand;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+    fn into_iter(self) -> Self::IntoIter {
+        vec![
+            self.high_card,
+            self.pair,
+            self.two_pair,
+            self.three_of_a_kind,
+            self.straight,
+            self.flush,
+            self.full_house,
+            self.four_of_a_kind,
+            self.straight_flush,
+            self.five_of_a_kind.unwrap_or(CurrentPokerHand {
+                hand: PokerHand {
+                    kind: FiveOfAKind,
+                    level: 1,
+                    chips: 120,
+                    mult: 12,
+                },
+                played: 0,
+                played_round: 0,
+            }),
+            self.flush_house.unwrap_or(CurrentPokerHand {
+                hand: PokerHand {
+                    kind: FlushHouse,
+                    level: 1,
+                    chips: 140,
+                    mult: 14,
+                },
+                played: 0,
+                played_round: 0,
+            }),
+            self.flush_fives.unwrap_or(CurrentPokerHand {
+                hand: PokerHand {
+                    kind: FlushFive,
+                    level: 1,
+                    chips: 160,
+                    mult: 16,
+                },
+                played: 0,
+                played_round: 0,
+            }),
+        ]
+        .into_iter()
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CurrentPokerHand {
     pub hand: PokerHand,
     pub played: u64,
+    pub played_round: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

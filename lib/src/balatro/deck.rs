@@ -1,6 +1,6 @@
+use self::Rank::*;
 use crate::balatro_enum;
 use serde::{Deserialize, Serialize};
-use self::Rank::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PlayingCard {

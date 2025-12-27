@@ -1,5 +1,6 @@
 use serde::Serialize;
 use std::borrow::Cow;
+use std::str::FromStr;
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter},
     net::{
@@ -17,7 +18,6 @@ use super::protocol::Packet; // Assuming Error is in super
 use log::{debug, error, info, trace, warn};
 use serde::de::DeserializeOwned;
 use std::time::Duration;
-
 // --- Constants for Heartbeat and Connection Logic ---
 
 /// Size of the MPSC channels used for communication between the main struct and the background task.
@@ -115,7 +115,21 @@ impl TcpStreamExt {
             ))));
         }
 
-        log::info!("Recieved: {body}");
+        info!("Received: {body}");
+
+        // Extract version from json and ensure it matches crate version
+        let mut body = serde_json::Value::from_str(body)?;
+        let body = match body.as_object_mut() {
+            Some(b) => b,
+            None => return Err(Error::VersionMismatch),
+        };
+        if let Some(version) = body.remove("version")
+            && version != env!("CARGO_PKG_VERSION")
+        {
+            return Err(Error::VersionMismatch);
+        }
+        let body = serde_json::to_string(&body)?;
+        let body = body.as_str();
 
         let response: R = serde_json::from_str(body)?;
         Ok(response)
@@ -207,7 +221,7 @@ async fn run_connection(
 
                         if received_line == PING_PACKET {
                             // Received a ping, send a pong back immediately.
-                            // Note: We add the newline back for the write.
+                            // Note: We add the newline back when writing.
                             debug!("Received PING, sending PONG.");
                             if let Err(e) = writer.write_all(format!("{PONG_PACKET}\n").as_bytes()).await {
                                 error!("Failed to send PONG: {e}");

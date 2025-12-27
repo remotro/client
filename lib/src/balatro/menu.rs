@@ -8,6 +8,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
+use std::fmt::Display;
 use std::str::FromStr;
 
 pub struct Menu<'a> {
@@ -203,6 +204,29 @@ impl FromStr for Deck {
         }
     }
 }
+impl Display for Deck {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
+            Deck::Red => "Red",
+            Deck::Blue => "Blue",
+            Deck::Yellow => "Yellow",
+            Deck::Green => "Green",
+            Deck::Black => "Black",
+            Deck::Magic => "Magic",
+            Deck::Nebula => "Nebula",
+            Deck::Ghost => "Ghost",
+            Deck::Abandoned => "Abandoned",
+            Deck::Checkered => "Checkered",
+            Deck::Zodiac => "Zodiac",
+            Deck::Painted => "Painted",
+            Deck::Anaglyph => "Anaglyph",
+            Deck::Plasma => "Plasma",
+            Deck::Erratic => "Erratic",
+        }
+        .to_string();
+        write!(f, "{}", str)
+    }
+}
 
 impl FromStr for Stake {
     type Err = String;
@@ -227,6 +251,22 @@ impl FromStr for Stake {
         }
     }
 }
+impl Display for Stake {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
+            Stake::White => "White",
+            Stake::Red => "Red",
+            Stake::Green => "Green",
+            Stake::Black => "Black",
+            Stake::Blue => "Blue",
+            Stake::Purple => "Purple",
+            Stake::Orange => "Orange",
+            Stake::Gold => "Gold",
+        }
+        .to_string();
+        write!(f, "{}", str)
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Seed(String);
@@ -249,6 +289,15 @@ pub struct SavedRun {
     pub round: u64,
     pub ante: u64,
     pub money: u64,
+}
+impl Display for SavedRun {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} deck, {} stake, ante {} round {}, ${}",
+            self.deck, self.stake, self.ante, self.round, self.money
+        )
+    }
 }
 
 pub(crate) mod protocol {

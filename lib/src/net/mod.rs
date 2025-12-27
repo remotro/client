@@ -46,6 +46,7 @@ pub enum Error {
     Timeout,
     ConnectionClosed,
     Channel(Cow<'static, str>),
+    VersionMismatch,
 }
 
 impl std::fmt::Display for Error {
