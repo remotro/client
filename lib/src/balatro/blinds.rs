@@ -38,6 +38,14 @@ impl<'a> SelectBlind<'a> {
     pub fn boss(&self) -> &BossBlindChoice {
         &self.info.blinds.boss
     }
+
+    pub fn can_reroll_boss(&self) -> bool {
+        self.info.can_reroll_boss
+    }
+
+    pub async fn reroll_boss(self) -> Result<Self, super::Error> {
+        Ok(Self::new(self.connection.request(protocol::RerollBoss::<'a> { _r_marker: std::marker::PhantomData }).await??, self.connection))
+    }
 }
 
 impl<'a> Screen<'a> for SelectBlind<'a> {    
@@ -200,7 +208,8 @@ pub(crate) mod protocol {
     #[derive(Serialize, Deserialize)]
     pub struct BlindInfo {
         pub hud: HudInfo,
-        pub blinds: BlindChoices
+        pub blinds: BlindChoices,
+        pub can_reroll_boss: bool,
     }
 
     impl Response for BlindInfo {}
@@ -268,6 +277,21 @@ pub(crate) mod protocol {
     impl<'a> Packet for SkipBlind<'a> {
         fn kind() -> String {
             "blind_select/skip".to_string()
+        }
+    }
+
+    #[derive(Serialize)]
+    pub struct RerollBoss<'a> {
+        pub _r_marker: std::marker::PhantomData<&'a ()>,
+    }
+
+    impl<'a> Request for RerollBoss<'a> {
+        type Expect = Result<BlindInfo, String>;
+    }
+
+    impl<'a> Packet for RerollBoss<'a> {
+        fn kind() -> String {
+            "blind_select/reroll_boss".to_string()
         }
     }
 }

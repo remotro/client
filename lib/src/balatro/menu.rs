@@ -4,6 +4,7 @@ use crate::balatro::play::Play;
 use crate::balatro::shop;
 use crate::balatro::shop::Shop;
 use crate::balatro::blinds;
+use crate::balatro::translations::Translatable;
 use crate::balatro::{blinds::SelectBlind, CurrentScreen, Screen};
 use crate::net::Connection;
 use serde::{Deserialize, Serialize};
@@ -124,6 +125,21 @@ pub enum Stake {
     Gold = 8,
 }
 
+impl Stake {
+    fn predecessors(&self) -> Vec<Stake> {
+        match self {
+            Stake::White => vec![],
+            Stake::Red => vec![Stake::White],
+            Stake::Green => vec![Stake::White, Stake::Red],
+            Stake::Black => vec![Stake::White, Stake::Red, Stake::Green],
+            Stake::Blue => vec![Stake::White, Stake::Red, Stake::Green, Stake::Black],
+            Stake::Purple => vec![Stake::White, Stake::Red, Stake::Green, Stake::Black, Stake::Blue],
+            Stake::Orange => vec![Stake::White, Stake::Red, Stake::Green, Stake::Black, Stake::Blue, Stake::Purple],
+            Stake::Gold => vec![Stake::White, Stake::Red, Stake::Green, Stake::Black, Stake::Blue, Stake::Purple, Stake::Orange],
+        }
+    }
+}
+
 impl FromStr for Deck {
     type Err = String;
 
@@ -169,6 +185,24 @@ impl FromStr for Stake {
                 ["White", "Red", "Green", "Black", "Blue", "Purple", 
                  "Orange", "Gold"].join(", ")))
         }
+    }
+}
+
+impl Translatable for Stake {
+    fn translate(&self, translations: &super::translations::Translations) -> super::translations::Translation {
+        // stake paths are Stake.stake_<color>
+        let id = match self {
+            Stake::White => "stake_white",
+            Stake::Red => "stake_red",
+            Stake::Green => "stake_green",
+            Stake::Black => "stake_black",
+            Stake::Blue => "stake_blue",
+            Stake::Purple => "stake_purple",
+            Stake::Orange => "stake_orange",
+            Stake::Gold => "stake_gold",
+        };
+        let translation_key = format!("descriptions.Stake.{}", id);
+        translations.render(translation_key, vec![]).unwrap()
     }
 }
 

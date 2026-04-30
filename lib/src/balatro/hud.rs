@@ -22,6 +22,8 @@ pub trait Hud<'a>: Sized + Screen<'a> {
 
     fn jokers(&self) -> &[Joker];
 
+    fn joker_slots(&self) -> usize;
+
     fn tags(&self) -> &[Tag];
 
     fn run_info(&self) -> &RunInfo;
@@ -31,6 +33,8 @@ pub trait Hud<'a>: Sized + Screen<'a> {
     async fn sell_joker(self, index: u32) -> Result<Self, Error>;
 
     fn consumables(&self) -> &[Consumable];
+
+    fn consumable_slots(&self) -> usize;
 
     async fn move_consumable(self, from: u32, to: u32) -> Result<Self, Error>;
 
@@ -68,6 +72,10 @@ macro_rules! impl_hud {
                     &self.info.hud.jokers
                 }
 
+                fn joker_slots(&self) -> usize {
+                    self.info.hud.joker_slots
+                }
+
                 fn tags(&self) -> &[$crate::balatro::blinds::Tag] {
                     &self.info.hud.tags
                 }
@@ -96,6 +104,10 @@ macro_rules! impl_hud {
                     &self.info.hud.consumables
                 }
 
+                fn consumable_slots(&self) -> usize {
+                    self.info.hud.consumable_slots
+                }
+                
                 async fn move_consumable(self, from: u32, to: u32) -> Result<Self, $crate::balatro::Error> {
                     let new_info = self
                         .connection
@@ -179,8 +191,10 @@ pub(crate) mod protocol {
         pub ante: u32,
         pub money: u32,
         pub jokers: Vec<Joker>,
+        pub joker_slots: usize,
         pub tags: Vec<Tag>,
         pub consumables: Vec<Consumable>,
+        pub consumable_slots: usize,
         pub run_info: RunInfo,
     }
 

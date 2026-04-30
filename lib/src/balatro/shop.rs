@@ -22,6 +22,10 @@ impl<'a> Shop<'a> {
     pub fn boosters(&self) -> &[BoosterPack] {
         &self.info.boosters
     }
+    
+    pub fn reroll_cost(&self) -> u64 {
+        self.info.reroll_cost
+    }
 
     pub async fn buy_main(self, index: u8) -> Result<Self, Error> {
         let info = self.connection.request(protocol::ShopBuyMain { index }).await??;
@@ -181,6 +185,7 @@ pub(crate) mod protocol {
     pub struct ShopInfo {
         pub hud: HudInfo,
         pub main: Vec<MainCard>,
+        pub reroll_cost: u64,
         pub vouchers: Vec<Voucher>,
         pub boosters: Vec<BoosterPack>,
     }

@@ -19,16 +19,16 @@ impl<'a> Play<'a> {
         &self.info.hand
     }
 
+    pub fn hand_size(&self) -> usize {
+        self.info.hand_size
+    }
+
     pub fn score(&self) -> f64 {
         self.info.score
     }
     
     pub fn poker_hand(&self) -> Option<&PokerHand> {
         self.info.poker_hand.as_ref()
-    }
-
-    pub fn last_score(&self) -> Option<LastScore> {
-        self.info.last_score
     }
 
     pub async fn click(self, indices: &[u32]) -> Result<Self, Error> {
@@ -39,9 +39,9 @@ impl<'a> Play<'a> {
     pub async fn play(self) -> Result<PlayResult<'a>, Error> {
         let info = self.connection.request(protocol::PlayPlay).await??;
         let result = match info {
-            protocol::PlayResult::Again(info) => PlayResult::Again(Self::new(info, self.connection)),
-            protocol::PlayResult::RoundOver(info) => PlayResult::RoundOver(RoundOverview::new(info, self.connection)),
-            protocol::PlayResult::GameOver(info) => PlayResult::GameOver(GameOverview::new(info, self.connection)),
+            protocol::PlayResult::Again { play, scored } => PlayResult::Again { play: Self::new(play, self.connection), scored },
+            protocol::PlayResult::RoundOver { info, scored } => PlayResult::RoundOver { info: RoundOverview::new(info, self.connection), scored },
+            protocol::PlayResult::GameOver { info, scored } => PlayResult::GameOver { info: GameOverview::new(info, self.connection), scored },
         };
         Ok(result)
     }
@@ -69,20 +69,20 @@ impl<'a> Screen<'a> for Play<'a> {
 crate::impl_hud!(Play);
 
 pub enum PlayResult<'a> {
-    Again(Play<'a>),
-    RoundOver(RoundOverview<'a>),
-    GameOver(GameOverview<'a>),
+    Again { play: Play<'a>, scored: Scored },
+    RoundOver { info: RoundOverview<'a>, scored: Scored },
+    GameOver { info: GameOverview<'a>, scored: Scored },
 }
 
 impl <'a> PlayResult<'a> {
     pub fn again(self) -> Play<'a> {
         match self {
-            PlayResult::Again(play) => play,
+            PlayResult::Again { play, scored } => play,
             _ => panic!()
         }
     }
 }
-
+    
 pub enum DiscardResult<'a> {
     Again(Play<'a>),
     GameOver(GameOverview<'a>),
@@ -144,14 +144,14 @@ impl Default for PokerHandKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub struct LastScore {
+pub struct Scored {
     pub chips: u64,
     pub mult: f64
 }
 
 pub(crate) mod protocol {
     use serde::{Deserialize, Serialize};
-    use crate::balatro::play::LastScore;
+    use crate::balatro::play::Scored;
     use crate::net::protocol::{Packet, Request, Response};
     use super::{CurrentBlind, HandCard, PokerHand};
     use crate::balatro::overview::protocol::{GameOverviewInfo, RoundOverviewInfo};
@@ -161,10 +161,11 @@ pub(crate) mod protocol {
     pub struct PlayInfo {
         pub current_blind: CurrentBlind,
         pub hand: Vec<HandCard>,
+        pub hand_size: usize,
         pub score: f64,
         pub hud: HudInfo,
         pub poker_hand: Option<PokerHand>,
-        pub last_score: Option<LastScore>
+        pub last_score: Option<Scored>,
     }
 
     impl Response for PlayInfo {}
@@ -218,9 +219,9 @@ pub(crate) mod protocol {
 
     #[derive(Serialize, Deserialize, Clone)]
     pub enum PlayResult {
-        Again(PlayInfo),
-        RoundOver(RoundOverviewInfo),
-        GameOver(GameOverviewInfo),
+        Again { play: PlayInfo, scored: Scored },
+        RoundOver { info: RoundOverviewInfo, scored: Scored },
+        GameOver { info: GameOverviewInfo, scored: Scored },
     }
 
     impl Response for PlayResult {}

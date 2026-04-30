@@ -31,6 +31,10 @@ macro_rules! impl_hud_generic {
                     &self.info.hud.jokers
                 }
 
+                fn joker_slots(&self) -> usize {
+                    self.info.hud.joker_slots
+                }
+
                 fn tags(&self) -> &[crate::balatro::blinds::Tag] {
                     &self.info.hud.tags
                 }
@@ -57,6 +61,10 @@ macro_rules! impl_hud_generic {
 
                 fn consumables(&self) -> &[crate::balatro::consumables::Consumable] {
                     &self.info.hud.consumables
+                }
+
+                fn consumable_slots(&self) -> usize {
+                    self.info.hud.consumable_slots
                 }
 
                 async fn move_consumable(self, from: u32, to: u32) -> Result<Self, crate::balatro::Error> {
@@ -142,6 +150,7 @@ pub trait Open<'a>: Sized + Screen<'a> {
 #[allow(async_fn_in_trait)]
 pub trait OpenWithHand<'a>: Sized + Open<'a> {
     async fn hand(&self) -> &[BoosterCard];
+    async fn hand_size(&self) -> usize;
     async fn click(self, indices: &[u32]) -> Result<Self, Error>;
 }
 
@@ -196,6 +205,10 @@ macro_rules! impl_open_with_hand {
         impl<'a, R : Response + 'a> OpenWithHand<'a> for $ty<'a, R> {
             async fn hand(&self) -> &[BoosterCard] {
                 &self.info.hand
+            }
+            
+            async fn hand_size(&self) -> usize {
+                self.info.hand_size
             }
             
             async fn click(self, indices: &[u32]) -> Result<Self, Error> {
@@ -369,7 +382,8 @@ pub(crate) mod protocol {
         pub booster: BoosterPackKind,
         pub options: Vec<B::Options>,
         pub selections_left: SelectionsLeft,
-        pub hand: Vec<BoosterCard>
+        pub hand: Vec<BoosterCard>,
+        pub hand_size: usize
     }
 
     impl<'a, B: OpenWithHand<'a>> Response for OpenWithHandInfo<'a, B> {}

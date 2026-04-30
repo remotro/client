@@ -204,7 +204,7 @@ fn print_run_info(run_info: &RunInfo) {
         }
     }
     
-    println!("\nBlinds Progress:");
+    println!("\nBlinds Progressflush_fives:");
     println!("  Small: {} ({} chips)", 
              match run_info.blinds.small.state {
                  remotro::balatro::blinds::BlindState::Current => "Current",
@@ -695,32 +695,32 @@ async fn main() {
                             },
                             Some("play") => {
                                 match play.play().await {
-                                    Ok(PlayResult::Again(_)) => {
+                                    Ok(PlayResult::Again { play, scored }) => {
                                         println!("Continue playing...");
                                     },
-                                    Ok(PlayResult::RoundOver(overview)) => {
+                                    Ok(PlayResult::RoundOver { info, scored }) => {
                                         println!("\n=== ROUND COMPLETE ===");
-                                        print_hud(&overview);
-                                        println!("Total Earned: ${}", overview.total_earned());
-                                        println!("Earnings Breakdown: {:?}", overview.earnings());
+                                        print_hud(&info);
+                                        println!("Total Earned: ${}", info.total_earned());
+                                        println!("Earnings Breakdown: {:?}", info.earnings());
                                         display_overview_menu();
                                         let _ = get_string_input("Press Enter to continue to shop");
-                                        match overview.cash_out().await {
+                                        match info.cash_out().await {
                                             Ok(_) => println!("Proceeding to shop..."),
                                             Err(e) => error!("Failed to proceed to shop: {}", e),
                                         }
                                     },
-                                    Ok(PlayResult::GameOver(game_over)) => {
+                                    Ok(PlayResult::GameOver { info, scored }) => {
                                         println!("\n=== GAME OVER ===");
-                                        println!("{}: {:?}", "Outcome".bright_red().bold(), game_over.outcome());
-                                        if let Some(best) = game_over.best_hand() {
+                                        println!("{}: {:?}", "Outcome".bright_red().bold(), info.outcome());
+                                        if let Some(best) = info.best_hand() {
                                             println!("Best Hand: {}", best);
                                         }
-                                        println!("{}: {:?}", "Most Played Hand".green().bold(), game_over.most_played_hand());
-                                        println!("Seed: {:?}", game_over.seed());
+                                        println!("{}: {:?}", "Most Played Hand".green().bold(), info.most_played_hand());
+                                        println!("Seed: {:?}", info.seed());
                                         display_game_over_menu();
                                         let _ = get_string_input("Press Enter to return to menu");
-                                        game_over.menu();
+                                        info.menu();
                                         return;
                                     },
                                     Err(e) => error!("Failed to play: {}", e),

@@ -108,10 +108,6 @@ impl<'a> GameOverview<'a> {
         self.info.times_rerolled
     }
 
-    pub fn new_discoveries(&self) -> u64 {
-        self.info.new_discoveries
-    }
-
     pub fn seed(&self) -> &Seed {
         &self.info.seed
     }
@@ -202,7 +198,6 @@ pub(crate) mod protocol {
         pub cards_discarded: u64,
         pub cards_purchased: u64,
         pub times_rerolled: u64,
-        pub new_discoveries: u64,
         pub seed: Seed,
     }
 
